@@ -7,8 +7,61 @@ const CATEGORIES = [
   'Text Animations', 'Visual Effects', 'Scroll Animations', 'Sliders & Marquees',
   'Page Transitions', 'Navigation', 'Loaders', 'Gallery & Images', 'Utilities & Scripts',
   'Sections & Layouts', 'Cursor Animations', 'Video & Audio', 'Buttons', 'Gimmicks',
-  'Hover Interactions', 'Filters & Sorting', 'Forms', '3D & WebGL'
+  'Hover Interactions', 'Filters & Sorting', 'Forms', '3D & WebGL', 'Other'
 ];
+
+const CustomSelect = ({ value, onChange, options, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef(null);
+  
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+  
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ 
+          width: '100%', padding: '12px 14px', background: '#0e0e10', color: value ? 'var(--text)' : 'var(--text-dim)', 
+          border: `1px solid ${isOpen ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', 
+          fontFamily: 'var(--font-sans)', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          transition: 'all 0.2s ease'
+        }}
+      >
+        {value || placeholder}
+        <span style={{ fontSize: '10px', color: 'var(--text-dim)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>▼</span>
+      </div>
+      
+      {isOpen && (
+        <div 
+          className="custom-scrollbar"
+          style={{ 
+            position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '8px', background: '#1c1c1e', 
+            border: '1px solid var(--border)', borderRadius: '3px', zIndex: 100, maxHeight: '240px', overflowY: 'auto',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fadeIn 0.2s ease'
+          }}
+        >
+          {options.map(opt => (
+            <div 
+              key={opt}
+              onClick={() => { onChange(opt); setIsOpen(false); }}
+              onMouseEnter={(e) => { e.target.style.background = 'rgba(0,0,255,0.1)'; e.target.style.color = 'var(--electric)'; }}
+              onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--text)'; }}
+              style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', transition: 'all 0.15s ease', borderBottom: '1px solid rgba(255,255,255,0.02)' }}
+            >
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function Admin() {
   const { allPrompts, addDraft, removeDraft } = useApp();
@@ -18,7 +71,7 @@ export default function Admin() {
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
-    title: '', category: '', tier: 'free', thumbSrc: '', hoverSrc: '', prompt: '', link: ''
+    title: '', category: '', customCategory: '', description: '', componentType: 'interactions', tier: 'free', price: '', thumbSrc: '', hoverSrc: '', prompt: '', link: ''
   });
 
   const showToastMsg = (msg) => {
@@ -47,10 +100,14 @@ export default function Admin() {
   const onSubmit = async () => {
     if (!form.title) { showToastMsg('Add a title'); return; }
     if (!form.category) { showToastMsg('Pick a category'); return; }
+    if (form.category === 'Other' && !form.customCategory) { showToastMsg('Enter custom category'); return; }
     if (!form.prompt) { showToastMsg('Add the prompt / code'); return; }
 
     try {
-      const payload = { ...form, status: 'published' };
+      const finalCategory = form.category === 'Other' ? form.customCategory.toLowerCase() : form.category;
+      const payload = { ...form, category: finalCategory, status: 'published' };
+      delete payload.customCategory; // remove internal state field
+      
       if (editingId) payload.id = editingId;
       else payload.createdAt = new Date().toISOString();
       
@@ -66,8 +123,12 @@ export default function Admin() {
     setEditingId(item.id);
     setForm({
       title: item.title || '',
-      category: item.category || '',
+      category: CATEGORIES.includes(item.category) ? item.category : 'Other',
+      customCategory: CATEGORIES.includes(item.category) ? '' : (item.category || ''),
+      description: item.description || '',
+      componentType: item.componentType || 'interactions',
       tier: item.tier || 'free',
+      price: item.price || '',
       thumbSrc: item.thumbSrc || '',
       hoverSrc: item.hoverSrc || '',
       prompt: item.prompt || '',
@@ -79,7 +140,7 @@ export default function Admin() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setForm({ title: '', category: '', tier: 'free', thumbSrc: '', hoverSrc: '', prompt: '', link: '' });
+    setForm({ title: '', category: '', customCategory: '', description: '', componentType: 'interactions', tier: 'free', price: '', thumbSrc: '', hoverSrc: '', prompt: '', link: '' });
   };
 
   const onDelete = async (id) => {
@@ -132,10 +193,44 @@ export default function Admin() {
 
             <div className="field">
               <label>Category</label>
-              <select value={form.category} onChange={e => set({category: e.target.value})}>
-                <option value="" disabled>Select category...</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <CustomSelect 
+                value={form.category} 
+                onChange={(val) => set({ category: val })} 
+                options={CATEGORIES} 
+                placeholder="Select category..." 
+              />
+            </div>
+
+            {form.category === 'Other' && (
+              <div className="field" style={{ animation: 'fadeIn 0.3s ease' }}>
+                <label>Custom Category</label>
+                <input type="text" value={form.customCategory} onChange={e => set({customCategory: e.target.value.toLowerCase()})} placeholder="e.g. typography" />
+              </div>
+            )}
+
+            <div className="field">
+              <label>Component Type</label>
+              <div className="tier-toggle">
+                <label className="tier-option">
+                  <input type="radio" name="componentType" value="interactions" checked={form.componentType === 'interactions'} onChange={() => set({componentType: 'interactions'})} />
+                  <span className="tier-label" style={{ display: 'block' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', display: 'block' }}>Interactions</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>Buttons, navbars, micro-interactions</span>
+                  </span>
+                </label>
+                <label className="tier-option">
+                  <input type="radio" name="componentType" value="sections" checked={form.componentType === 'sections'} onChange={() => set({componentType: 'sections'})} />
+                  <span className="tier-label" style={{ display: 'block' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', display: 'block' }}>Sections</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>Landing pages, hero sections, layouts</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Description</label>
+              <textarea value={form.description} onChange={e => set({description: e.target.value})} rows={3} placeholder="Brief description of the component..." style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', resize: 'vertical' }} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="field">
@@ -172,6 +267,13 @@ export default function Admin() {
                 </label>
               </div>
             </div>
+
+            {form.tier === 'paid' && (
+              <div className="field" style={{ animation: 'fadeIn 0.3s ease' }}>
+                <label>Price (USD)</label>
+                <input type="number" step="0.01" value={form.price} onChange={e => set({price: e.target.value})} placeholder="e.g. 19.99" />
+              </div>
+            )}
 
             <div className="field">
               <label>Prompt / Code</label>

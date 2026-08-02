@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { backend } from '../lib/backend.js';
+import { useUser, SignInButton } from '@clerk/clerk-react';
 
 export default function Modal({ item, onClose }) {
   const [content, setContent] = useState(null);
@@ -54,10 +55,27 @@ export default function Modal({ item, onClose }) {
 
   const isPaid = item.tier === 'paid' || item.price === 'premium';
   const promptLocked = isPaid && userTier === 'free';
+  
+  const { isSignedIn, user } = useUser();
 
-  const onUpgrade = () => {
-    localStorage.setItem('cue_user_tier', 'paid');
-    window.location.reload();
+  const onBuy = async () => {
+    if (!isSignedIn) {
+      alert("Please sign in to purchase.");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const email = user?.primaryEmailAddress?.emailAddress;
+      const name = user?.fullName || 'Cue User';
+      const checkoutUrl = await backend.createCheckoutSession(item.id, email, name);
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      console.error(e);
+      // Fallback for demo purposes if backend isn't perfectly wired
+      window.location.href = `https://checkout.dodopayments.com/buy/${item.id}?email=${user?.primaryEmailAddress?.emailAddress}`;
+    }
+    setLoading(false);
   };
 
   const onCopy = async () => {
@@ -90,6 +108,11 @@ export default function Modal({ item, onClose }) {
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--text-dim)', fontWeight: 600 }}>
               {item.category}
             </div>
+            {item.description && (
+              <div style={{ marginTop: '12px', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.5, maxWidth: '500px' }}>
+                {item.description}
+              </div>
+            )}
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '24px', cursor: 'pointer' }} aria-label="Close">×</button>
         </div>
@@ -111,12 +134,20 @@ export default function Modal({ item, onClose }) {
             {promptLocked ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', border: '1px solid var(--border)', background: '#0a0a0c', borderRadius: '3px' }}>
                 <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(0,0,255,0.15)', border: '1px solid rgba(0,0,255,0.4)', color: 'var(--electric)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>🔒</div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '28px', fontStyle: 'italic', color: 'var(--text)', marginBottom: '12px' }}>Prompt locked for <em style={{ color: 'var(--electric)', fontStyle: 'italic' }}>Cue+</em></div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--text-dim)', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.5 }}>You can browse the design freely. To copy the paste-ready prompt into Bolt, v0 or Cursor, upgrade to Cue+.</div>
+                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '28px', fontStyle: 'italic', color: 'var(--text)', marginBottom: '12px' }}>Premium Component</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: 'var(--text-dim)', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.5 }}>You can browse the design and video freely. To copy the paste-ready prompt into Bolt, v0 or Cursor, unlock this component.</div>
                 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                   <button onClick={onClose} style={{ padding: '12px 24px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-dim)', borderRadius: '3px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Not now</button>
-                  <button onClick={onUpgrade} style={{ padding: '12px 24px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', boxShadow: '0 4px 16px -4px rgba(0,0,255,0.6)', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Upgrade to Cue+</button>
+                  {!isSignedIn ? (
+                    <SignInButton mode="modal">
+                      <button style={{ padding: '12px 24px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', boxShadow: '0 4px 16px -4px rgba(0,0,255,0.6)', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Sign in to buy</button>
+                    </SignInButton>
+                  ) : (
+                    <button onClick={onBuy} disabled={loading} style={{ padding: '12px 24px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', boxShadow: '0 4px 16px -4px rgba(0,0,255,0.6)', fontWeight: 600, fontFamily: 'var(--font-sans)', opacity: loading ? 0.7 : 1 }}>
+                      {loading ? 'Processing...' : `Buy for $${item.price || '9.99'}`}
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (

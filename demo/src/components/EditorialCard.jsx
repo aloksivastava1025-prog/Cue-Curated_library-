@@ -16,7 +16,7 @@ export default function EditorialCard({ item, index, onClick }) {
   const cardRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Video autoplay lazy intersection observer
+  // Video lazy loading observer (only sets src, does not autoplay)
   useEffect(() => {
     if (!videoRef.current) return;
     const videoObserver = new IntersectionObserver((entries) => {
@@ -26,19 +26,24 @@ export default function EditorialCard({ item, index, onClick }) {
           if (!video.src && video.dataset.videoSrc) {
             video.src = video.dataset.videoSrc;
           }
-          const p = video.play();
-          if (p && p.then) {
-            p.then(() => { video.dataset.videoStatus = 'playing'; }).catch(() => {});
-          }
-        } else {
-          video.pause();
         }
       });
-    }, { threshold: 0.25 });
+    }, { threshold: 0.1 });
     
     videoObserver.observe(videoRef.current);
     return () => videoObserver.disconnect();
   }, []);
+
+  // Play/pause based strictly on hover state
+  useEffect(() => {
+    if (!videoRef.current || !videoRef.current.src) return;
+    if (isHovered) {
+      const p = videoRef.current.play();
+      if (p && p.then) p.catch(() => {});
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isHovered]);
 
   const isPaid = item.tier === 'paid' || item.price === 'premium';
   const timeTag = formatAgo(item.createdAt || new Date().toISOString());
@@ -114,19 +119,20 @@ export default function EditorialCard({ item, index, onClick }) {
               src={item.hoverSrc} 
               className="cover-image" 
               style={{ zIndex: 2 }}
-              initial={{ opacity: 0 }}
-              animate={isHovered ? { opacity: 1, scale: 1.03, filter: 'brightness(1.05) contrast(1.05)', transition: springHover } : { opacity: 0, scale: 1, filter: 'brightness(0.95) contrast(1)', transition: { duration: 0.4 } }}
+              initial={{ opacity: item.thumbSrc ? 0 : 1 }}
+              animate={isHovered ? { opacity: 1, scale: 1.03, filter: 'brightness(1.05) contrast(1.05)', transition: springHover } : { opacity: item.thumbSrc ? 0 : 1, scale: 1, filter: 'brightness(0.95) contrast(1)', transition: { duration: 0.4 } }}
               alt={item.title} 
             />
           ) : (
             <motion.video 
               ref={videoRef}
               muted loop playsInline webkit-playsinline
+              preload="metadata"
               data-video-src={item.hoverSrc}
               data-video-status="not-loaded"
               className="cover-video"
-              initial={{ opacity: 0, scale: 1 }}
-              animate={isHovered ? { opacity: 1, scale: 1.03, transition: springHover } : { opacity: 0, scale: 1, transition: { duration: 0.4 } }}
+              initial={{ opacity: item.thumbSrc ? 0 : 1, scale: 1 }}
+              animate={isHovered ? { opacity: 1, scale: 1.03, transition: springHover } : { opacity: item.thumbSrc ? 0 : 1, scale: 1, transition: { duration: 0.4 } }}
             />
           )
         )}

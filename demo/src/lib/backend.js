@@ -6,15 +6,17 @@ function toJs(row) {
     prompt: row.prompt || null, // Will be fetched securely later
     thumbSrc: row.thumb_src,
     hoverSrc: row.hover_src,
+    componentType: row.component_type || 'interactions',
   }
 }
 
 function toDb(item) {
-  const { prompt, content, mode, thumbSrc, hoverSrc, ...rest } = item
+  const { prompt, content, mode, thumbSrc, hoverSrc, componentType, ...rest } = item
   return {
     ...rest,
     thumb_src: thumbSrc,
     hover_src: hoverSrc,
+    component_type: componentType || 'interactions',
   }
 }
 

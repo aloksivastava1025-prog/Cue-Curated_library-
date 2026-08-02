@@ -9,6 +9,7 @@ import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'fra
 function Library() {
   const { allPrompts, loadingDrafts } = useApp();
   const [selectedItem, setSelectedItem] = useState(null);
+  const [viewMode, setViewMode] = useState('interactions');
   
   const [userTier, setUserTier] = useState(localStorage.getItem('cue_user_tier') || 'free');
   
@@ -212,30 +213,91 @@ function Library() {
           
           <motion.p 
             initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.7, ease: "easeOut" }}
-            style={{ margin: '80px auto 0', maxWidth: '520px', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.55 }}
+            style={{ margin: '40px auto 0', maxWidth: '520px', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.55 }}
           >
             Battle-tested prompts for Bolt, v0, Cursor, and Framer. Stop endlessly tweaking and start shipping. Awwwards-tier interactions saved globally.
           </motion.p>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.8, ease: "easeOut" }}
+            style={{ 
+              display: 'flex', 
+              background: '#ffffff', 
+              borderRadius: '4px', 
+              padding: '4px', 
+              width: 'fit-content', 
+              margin: '60px auto -28px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+              position: 'relative'
+            }}
+          >
+            <div 
+              onClick={() => setViewMode('sections')}
+              style={{
+                padding: '8px 22px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 500,
+                color: viewMode === 'sections' ? '#ffffff' : '#52525b',
+                position: 'relative',
+                transition: 'color 0.3s ease',
+                zIndex: 1
+              }}
+            >
+              {viewMode === 'sections' && (
+                <motion.div
+                  layoutId="toggleBackground"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  style={{ position: 'absolute', inset: 0, background: '#27272a', borderRadius: '4px', zIndex: -1 }}
+                />
+              )}
+              Sections
+            </div>
+            <div 
+              onClick={() => setViewMode('interactions')}
+              style={{
+                padding: '8px 22px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 500,
+                color: viewMode === 'interactions' ? '#ffffff' : '#52525b',
+                position: 'relative',
+                transition: 'color 0.3s ease',
+                zIndex: 1
+              }}
+            >
+              {viewMode === 'interactions' && (
+                <motion.div
+                  layoutId="toggleBackground"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  style={{ position: 'absolute', inset: 0, background: '#27272a', borderRadius: '4px', zIndex: -1 }}
+                />
+              )}
+              Interactions
+            </div>
+          </motion.div>
         </motion.div>
       </section>
 
       {/* Grid Section */}
       <section style={{ padding: '20px 20px 120px', maxWidth: '1600px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px', position: 'relative', zIndex: 10 }}>
-        {allPrompts.length === 0 && !loadingDrafts ? (
+        {allPrompts.filter(p => (p.componentType || 'interactions') === viewMode).length === 0 && !loadingDrafts ? (
           <div className="empty-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 20px', maxWidth: '520px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-dim)', fontWeight: 600 }}>Empty library</div>
             <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '44px', fontStyle: 'italic', fontWeight: 400, color: 'var(--text)', margin: 0 }}>
-              <em style={{ color: 'var(--electric)', fontStyle: 'italic' }}>Add your first resource</em>
+              <em style={{ color: 'var(--electric)', fontStyle: 'italic' }}>No {viewMode} found</em>
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.55, margin: 0 }}>Your library is empty. Head to the admin panel to add projects, screenshots, or videos — they'll render as cards in this exact format.</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.55, margin: 0 }}>Your library has no components of this type. Head to the admin panel to add projects.</p>
             
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '14px' }}>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', margin: '14px auto 0' }}>
               <a href="#/admin" style={{ padding: '12px 24px', background: 'var(--electric)', color: '#fff', borderRadius: '3px', textDecoration: 'none', fontSize: '13px', fontWeight: 600, boxShadow: '0 6px 24px -8px rgba(0,0,255,0.6)' }}>Open admin &rarr;</a>
               <button onClick={seedDemo} style={{ padding: '12px 24px', background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px', cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-sans)' }}>Load 7 demo cards</button>
             </div>
           </div>
         ) : (
-          allPrompts.map((item, i) => (
+          allPrompts.filter(p => (p.componentType || 'interactions') === viewMode).map((item, i) => (
             <EditorialCard key={item.id} item={item} index={i} onClick={setSelectedItem} />
           ))
         )}
