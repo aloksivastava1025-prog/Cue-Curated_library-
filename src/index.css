@@ -1,3 +1,34 @@
+:root {
+  --electric:      #0000FF;
+  --bg:            #060606;
+  --card-bg:       #1c1c1e;
+  --card-img-bg:   #2a2a2c;
+  --text:          #f2f2ef;
+  --text-dim:      #8a8a82;
+  --text-dimmer:   #55554e;
+  --border:        rgba(255,255,255,0.08);
+  --danger:        #ff4d4d;
+  --font-serif:    'Fraunces', 'Instrument Serif', Georgia, serif;
+  --font-sans:     'Geist', -apple-system, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
@@ -12,4 +43,3 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.2);
 }
-
