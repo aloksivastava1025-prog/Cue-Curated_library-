@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, startTransition } from 'react';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import Modal from './components/Modal.jsx';
 import Admin from './pages/Admin.jsx';
 import EditorialCard from './components/EditorialCard.jsx';
 import { ClerkProvider, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 
 function Library() {
   const { allPrompts, loadingDrafts } = useApp();
@@ -34,20 +34,23 @@ function Library() {
   const subtitleOpacity = useTransform(springScroll, [0, 300], [1, 0.6]);
   const glowOpacity = useTransform(springScroll, [0, 500], [1, 0.1]);
 
-  // Mouse Parallax for hero title
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  // Mouse Parallax for hero title using useMotionValue (no React re-renders)
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
   useEffect(() => {
     const handleMouseMove = (e) => {
       const x = (e.clientX / window.innerWidth - 0.5) * 8; // max 4px movement
       const y = (e.clientY / window.innerHeight - 0.5) * 8;
-      setMousePos({ x, y });
+      mouseX.set(x);
+      mouseY.set(y);
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [mouseX, mouseY]);
 
-  const parallaxX = useSpring(mousePos.x, { stiffness: 150, damping: 25 });
-  const parallaxY = useSpring(mousePos.y, { stiffness: 150, damping: 25 });
+  const parallaxX = useSpring(mouseX, { stiffness: 150, damping: 25 });
+  const parallaxY = useSpring(mouseY, { stiffness: 150, damping: 25 });
 
   // Floating particles
   const particles = Array.from({ length: 15 }).map((_, i) => ({
@@ -63,8 +66,8 @@ function Library() {
   const titleLetters = titleText.split('');
 
   const letterVariants = {
-    hidden: { opacity: 0, y: 20, filter: 'blur(10px)' },
-    visible: { opacity: 1, y: 0, filter: 'blur(0px)' }
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
   };
 
   return (
@@ -172,8 +175,8 @@ function Library() {
         
         <motion.div style={{ position: 'relative', zIndex: 2, scale: heroScale, x: parallaxX, y: parallaxY }}>
           <motion.h1 
-            initial={{ opacity: 0, scale: 0.96, filter: 'blur(20px)', y: 40 }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)', y: 0 }}
+            initial={{ opacity: 0, scale: 0.96, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 1.4, ease: "easeOut" }}
             style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(76px, 13vw, 200px)', fontStyle: 'italic', letterSpacing: '-0.035em', lineHeight: 0.9, color: 'var(--text)' }}
           >
@@ -197,8 +200,8 @@ function Library() {
           </motion.h1>
           
           <motion.div 
-            initial={{ opacity: 0, filter: 'blur(10px)', y: 20 }}
-            animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.25, ease: "easeOut" }}
             style={{ marginTop: '24px', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '26px', color: 'var(--text)', opacity: subtitleOpacity }}
           >
@@ -232,7 +235,7 @@ function Library() {
             }}
           >
             <div 
-              onClick={() => setViewMode('sections')}
+              onClick={() => startTransition(() => setViewMode('sections'))}
               style={{
                 padding: '8px 22px',
                 cursor: 'pointer',
@@ -255,7 +258,7 @@ function Library() {
               Sections
             </div>
             <div 
-              onClick={() => setViewMode('interactions')}
+              onClick={() => startTransition(() => setViewMode('interactions'))}
               style={{
                 padding: '8px 22px',
                 cursor: 'pointer',

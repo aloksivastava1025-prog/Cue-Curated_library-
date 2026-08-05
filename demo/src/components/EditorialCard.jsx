@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 
 function formatAgo(iso) {
@@ -11,7 +11,9 @@ function formatAgo(iso) {
   return m === 1 ? '1 month ago' : `${m} months ago`;
 }
 
-export default function EditorialCard({ item, index, onClick }) {
+const springHover = { type: 'spring', stiffness: 100, damping: 22, mass: 0.8 };
+
+export default memo(function EditorialCard({ item, index, onClick }) {
   const videoRef = useRef(null);
   const cardRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -51,16 +53,15 @@ export default function EditorialCard({ item, index, onClick }) {
   const daysOld = Math.max(0, Math.floor((Date.now() - new Date(item.createdAt || Date.now()).getTime()) / 86400000));
   const isNew = item.isNew !== false && daysOld < 30;
 
-  // Spring configs
-  const springHover = { type: 'spring', stiffness: 100, damping: 22, mass: 0.8 };
+  // Spring configs are now static outside the component
 
   return (
     <motion.div 
       ref={cardRef} 
       onClick={() => onClick(item)}
       className="resource-card"
-      initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.6, delay: Math.min((index % 6) * 0.1, 0.5), ease: "easeOut" }}
       whileHover={{ y: -8, rotate: 0.5, boxShadow: '0 24px 48px rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.12)' }}
@@ -109,7 +110,7 @@ export default function EditorialCard({ item, index, onClick }) {
             src={item.thumbSrc} 
             className="cover-image" 
             alt={item.title} 
-            animate={isHovered ? { scale: 1.03, filter: 'brightness(1.05) contrast(1.05)', transition: springHover } : { scale: [1, 1.04, 1], filter: 'brightness(0.95) contrast(1)', transition: { duration: 20, repeat: Infinity, ease: 'linear' } }}
+            animate={isHovered ? { scale: 1.03, filter: 'brightness(1.05) contrast(1.05)', transition: springHover } : { scale: 1, filter: 'brightness(0.95) contrast(1)', transition: { duration: 0.4 } }}
           />
         )}
 
