@@ -4,18 +4,71 @@ function toJs(row) {
   return {
     ...row,
     prompt: row.prompt || null, // Will be fetched securely later
+    code: row.code || '',
     thumbSrc: row.thumb_src,
     hoverSrc: row.hover_src,
+    // Normalize array-shaped columns (jsonb) — Supabase returns them as arrays,
+    // but coerce defensively in case a row was inserted with null.
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    stack: Array.isArray(row.stack) ? row.stack : [],
+    description: row.description || '',
+    use_case: row.use_case || '',
+    component_type: row.component_type || '',
+    // DB stores 'premium'; the app uses 'paid' internally. Translate on read.
+    tier: row.tier === 'premium' ? 'paid' : (row.tier || 'free'),
   }
 }
 
+// Whitelist approach: only send known DB columns. Anything else (client-only
+// fields like `link`, `isNew`, `brandStyle`, `mode`, `content`, `prompt`) is
+// silently dropped so it can never trigger a "column not found" error.
 function toDb(item) {
-  const { prompt, content, mode, thumbSrc, hoverSrc, ...rest } = item
-  return {
-    ...rest,
-    thumb_src: thumbSrc,
-    hover_src: hoverSrc,
+  const out = {}
+
+  // --- Original schema columns (always send when present) ---------------
+  if (item.id)       out.id = item.id
+  if (item.title)    out.title = item.title
+  if (item.category) out.category = item.category
+  // DB check constraint allows only 'free' | 'premium'. The app uses 'paid'
+  // internally (via the AI schema + admin form); translate on write.
+  out.tier    = item.tier === 'paid' ? 'premium' : (item.tier || 'free')
+  out.status  = item.status  || 'published'
+  out.section = item.section || item.category || 'general'
+  out.brand   = item.brand   || 'cue'
+  out.variant = item.variant || 'sans'
+  out.stack   = Array.isArray(item.stack) ? item.stack : []
+  if (item.thumbSrc) out.thumb_src = item.thumbSrc
+  if (item.hoverSrc) out.hover_src = item.hoverSrc
+  if (item.rail)     out.rail = item.rail
+
+  // Timestamps — accept either camelCase (from the client) or snake_case.
+  const createdAt = item.created_at || item.createdAt
+  if (createdAt) out.created_at = createdAt
+
+  // --- New-schema columns (only send when they have data) ---------------
+  // If the DB hasn't run the migration yet these are simply omitted so the
+  // insert can still succeed. When present the DB stores them.
+  if (item.code && item.code.trim())          out.code = item.code
+  if (Array.isArray(item.tags) && item.tags.length) out.tags = item.tags
+  if (item.description && item.description.trim())  out.description = item.description
+  if (item.use_case && item.use_case.trim())        out.use_case = item.use_case
+  if (item.component_type === 'section' || item.component_type === 'interaction') {
+    out.component_type = item.component_type
   }
+
+  return out
+}
+
+// Fallback: same whitelist, but strip the NEW columns entirely. Used when a
+// save fails with a "column missing" error on the initial attempt.
+function toDbLegacy(item) {
+  const out = toDb(item)
+  delete out.code
+  delete out.tags
+  delete out.description
+  delete out.use_case
+  delete out.component_type
+  return out
 }
 
 const supabaseAdapter = {
@@ -32,20 +85,38 @@ const supabaseAdapter = {
   },
   
   async create(item) {
-    const { data, error } = await supabase
-      .from('prompts')
-      .upsert(toDb(item))
-      .select()
-      .single()
+    const trySave = async (payload) => {
+      const r = await supabase.from('prompts').upsert(payload).select().single()
+      return r
+    }
+
+    let { data, error } = await trySave(toDb(item))
+
+    // If the DB rejects because a new column (code / tags / description /
+    // use_case) hasn't been migrated yet, retry with the legacy-only payload.
+    if (error) {
+      const msg = error.message || ''
+      const isMissingCol = /(?:could not find|does not exist|schema cache|not found|unknown column)/i.test(msg)
+      if (isMissingCol) {
+        // eslint-disable-next-line no-console
+        console.warn('[cue] Save failed due to missing column; retrying with legacy payload:', msg)
+        const retry = await trySave(toDbLegacy(item))
+        data = retry.data
+        error = retry.error
+      }
+    }
     if (error) throw error
 
     if (item.prompt) {
       const { error: contentError } = await supabase
         .from('prompt_contents')
         .upsert({ prompt_id: item.id, content: item.prompt })
-      if (contentError) throw contentError
+      // A missing prompt_contents table shouldn't kill the item save either.
+      if (contentError && !/(?:does not exist|schema cache|not found)/i.test(contentError.message || '')) {
+        throw contentError
+      }
     }
-    
+
     return toJs(data)
   },
   

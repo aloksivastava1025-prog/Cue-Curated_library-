@@ -1,29 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { copyToClipboard } from '../hooks/useClipboard.js';
 import { backend } from '../lib/backend.js';
 import { useClerk, useUser } from '@clerk/clerk-react';
 
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
       <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   );
 }
 
-function LockIcon() {
+function LockIcon({ size = 26 }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px', margin: '0 auto 12px', color: 'var(--text-dim)', display: 'block' }}>
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-      <path d="M7 11V7a5 5 0 0110 0v4"></path>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: size, height: size }}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
     </svg>
   );
 }
 
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+const isImage = (src) => !!src && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(src);
+
 export default function Modal({ item, onClose, showToast }) {
   const { user, isSignedIn } = useUser();
   const clerk = useClerk();
-  
+
+  const [content, setContent] = useState(null); // prompt content (may load async)
+  const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState('code'); // 'code' | 'prompt'
+  const [copied, setCopied] = useState(null); // 'code' | 'prompt' | null
+
+  // Close on Esc, lock body scroll while open.
   useEffect(() => {
     if (!item) return;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -36,133 +52,358 @@ export default function Modal({ item, onClose, showToast }) {
     };
   }, [item, onClose]);
 
-  const [content, setContent] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const isPremium = !!item && (item.tier === 'paid' || item.price === 'premium');
 
+  // Fetch full prompt content for free items on open; premium stays locked.
   useEffect(() => {
-    if (!item) {
-      setContent(null);
-      return;
-    }
-    // If the prompt is stored directly (like from localStorage/drafts)
-    if (item.prompt && item.tier !== 'paid' && item.price !== 'premium') {
-      setContent(item.prompt);
-      return;
-    }
-
+    if (!item) { setContent(null); return; }
+    if (isPremium) { setContent(null); return; }
+    if (item.prompt) { setContent(item.prompt); return; }
     let active = true;
     setLoading(true);
-    backend.getPromptContent(item.id).then(text => {
-      if (active) {
-        setContent(text);
-        setLoading(false);
-      }
-    });
+    backend.getPromptContent(item.id)
+      .then((text) => { if (active) { setContent(text); setLoading(false); } })
+      .catch(() => { if (active) { setContent(null); setLoading(false); } });
     return () => { active = false; };
-  }, [item]);
+  }, [item, isPremium]);
+
+  // Which tabs exist? Auto-select the first non-empty one when the item changes.
+  const hasCode = !!(item && item.code && item.code.trim());
+  const hasPrompt = !!(item && (item.prompt || content));
+  const hasUseCase = !!(item && item.use_case && item.use_case.trim());
+
+  useEffect(() => {
+    if (!item) return;
+    setTab(hasCode ? 'code' : hasPrompt ? 'prompt' : 'use_case');
+    setCopied(null);
+  }, [item?.id, hasCode, hasPrompt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!item) return null;
 
-  const isPremium = item.tier === 'paid' || item.price === 'premium';
-  const isLocked = isPremium && !content && !loading;
+  const onCopy = async (which) => {
+    let text = '';
+    if (which === 'code') text = item.code || '';
+    else if (which === 'prompt') text = content || item.prompt || '';
+    else if (which === 'use_case') text = item.use_case || '';
+    if (!text) {
+      if (showToast) showToast('Nothing to copy');
+      return;
+    }
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(which);
+      setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
+      if (showToast) showToast(`Copied ${which.replace('_', ' ')}`);
+    } else if (showToast) {
+      showToast('Copy failed');
+    }
+  };
 
-  const onPurchase = async () => {
+  const onBuyIndividual = async () => {
     if (!isSignedIn) {
-      if (showToast) showToast('Please sign in to continue purchase');
+      if (showToast) showToast('Sign in to purchase');
       clerk.openSignIn({ redirectUrl: window.location.href });
       return;
     }
-    if (showToast) showToast('Redirecting to secure checkout...');
+    if (showToast) showToast('Opening secure checkout…');
     try {
-      const customerEmail = user?.primaryEmailAddress?.emailAddress || '';
-      const customerName = user?.fullName || user?.firstName || '';
-      const url = await backend.createCheckoutSession(item.id, customerEmail, customerName);
+      const email = user?.primaryEmailAddress?.emailAddress || '';
+      const name = user?.fullName || user?.firstName || '';
+      const url = await backend.createCheckoutSession(item.id, email, name);
       window.location.href = url;
     } catch (err) {
       if (showToast) showToast('Checkout failed: ' + err.message);
     }
   };
 
-  const onCopy = async () => {
-    if (isPremium && isLocked) {
-      if(showToast) showToast('Premium prompt — purchase to unlock');
-      return;
-    }
-    const ok = await copyToClipboard(content || item.prompt || '');
-    if (ok && showToast) showToast(`Copied “${item.title}”`);
-    else if (showToast) showToast('Copy failed. Try again.');
+  const onSubscribe = () => {
+    // Route to the site's pricing surface; tests + edge-fn subscription flow live there.
+    window.location.hash = '#/pricing';
+    onClose();
   };
-  
-  const hash = item.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const hue = hash % 360;
 
+  // --- Media (left column) ---------------------------------------------------
+  const media = item.hoverSrc
+    ? (isImage(item.hoverSrc)
+        ? <img src={item.hoverSrc} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+        : <video src={item.hoverSrc} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />)
+    : item.thumbSrc
+      ? <img src={item.thumbSrc} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+      : (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'linear-gradient(135deg, #1a1a1c 0%, #0d0d10 100%)' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 32, color: 'var(--text)' }}>{item.title}</span>
+        </div>
+      );
+
+  const primaryCategory = (item.category || '').split(',')[0].trim();
+
+  // Backdrop click closes.
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', padding: '20px' }} onClick={onClose}>
-      
-      {/* Close Button Top Right */}
-      <button onClick={onClose} style={{ position: 'absolute', top: '24px', right: '24px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '8px', zIndex: 1010 }}>
-        <CloseIcon />
-      </button>
-
-      {/* Modal Panel */}
-      <div 
-        onClick={e => e.stopPropagation()} 
-        style={{ width: '100%', maxWidth: '820px', maxHeight: '90vh', background: 'var(--card-bg)', overflowY: 'auto', display: 'flex', flexDirection: 'column', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}
-        className="custom-scrollbar"
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.75)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20,
+      }}
+    >
+      {/* Panel */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 1100, maxHeight: '90vh',
+          background: 'var(--card-bg)',
+          borderRadius: 14,
+          overflow: 'hidden',
+          display: 'flex',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.8)',
+          position: 'relative',
+        }}
+        className="cue-detail-modal"
       >
-        {/* Media Preview (16/10) */}
-        <div style={{ position: 'relative', aspectRatio: '16 / 10', background: 'var(--card-img-bg)', overflow: 'hidden' }}>
-          {item.hoverSrc ? (
-            item.hoverSrc.match(/\.(jpeg|jpg|gif|png|webp|svg|heic)$/i) ? (
-              <img src={item.hoverSrc} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <video src={item.hoverSrc} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            )
-          ) : item.thumbSrc ? (
-            <img src={item.thumbSrc} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 30% 30%, hsla(${hue}, 60%, 25%, 0.4) 0%, transparent 60%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-serif)', fontSize: '40px', fontStyle: 'italic', color: 'var(--text)' }}>{item.title}</span>
-            </div>
-          )}
+        {/* Close */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: 'absolute', top: 14, right: 14, zIndex: 5,
+            width: 32, height: 32, borderRadius: 999,
+            background: 'rgba(0,0,0,0.55)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+          }}
+        >
+          <CloseIcon />
+        </button>
+
+        {/* LEFT: Media */}
+        <div className="cue-detail-media" style={{ flex: '1 1 55%', background: '#000', position: 'relative', minHeight: 300 }}>
+          {media}
         </div>
 
-        {/* Modal Body */}
-        <div style={{ padding: '32px 40px' }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '32px', fontWeight: 400, fontStyle: 'italic', letterSpacing: '-0.015em', marginBottom: '8px', color: '#fff' }}>
-            {item.title}
-          </h2>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>{item.category}</span>
-            {(item.stack || []).map(s => (
-              <span key={s} style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>&middot; {s}</span>
-            ))}
+        {/* RIGHT: Meta + tabs */}
+        <div
+          className="cue-detail-side custom-scrollbar"
+          data-lenis-prevent
+          style={{
+            flex: '1 1 45%',
+            display: 'flex', flexDirection: 'column',
+            padding: '28px 28px 24px',
+            overflowY: 'auto',
+            borderLeft: '1px solid var(--border)',
+            background: 'var(--card-bg)',
+          }}
+        >
+          {/* Header meta */}
+          <div style={{ marginBottom: 20 }}>
+            {primaryCategory && (
+              <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 12 }}>
+                {primaryCategory}
+              </div>
+            )}
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 30, fontWeight: 400, fontStyle: 'italic', letterSpacing: '-0.015em', margin: 0, color: '#fff', lineHeight: 1.15 }}>
+              {item.title}
+            </h2>
+            {item.description && (
+              <p style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.55, color: 'var(--text-dim)' }}>{item.description}</p>
+            )}
+            {/* Tags + stack — pills, no dump */}
+            {(Array.isArray(item.tags) && item.tags.length > 0 || Array.isArray(item.stack) && item.stack.length > 0) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
+                {(item.tags || []).slice(0, 6).map((t) => (
+                  <span key={`t-${t}`} style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text-dim)', fontSize: 10.5, letterSpacing: '0.04em', textTransform: 'lowercase' }}>{t}</span>
+                ))}
+                {(item.stack || []).slice(0, 4).map((s) => (
+                  <span key={`s-${s}`} style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(0,0,255,0.08)', border: '1px solid rgba(0,0,255,0.22)', color: 'var(--text)', fontSize: 10.5, letterSpacing: '0.04em' }}>{s}</span>
+                ))}
+              </div>
+            )}
           </div>
 
-          {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dim)' }}>Loading...</div>
-          ) : isLocked ? (
-            <div style={{ border: '1px solid var(--border)', padding: '40px 20px', textAlign: 'center', background: '#111' }}>
-              <LockIcon />
-              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontStyle: 'italic', fontWeight: 400, marginBottom: '24px', color: '#fff' }}>Prompt locked for Cue+</h3>
-              <button onClick={onPurchase} style={{ padding: '14px 28px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px -8px rgba(0,0,255,0.6)' }}>
-                Upgrade to Cue+
-              </button>
-            </div>
+          {/* Body: paywall OR tabs */}
+          {isPremium ? (
+            <Paywall item={item} onBuy={onBuyIndividual} onSubscribe={onSubscribe} />
           ) : (
-            <div>
-              <div style={{ background: '#0e0e10', border: '1px solid var(--border)', padding: '24px', overflowX: 'auto', marginBottom: '24px' }} className="custom-scrollbar">
-                <pre style={{ margin: 0, padding: 0, fontFamily: 'Menlo, Consolas, monospace', fontSize: '13px', lineHeight: 1.6, color: 'var(--text-dim)' }}>
-                  {content || item.prompt || 'No prompt available.'}
-                </pre>
-              </div>
-              <button onClick={onCopy} style={{ display: 'block', width: '100%', padding: '16px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px -8px rgba(0,0,255,0.6)', transition: 'transform 0.2s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                Copy prompt
-              </button>
-            </div>
+            <FreeTabs
+              tab={tab}
+              setTab={setTab}
+              hasCode={hasCode}
+              hasPrompt={hasPrompt}
+              hasUseCase={hasUseCase}
+              loading={loading}
+              codeText={item.code || ''}
+              promptText={content || item.prompt || ''}
+              useCaseText={item.use_case || ''}
+              copied={copied}
+              onCopy={onCopy}
+            />
           )}
         </div>
 
+        {/* Responsive: on narrow screens stack the columns */}
+        <style>{`
+          @media (max-width: 820px) {
+            .cue-detail-modal { flex-direction: column; max-height: 92vh; }
+            .cue-detail-media { flex: 0 0 auto; aspect-ratio: 16/10; min-height: 0; }
+            .cue-detail-side { border-left: none; border-top: 1px solid var(--border); }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Free item: Code / Prompt / Use Case tabs
+function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy }) {
+  const TABS = [
+    { key: 'code',     label: 'Code',     present: hasCode },
+    { key: 'prompt',   label: 'Prompt',   present: hasPrompt },
+    { key: 'use_case', label: 'Use Case', present: hasUseCase },
+  ];
+  const presentTabs = TABS.filter((t) => t.present);
+  const showToggle = presentTabs.length >= 2;
+
+  // Ensure active is a present tab; fall back to the first available.
+  const active = presentTabs.some((t) => t.key === tab) ? tab : (presentTabs[0]?.key || 'code');
+
+  const bodyText = active === 'code' ? codeText : active === 'prompt' ? promptText : useCaseText;
+  const isEmpty = !bodyText || !bodyText.trim();
+  const isProse = active === 'use_case'; // use case = readable text, not monospace
+
+  const activeLabel = TABS.find((t) => t.key === active)?.label || active;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 240 }}>
+      {/* Segmented tab control (only when 2+ tabs present) */}
+      {showToggle ? (
+        <div style={{ display: 'inline-flex', padding: 3, background: '#0e0e10', border: '1px solid var(--border)', borderRadius: 999, alignSelf: 'flex-start', marginBottom: 14 }}>
+          {presentTabs.map((t) => {
+            const on = active === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                style={{
+                  padding: '6px 16px', borderRadius: 999,
+                  background: on ? 'var(--electric)' : 'transparent',
+                  color: on ? '#fff' : 'var(--text-dim)',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 11.5, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+                }}
+              >{t.label}</button>
+            );
+          })}
+        </div>
+      ) : (
+        <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 10 }}>
+          {activeLabel}
+        </div>
+      )}
+
+      {/* Body */}
+      <div
+        className="custom-scrollbar"
+        data-lenis-prevent
+        style={{
+          flex: 1, minHeight: 160, maxHeight: 340,
+          background: isProse ? 'transparent' : '#0b0b0d',
+          border: isProse ? 'none' : '1px solid var(--border)',
+          borderRadius: 8, padding: isProse ? '4px 0' : 16, overflow: 'auto',
+        }}
+      >
+        {loading ? (
+          <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: 20, textAlign: 'center' }}>Loading…</div>
+        ) : isEmpty ? (
+          <div style={{ color: 'var(--text-dimmer)', fontSize: 12.5, padding: 12, fontStyle: 'italic' }}>
+            {active === 'code' ? 'No component code available for this item.' : active === 'prompt' ? 'No prompt available for this item.' : 'No use case notes for this item.'}
+          </div>
+        ) : isProse ? (
+          <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.6, color: 'var(--text)' }}>
+            {bodyText}
+          </p>
+        ) : (
+          <pre style={{ margin: 0, fontFamily: 'Menlo, Consolas, monospace', fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-dim)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {bodyText}
+          </pre>
+        )}
+      </div>
+
+      {/* Copy button */}
+      <button
+        onClick={() => onCopy(active)}
+        disabled={isEmpty}
+        style={{
+          marginTop: 14, padding: '13px 18px',
+          background: isEmpty ? '#1c1c1e' : 'var(--electric)',
+          color: isEmpty ? 'var(--text-dimmer)' : '#fff',
+          border: 'none', borderRadius: 8,
+          fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em',
+          cursor: isEmpty ? 'not-allowed' : 'pointer',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          boxShadow: isEmpty ? 'none' : '0 6px 24px -8px rgba(0,0,255,0.55)',
+          transition: 'transform 0.15s ease, background 0.2s ease',
+        }}
+      >
+        {copied === active ? (<><CheckIcon /> Copied</>) : (`Copy ${activeLabel.toLowerCase()}`)}
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Paid item: paywall gate (blocks BOTH code and prompt)
+function Paywall({ item, onBuy, onSubscribe }) {
+  // Individual price: fall back to a default if not set on the item.
+  const priceLabel = (typeof item.price === 'number' && item.price > 0)
+    ? `$${item.price.toFixed(2)}`
+    : 'Cue+ only';
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      padding: '28px 20px',
+      border: '1px solid rgba(0,0,255,0.22)',
+      background: 'linear-gradient(180deg, rgba(0,0,255,0.05) 0%, rgba(0,0,255,0.01) 100%)',
+      borderRadius: 12,
+      textAlign: 'center',
+      gap: 14,
+    }}>
+      <div style={{ color: 'var(--electric)', marginBottom: 2 }}>
+        <LockIcon size={28} />
+      </div>
+      <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--electric)', fontWeight: 700 }}>
+        Cue+ Premium
+      </div>
+      <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontStyle: 'italic', fontWeight: 400, margin: 0, color: '#fff', lineHeight: 1.25 }}>
+        Unlock code &amp; prompt
+      </h3>
+      <p style={{ margin: '2px 6px 6px', fontSize: 13, lineHeight: 1.55, color: 'var(--text-dim)' }}>
+        This component is part of Cue+. Buy it once, or subscribe for unlimited access to every premium item.
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
+        <button
+          onClick={onBuy}
+          style={{
+            padding: '13px 18px',
+            background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: 8,
+            fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+            boxShadow: '0 6px 24px -8px rgba(0,0,255,0.55)',
+          }}
+        >
+          Buy this component {typeof item.price === 'number' && item.price > 0 ? `— ${priceLabel}` : ''}
+        </button>
+        <button
+          onClick={onSubscribe}
+          style={{
+            padding: '11px 18px',
+            background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8,
+            fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          }}
+        >
+          Or subscribe to Cue+ →
+        </button>
       </div>
     </div>
   );
