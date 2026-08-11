@@ -13,6 +13,7 @@
     "@clerk/clerk-react": "^5.61.9",
     "@supabase/supabase-js": "^2.110.2",
     "dodopayments": "^2.42.2",
+    "lenis": "^1.3.26",
     "pg": "^8.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
