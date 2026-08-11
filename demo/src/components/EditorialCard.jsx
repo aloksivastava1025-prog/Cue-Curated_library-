@@ -151,4 +151,4 @@ export default memo(function EditorialCard({ item, index, onClick }) {
       </div>
     </motion.div>
   );
-}
+});
