@@ -5,8 +5,7 @@
       "name": "cue-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 5173,
-      "cwd": "C:\\Users\\Peeyush\\Downloads\\Cue_libarray"
+      "port": 5173
     }
   ]
 }

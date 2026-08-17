@@ -7,10 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "import": "node scripts/import-partner-data.js"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.9",
+    "@sentry/react": "^10.70.0",
     "@supabase/supabase-js": "^2.110.2",
     "dodopayments": "^2.42.2",
     "lenis": "^1.3.26",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "papaparse": "^5.6.0",
     "vite": "^5.4.10"
   }
 }

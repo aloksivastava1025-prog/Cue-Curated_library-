@@ -2,6 +2,27 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { copyToClipboard } from '../hooks/useClipboard.js';
 import { backend } from '../lib/backend.js';
 import { useClerk, useUser } from '@clerk/clerk-react';
+import { useApp } from '../context/AppContext.jsx';
+import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
+
+function formatCount(n) {
+  const x = Number(n) || 0;
+  if (x >= 1e6) return (x / 1e6).toFixed(x >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'm';
+  if (x >= 1e3) return (x / 1e3).toFixed(x >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'k';
+  return String(x);
+}
+
+const modalActionBtn = (active, color) => ({
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+  padding: '6px 12px', borderRadius: 999,
+  background: active ? 'rgba(0,0,255,0.06)' : 'transparent',
+  border: '1px solid ' + (active ? color : 'var(--border)'),
+  color,
+  fontFamily: 'var(--font-sans)',
+  fontSize: 12, fontWeight: 500, letterSpacing: '0.02em',
+  cursor: 'pointer',
+  transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+});
 
 function CloseIcon() {
   return (
@@ -33,11 +54,21 @@ const isImage = (src) => !!src && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(sr
 export default function Modal({ item, onClose, showToast }) {
   const { user, isSignedIn } = useUser();
   const clerk = useClerk();
+  const { bookmarkedIds, likedIds, toggleBookmark, toggleLike, registerView } = useApp();
+  const isBookmarked = bookmarkedIds?.has(item?.id);
+  const isLiked = likedIds?.has(item?.id);
+  const [likeAnim, setLikeAnim] = useState(false);
 
   const [content, setContent] = useState(null); // prompt content (may load async)
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('code'); // 'code' | 'prompt'
   const [copied, setCopied] = useState(null); // 'code' | 'prompt' | null
+
+  // Register a view once per modal open (per item). Fires optimistically —
+  // failures don't affect the UI.
+  useEffect(() => {
+    if (item?.id) registerView(item.id);
+  }, [item?.id, registerView]);
 
   // Close on Esc, lock body scroll while open.
   useEffect(() => {
@@ -52,7 +83,7 @@ export default function Modal({ item, onClose, showToast }) {
     };
   }, [item, onClose]);
 
-  const isPremium = !!item && (item.tier === 'paid' || item.price === 'premium');
+  const isPremium = isPremiumItem(item);
 
   // Fetch full prompt content for free items on open; premium stays locked.
   useEffect(() => {
@@ -135,7 +166,7 @@ export default function Modal({ item, onClose, showToast }) {
         </div>
       );
 
-  const primaryCategory = (item.category || '').split(',')[0].trim();
+  const primaryCategory = primaryCategoryOf(item);
 
   // Backdrop click closes.
   return (
@@ -218,11 +249,52 @@ export default function Modal({ item, onClose, showToast }) {
                 ))}
               </div>
             )}
+
+            {/* Actions: like · views · bookmark */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                  setLikeAnim(true); setTimeout(() => setLikeAnim(false), 350);
+                  toggleLike(item.id);
+                }}
+                style={modalActionBtn(isLiked, isLiked ? '#ff4d6d' : 'var(--text)')}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill={isLiked ? '#ff4d6d' : 'none'} stroke={isLiked ? '#ff4d6d' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: likeAnim ? 'scale(1.35)' : 'scale(1)', transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span>{isLiked ? 'Liked' : 'Like'}</span>
+                <span style={{ opacity: 0.7 }}>· {formatCount(item.like_count)}</span>
+              </button>
+
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 999, fontSize: 12, color: 'var(--text-dim)' }} title="Views">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>{formatCount(item.view_count)} views</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                  toggleBookmark(item.id);
+                }}
+                style={modalActionBtn(isBookmarked, isBookmarked ? 'var(--electric)' : 'var(--text)')}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill={isBookmarked ? 'var(--electric)' : 'none'} stroke={isBookmarked ? 'var(--electric)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{isBookmarked ? 'Saved' : 'Save'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Body: paywall OR tabs */}
           {isPremium ? (
-            <Paywall item={item} onBuy={onBuyIndividual} onSubscribe={onSubscribe} />
+            <Paywall item={item} onSubscribe={onSubscribe} />
           ) : (
             <FreeTabs
               tab={tab}
@@ -352,13 +424,10 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
 }
 
 // ---------------------------------------------------------------------------
-// Paid item: paywall gate (blocks BOTH code and prompt)
-function Paywall({ item, onBuy, onSubscribe }) {
-  // Individual price: fall back to a default if not set on the item.
-  const priceLabel = (typeof item.price === 'number' && item.price > 0)
-    ? `$${item.price.toFixed(2)}`
-    : 'Cue+ only';
-
+// Paid item: paywall gate. Only Cue+ subscription unlocks the prompt.
+// Per-component purchase has been removed — one library, one subscription.
+// Code delivery is on the roadmap; for now Cue+ unlocks the PROMPT.
+function Paywall({ item, onSubscribe }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
@@ -375,35 +444,28 @@ function Paywall({ item, onBuy, onSubscribe }) {
       <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--electric)', fontWeight: 700 }}>
         Cue+ Premium
       </div>
-      <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontStyle: 'italic', fontWeight: 400, margin: 0, color: '#fff', lineHeight: 1.25 }}>
-        Unlock code &amp; prompt
+      <h3 style={{ fontFamily: '"Cormorant Garamond", "EB Garamond", Georgia, serif', fontSize: 26, fontWeight: 400, margin: 0, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+        Unlock the prompt
       </h3>
       <p style={{ margin: '2px 6px 6px', fontSize: 13, lineHeight: 1.55, color: 'var(--text-dim)' }}>
-        This component is part of Cue+. Buy it once, or subscribe for unlimited access to every premium item.
+        Subscribe to Cue+ for the prompts behind every premium component. Production code delivery — <span style={{ color: 'var(--text)' }}>coming in a future update</span>.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
         <button
-          onClick={onBuy}
+          onClick={onSubscribe}
           style={{
-            padding: '13px 18px',
+            padding: '14px 20px',
             background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: 8,
-            fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em',
             boxShadow: '0 6px 24px -8px rgba(0,0,255,0.55)',
           }}
         >
-          Buy this component {typeof item.price === 'number' && item.price > 0 ? `— ${priceLabel}` : ''}
+          Subscribe to Cue+ →
         </button>
-        <button
-          onClick={onSubscribe}
-          style={{
-            padding: '11px 18px',
-            background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8,
-            fontSize: 13, fontWeight: 500, cursor: 'pointer',
-          }}
-        >
-          Or subscribe to Cue+ →
-        </button>
+      </div>
+      <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--text-dimmer)' }}>
+        <a href="#/pricing" style={{ color: 'var(--text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>See what's included →</a>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useUser } from '@clerk/clerk-react'
 import { prompts as seedPrompts } from '../data/prompts.js'
 import { backend } from '../lib/backend.js'
 
@@ -36,6 +37,12 @@ export function AppProvider({ children }) {
   const [drafts, setDrafts] = useState([])
   const [loadingDrafts, setLoadingDrafts] = useState(true)
   const [user, setUser] = useState(null)
+  const [bookmarkedIds, setBookmarkedIds] = useState(() => new Set())
+  const [likedIds, setLikedIds] = useState(() => new Set())
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackSource, setFeedbackSource] = useState('nav')
+  const { user: clerkUser, isSignedIn } = useUser()
+  const clerkUserId = isSignedIn ? clerkUser?.id : null
 
   const allPrompts = useMemo(() => [...seedPrompts, ...drafts], [drafts])
 
@@ -71,6 +78,102 @@ export function AppProvider({ children }) {
   const updateFilter = useCallback((patch) => setFilter((f) => ({ ...f, ...patch })), [])
   const clearFilter = useCallback(() => setFilter(DEFAULT_FILTER), [])
 
+  // Hydrate bookmarks + likes on sign-in; clear on sign-out.
+  useEffect(() => {
+    if (!clerkUserId) {
+      setBookmarkedIds(new Set())
+      setLikedIds(new Set())
+      return
+    }
+    let alive = true
+    Promise.all([
+      backend.listBookmarks(clerkUserId),
+      backend.listLikes(clerkUserId),
+    ]).then(([bm, lk]) => {
+      if (!alive) return
+      setBookmarkedIds(new Set(bm))
+      setLikedIds(new Set(lk))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [clerkUserId])
+
+  // Bump the in-memory prompt's like_count so the card reflects the change
+  // instantly. Server trigger handles the persisted count.
+  const bumpLikeCount = useCallback((promptId, delta) => {
+    setDrafts((list) => list.map((p) => (
+      p.id === promptId ? { ...p, like_count: Math.max((p.like_count || 0) + delta, 0) } : p
+    )))
+  }, [])
+
+  const toggleBookmark = useCallback(async (promptId) => {
+    if (!clerkUserId) return { needsAuth: true }
+    const isSaved = bookmarkedIds.has(promptId)
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev)
+      isSaved ? next.delete(promptId) : next.add(promptId)
+      return next
+    })
+    try {
+      if (isSaved) await backend.removeBookmark(clerkUserId, promptId)
+      else         await backend.addBookmark(clerkUserId, promptId)
+    } catch (e) {
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev)
+        isSaved ? next.add(promptId) : next.delete(promptId)
+        return next
+      })
+    }
+    return {}
+  }, [clerkUserId, bookmarkedIds])
+
+  const toggleLike = useCallback(async (promptId) => {
+    if (!clerkUserId) return { needsAuth: true }
+    const isLiked = likedIds.has(promptId)
+    setLikedIds((prev) => {
+      const next = new Set(prev)
+      isLiked ? next.delete(promptId) : next.add(promptId)
+      return next
+    })
+    bumpLikeCount(promptId, isLiked ? -1 : +1)
+    try {
+      if (isLiked) await backend.removeLike(clerkUserId, promptId)
+      else         await backend.addLike(clerkUserId, promptId)
+    } catch (e) {
+      setLikedIds((prev) => {
+        const next = new Set(prev)
+        isLiked ? next.add(promptId) : next.delete(promptId)
+        return next
+      })
+      bumpLikeCount(promptId, isLiked ? +1 : -1)
+    }
+    return {}
+  }, [clerkUserId, likedIds, bumpLikeCount])
+
+  // View dedup — once per item per 12h per browser. Kills:
+  //   1. React StrictMode useEffect double-fire (2x in dev)
+  //   2. Same user open/close/reopen spam
+  //   3. Refresh loops on the same item
+  // Server still sees ONE bump per real, deliberate open.
+  const registerView = useCallback((promptId) => {
+    if (!promptId) return
+    const key = `cue.view.${promptId}`
+    const WINDOW_MS = 12 * 60 * 60 * 1000 // 12 hours
+    try {
+      const last = localStorage.getItem(key)
+      if (last) {
+        const lastMs = new Date(last).getTime()
+        if (!Number.isNaN(lastMs) && Date.now() - lastMs < WINDOW_MS) return
+      }
+      localStorage.setItem(key, new Date().toISOString())
+    } catch {
+      // localStorage disabled / private mode — still let the view through
+    }
+    backend.incrementView(promptId).catch(() => {})
+    setDrafts((list) => list.map((p) => (
+      p.id === promptId ? { ...p, view_count: (p.view_count || 0) + 1 } : p
+    )))
+  }, [])
+
   const isFiltering = useMemo(
     () => filter.section !== null || filter.pricing !== 'all' || filter.q.trim() !== '',
     [filter]
@@ -93,6 +196,22 @@ export function AppProvider({ children }) {
     await backend.remove(id)
     setDrafts((prev) => prev.filter((p) => p.id !== id))
   }, [])
+
+  // Inline partial update — for quick toggles like ★ Featured on a row
+  // without opening the full edit form. Optimistic: updates local state
+  // first, rolls back if the server call fails.
+  const updateDraftFields = useCallback(async (id, patch) => {
+    const prev = drafts
+    setDrafts((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+    try {
+      const updated = await backend.updateFields(id, patch)
+      setDrafts((list) => list.map((p) => (p.id === id ? updated : p)))
+      return updated
+    } catch (e) {
+      setDrafts(prev)
+      throw e
+    }
+  }, [drafts])
   const clearDrafts = useCallback(async () => {
     await backend.clear()
     setDrafts([])
@@ -120,11 +239,16 @@ export function AppProvider({ children }) {
   const value = {
     allPrompts,
     seedPrompts,
-    drafts, addDraft, removeDraft, clearDrafts, loadingDrafts,
+    drafts, addDraft, removeDraft, updateDraftFields, clearDrafts, loadingDrafts,
     user,
     selectedItem, openItem, closeItem,
     toast, showToast,
     filter, updateFilter, clearFilter, isFiltering,
+    bookmarkedIds, likedIds,
+    toggleBookmark, toggleLike, registerView,
+    feedbackOpen, feedbackSource,
+    openFeedback: (source = 'nav') => { setFeedbackSource(source); setFeedbackOpen(true) },
+    closeFeedback: () => setFeedbackOpen(false),
   }
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>
 }

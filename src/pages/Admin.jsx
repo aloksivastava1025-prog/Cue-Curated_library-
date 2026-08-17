@@ -17,6 +17,51 @@ const CATEGORIES = [
 // createdAt, status) is locked — the button cannot touch them.
 const AI_ALLOWED_FIELDS = ['title', 'category', 'tags', 'description', 'stack', 'use_case', 'component_type', 'tier'];
 
+// Small nav-embedded link that shows a live count of unread feedback +
+// waitlist submissions. "Unread" = created_at > localStorage lastSeen.
+function InboxNavLink() {
+  const [unread, setUnread] = React.useState(0);
+  React.useEffect(() => {
+    let alive = true;
+    async function tick() {
+      try {
+        const [fb, wl] = await Promise.all([backend.listFeedback(50), backend.listWaitlist(200)]);
+        if (!alive) return;
+        const cutoff = (() => {
+          try { return new Date(localStorage.getItem('cue.admin.inbox.lastSeen') || 0).getTime(); }
+          catch { return 0; }
+        })();
+        const count = [...fb, ...wl].filter((r) => new Date(r.created_at || r.createdAt || 0).getTime() > cutoff).length;
+        setUnread(count);
+      } catch {}
+    }
+    tick();
+    const id = setInterval(tick, 60_000); // refresh once a minute
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+  return (
+    <a href="#/admin/inbox" style={{
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+      padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 999,
+      color: 'var(--text)', textDecoration: 'none', fontSize: 12,
+    }}>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+        <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+      </svg>
+      <span>Inbox</span>
+      {unread > 0 && (
+        <span style={{
+          minWidth: 18, height: 18, padding: '0 6px', borderRadius: 999,
+          background: 'var(--electric)', color: '#fff',
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>{unread}</span>
+      )}
+    </a>
+  );
+}
+
 function nextId(existing) {
   let n = 1;
   const nums = existing.map((p) => parseInt(p.id.replace(/\\D/g, ''), 10)).filter((x) => !Number.isNaN(x));
@@ -37,6 +82,7 @@ const EMPTY_FORM = {
   description: '',
   use_case: '',
   component_type: '', // 'section' | 'interaction'
+  rail: null, // null | 'featured' — powers the "Design of the Day" rail on homepage
   tags: [],
   stack: [],
   status: 'published',
@@ -127,9 +173,10 @@ const STACK_SUGGESTIONS = ['CSS', 'JavaScript', 'React', 'GSAP', 'Framer Motion'
 // A single uploaded-resource row: real thumbnail (video first-frame OR image),
 // clean labels, type + tier badges, and edit / delete actions.
 const IMG_EXT_RE = /\.(jpe?g|gif|png|webp|svg|heic|avif)$/i;
-function ResourceRow({ p, isActive, onEdit, onDelete }) {
+function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured }) {
   const isPaid = p.tier === 'paid' || p.price === 'premium';
   const isDraft = p.status === 'draft';
+  const isFeatured = p.rail === 'featured';
   const primaryCategory = String(p.category || '').split(',')[0].trim();
   // Figure out the best preview source: thumb wins, else hover media, else letter.
   const thumb = p.thumbSrc;
@@ -171,6 +218,7 @@ function ResourceRow({ p, isActive, onEdit, onDelete }) {
           {p.component_type === 'interaction' && (
             <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '3px', letterSpacing: '0.08em' }}>INTERACTION</span>
           )}
+          {isFeatured && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(204,255,0,0.14)', color: '#ccff00', border: '1px solid rgba(204,255,0,0.5)', borderRadius: '3px', letterSpacing: '0.08em' }}>★ FEATURED</span>}
           {isPaid && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(0,0,255,0.15)', color: 'var(--electric)', border: '1px solid rgba(0,0,255,0.4)', borderRadius: '3px' }}>🔒 Cue+</span>}
           {isDraft && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px' }}>DRAFT</span>}
         </div>
@@ -188,11 +236,37 @@ function ResourceRow({ p, isActive, onEdit, onDelete }) {
 
       {/* Date */}
       <div style={{ fontSize: '11.5px', color: 'var(--text-dimmer)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-        {new Date(p.createdAt || Date.now()).toLocaleDateString()}
+        {new Date(p.created_at || p.createdAt || Date.now()).toLocaleDateString()}
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {/* Inline Featured toggle — filled star = in rail, outline = not */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFeatured && onToggleFeatured(p); }}
+          aria-pressed={isFeatured}
+          title={isFeatured ? 'Remove from Featured rail' : 'Add to Featured rail'}
+          style={{
+            width: '34px', height: '34px', borderRadius: '50%',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            background: isFeatured ? 'rgba(204,255,0,0.14)' : 'transparent',
+            border: `1px solid ${isFeatured ? '#ccff00' : 'var(--border)'}`,
+            color: isFeatured ? '#ccff00' : 'var(--text-dim)',
+            cursor: 'pointer',
+            fontSize: '16px',
+            lineHeight: 1,
+            transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease',
+          }}
+          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.92)' }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+        >
+          {/* Filled star when featured, outline star when not */}
+          <svg viewBox="0 0 24 24" width="16" height="16" fill={isFeatured ? '#ccff00' : 'none'} stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round">
+            <path d="M12 2.6l2.86 5.78 6.38.93-4.62 4.5 1.09 6.36L12 17.17l-5.71 3 1.09-6.36-4.62-4.5 6.38-.93L12 2.6z" />
+          </svg>
+        </button>
+
         <button onClick={() => onEdit(p)} style={{ padding: '6px 12px', background: 'transparent', color: 'var(--electric)', border: '1px solid rgba(0,0,255,0.35)', borderRadius: '3px', fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Edit</button>
         <button onClick={() => onDelete(p.id)} style={{ padding: '6px 12px', background: 'transparent', color: 'var(--danger)', border: '1px solid rgba(255,77,77,0.25)', borderRadius: '3px', fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Delete</button>
       </div>
@@ -284,7 +358,7 @@ function AutofillPreview({ suggestions, current, onApply, onCancel }) {
 
 // =========================================================================
 export default function Admin() {
-  const { allPrompts, addDraft, removeDraft, showToast } = useApp();
+  const { allPrompts, addDraft, removeDraft, updateDraftFields, showToast } = useApp();
   const { isLoaded, isSignedIn, user } = useUser();
   const fileRef = useRef(null);
   const videoRef = useRef(null);
@@ -419,7 +493,12 @@ export default function Admin() {
     if (!form.prompt) { showToast('Add the prompt'); setSaveError('Add the prompt'); return; }
 
     setSaving(true);
-    const payload = { ...form, createdAt: isEditing ? undefined : new Date().toISOString() };
+    // Race-condition guard: on a fresh add (not editing), recompute the ID
+    // from the CURRENT allPrompts list. Otherwise a stale `form.id` (set at
+    // mount before drafts finished fetching) can collide with an existing
+    // row and turn our INSERT into a silent UPDATE.
+    const safeId = isEditing ? form.id : nextId(allPrompts);
+    const payload = { ...form, id: safeId, createdAt: isEditing ? undefined : new Date().toISOString() };
     try {
       // backend.create handles the "column missing" fallback internally —
       // it retries with a legacy-only payload if new columns aren't in the DB.
@@ -482,6 +561,18 @@ export default function Admin() {
     }
   };
 
+  // Inline row star toggle: promote/demote an item into the Featured rail
+  // without opening the full edit form.
+  const onToggleFeatured = async (item) => {
+    const nextRail = item.rail === 'featured' ? null : 'featured';
+    try {
+      await updateDraftFields(item.id, { rail: nextRail });
+      showToast(nextRail === 'featured' ? `★ Featured: ${item.title}` : `Unfeatured: ${item.title}`);
+    } catch (e) {
+      showToast('Toggle failed: ' + (e?.message || 'unknown'));
+    }
+  };
+
   const inputStyle = { width: '100%', padding: '12px 14px', background: '#0e0e10', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '3px', fontFamily: 'var(--font-sans)', fontSize: '14px', outline: 'none' };
   const labelStyle = { display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 500 };
 
@@ -494,8 +585,11 @@ export default function Admin() {
           <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '24px' }}>CUE</div>
           <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>ADMIN</span>
         </div>
-        <div style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>
-          {allPrompts.length} resources
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <InboxNavLink />
+          <div style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>
+            {allPrompts.length} resources
+          </div>
         </div>
       </nav>
 
@@ -687,6 +781,23 @@ export default function Admin() {
               {!form.component_type && <div style={{ fontSize: '10.5px', color: 'var(--text-dimmer)', marginTop: '6px', letterSpacing: '0.04em' }}>Leave unset to let the homepage auto-classify from category keywords.</div>}
             </div>
 
+            {/* Design of the Day — flag an item into the top featured rail */}
+            <div>
+              <label style={labelStyle}>Design of the Day <span style={{ textTransform: 'none', color: 'var(--text-dimmer)', letterSpacing: 0 }}>(homepage featured rail)</span></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div onClick={() => set({ rail: null })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${!form.rail ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: !form.rail ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Regular</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Only in the main grid</div>
+                </div>
+                <div onClick={() => set({ rail: 'featured' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.rail === 'featured' ? '#ccff00' : 'var(--border)'}`, borderRadius: '3px', background: form.rail === 'featured' ? 'rgba(204,255,0,0.06)' : '#0e0e10' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: '#ccff00' }}>★</span> Featured
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Appears in the top "Signature picks" rail</div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label style={labelStyle}>Access Tier</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -745,7 +856,7 @@ export default function Admin() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px' }}>
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 400, fontStyle: 'italic', marginBottom: '24px' }}>Uploaded resources</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} />)}
+          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} onToggleFeatured={onToggleFeatured} />)}
         </div>
       </div>
 

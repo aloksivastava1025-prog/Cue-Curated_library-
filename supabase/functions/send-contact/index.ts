@@ -46,18 +46,25 @@ serve(async (req) => {
       },
     });
 
-    const displayInquiry = custom_inquiry ? `Other (${custom_inquiry})` : inquiry_type;
+    // HTML-escape every user-supplied field. Without this, an attacker can
+    // inject <a href="http://phish.example">reset password</a> into the
+    // email body — a phishing surface aimed at whoever reads support inbox.
+    const esc = (s: string = "") => String(s).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c] as string
+    ));
+
+    const displayInquiry = custom_inquiry ? `Other (${esc(custom_inquiry)})` : esc(inquiry_type);
 
     const htmlContent = `
       <div style="font-family: sans-serif; padding: 20px; max-width: 600px; border: 1px solid #eaeaea; border-radius: 12px;">
         <h2 style="color: #3B82F6;">New Contact Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Name:</strong> ${esc(name)}</p>
+        <p><strong>Email:</strong> ${esc(email)}</p>
         <p><strong>Inquiry Type:</strong> ${displayInquiry}</p>
         <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #eaeaea;">
           <p><strong>Message:</strong></p>
           <div style="background: #f9fafb; padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6; color: #374151;">
-            ${message.replace(/\n/g, '<br/>')}
+            ${esc(message).replace(/\n/g, '<br/>')}
           </div>
         </div>
       </div>

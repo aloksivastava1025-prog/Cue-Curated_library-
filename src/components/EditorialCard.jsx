@@ -1,6 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useClerk, useUser } from '@clerk/clerk-react';
+import { useApp } from '../context/AppContext.jsx';
+import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
+
+function formatCount(n) {
+  const x = Number(n) || 0;
+  if (x >= 1e6) return (x / 1e6).toFixed(x >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'm';
+  if (x >= 1e3) return (x / 1e3).toFixed(x >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'k';
+  return String(x);
+}
 
 export default function EditorialCard({ item, setSelectedItem }) {
+  const { bookmarkedIds, likedIds, toggleBookmark, toggleLike } = useApp();
+  const { isSignedIn } = useUser();
+  const clerk = useClerk();
+  const isBookmarked = bookmarkedIds?.has(item.id);
+  const isLiked = likedIds?.has(item.id);
+  const [likeAnim, setLikeAnim] = useState(false);
   const [inView, setInView] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const ref = useRef(null);
@@ -34,12 +50,19 @@ export default function EditorialCard({ item, setSelectedItem }) {
     return m === 1 ? '1 month ago' : `${m} months ago`;
   };
 
-  const timeTag = formatAgo(item.createdAt || new Date().toISOString());
-  const isNew = item.isNew !== false;
-  const isPaid = item.tier === 'paid' || item.price === 'premium';
+  // Supabase rows use created_at (snake_case); seed data may use camelCase.
+  const createdAtIso = item.created_at || item.createdAt || null;
+  const timeTag = formatAgo(createdAtIso);
+  // "New" pill only for items dropped in the last 7 days. Previous logic
+  // (item.isNew !== false) treated every DB row as new because the field
+  // does not exist on Supabase rows — false positives everywhere.
+  const isNew = createdAtIso
+    ? (Date.now() - new Date(createdAtIso).getTime()) < 7 * 24 * 60 * 60 * 1000
+    : false;
+  const isPaid = isPremiumItem(item);
 
   // Show only the primary category, not the full tag dump.
-  const primaryCategory = (item.category || 'Hero').split(',')[0].trim();
+  const primaryCategory = primaryCategoryOf(item);
 
   const hoverIsImage = item.hoverSrc && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(item.hoverSrc);
   const hoverIsVideo = item.hoverSrc && !hoverIsImage;
@@ -145,10 +168,66 @@ export default function EditorialCard({ item, setSelectedItem }) {
         <div style={{ fontFamily: 'var(--font-sans)', fontSize: '16px', fontWeight: 500, lineHeight: 1.25, letterSpacing: '-0.01em', color: isHovered ? '#fff' : 'var(--text)', transition: 'color 0.2s ease' }}>
           {item.title}
         </div>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 500, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-          {primaryCategory}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 500, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+            {primaryCategory}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {/* Like */}
+            <button
+              type="button"
+              aria-label={isLiked ? 'Unlike' : 'Like'}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                setLikeAnim(true); setTimeout(() => setLikeAnim(false), 350);
+                toggleLike(item.id);
+              }}
+              style={cardActionBtn(isLiked, isLiked ? '#ff4d6d' : 'var(--text-dim)')}
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" fill={isLiked ? '#ff4d6d' : 'none'} stroke={isLiked ? '#ff4d6d' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: likeAnim ? 'scale(1.35)' : 'scale(1)', transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)' }} aria-hidden="true">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.02em' }}>{formatCount(item.like_count)}</span>
+            </button>
+            {/* Views (display only) */}
+            <span title="Views" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: 'var(--text-dim)' }}>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span style={{ fontWeight: 600 }}>{formatCount(item.view_count)}</span>
+            </span>
+            {/* Bookmark */}
+            <button
+              type="button"
+              aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                toggleBookmark(item.id);
+              }}
+              style={cardActionBtn(isBookmarked, isBookmarked ? 'var(--electric)' : 'var(--text-dim)')}
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" fill={isBookmarked ? 'var(--electric)' : 'none'} stroke={isBookmarked ? 'var(--electric)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </article>
   );
 }
+
+const cardActionBtn = (active, color) => ({
+  display: 'inline-flex', alignItems: 'center', gap: 4,
+  padding: '3px 6px',
+  background: 'transparent',
+  border: '1px solid ' + (active ? color : 'transparent'),
+  borderRadius: 999,
+  color,
+  cursor: 'pointer',
+  transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+  lineHeight: 1,
+});

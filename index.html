@@ -20,23 +20,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Geist:wght@400;500;600;700&family=Instrument+Serif:wght@400&display=swap" rel="stylesheet"/>
   </head>
   <body>
-    <div id="error-overlay" style="display: none; position: fixed; inset: 0; background: rgba(255,0,0,0.9); color: white; z-index: 999999; padding: 40px; font-family: monospace; overflow-y: auto;">
-      <h2>Something went wrong</h2>
-      <pre id="error-message" style="white-space: pre-wrap; font-size: 16px;"></pre>
-    </div>
-    <script>
-      window.addEventListener('error', function(e) {
-        document.getElementById('error-overlay').style.display = 'block';
-        document.getElementById('error-message').textContent = e.message + '\n\n' + e.error?.stack;
-      });
-      window.addEventListener('unhandledrejection', function(e) {
-        document.getElementById('error-overlay').style.display = 'block';
-        document.getElementById('error-message').textContent = 'Unhandled Rejection: ' + e.reason;
-      });
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

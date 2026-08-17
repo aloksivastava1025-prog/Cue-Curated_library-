@@ -1,0 +1,168 @@
+/* ============================================================
+   CUE — Mobile / tablet responsive rules
+   ============================================================
+   Only overrides. Base styles live inline in the JSX or in
+   overhaul.css. Break points:
+     - <= 768px  (tablet portrait + phones)
+     - <= 640px  (most phones landscape+portrait)
+     - <= 400px  (small phones)
+   ============================================================ */
+
+/* ---- Tablets and below (<= 768px) --------------------------------- */
+@media (max-width: 768px) {
+
+  /* Sticky nav: allow items to wrap, tighter padding */
+  .cue-nav {
+    padding: 12px 16px !important;
+    gap: 8px !important;
+  }
+  .cue-nav-count {
+    font-size: 11px !important;
+  }
+  .cue-nav-count-label {
+    display: none;             /* just show the number circle + digit */
+  }
+  .cue-nav-admin {
+    font-size: 11.5px !important;
+  }
+  /* Nav feedback button — icon only on small screens */
+  .cue-nav-feedback {
+    padding: 5px 9px !important;
+  }
+  .cue-nav-feedback-label {
+    display: none;
+  }
+
+  /* Hero: much less top padding, keep serif big but tamed */
+  .cue-hero {
+    padding: 56px 20px 32px !important;
+  }
+  .cue-hero-title {
+    /* Clamp already goes down to 56px; on small screens allow 48px. */
+    font-size: clamp(48px, 15vw, 120px) !important;
+    letter-spacing: -0.03em !important;
+  }
+  .cue-hero p {
+    font-size: 12.5px !important;
+    margin-top: 28px !important;
+  }
+
+  /* Featured rail: tighter padding, narrower cards, hide chevrons on touch */
+  .cue-featured-scroller {
+    grid-auto-columns: min(88vw, 420px) !important;
+    gap: 14px !important;
+  }
+  .cue-featured-scroller > article {
+    border-radius: 14px !important;
+  }
+  /* Chevrons — hard to click on touch; hide on narrow viewports. */
+  .cue-featured-controls {
+    display: none !important;
+  }
+
+  /* Type toggle — smaller text, tight padding */
+  .cue-type-toggle button {
+    padding: 6px 12px !important;
+    font-size: 10.5px !important;
+  }
+
+  /* Main grid — tighter side padding, less vertical gap */
+  .cue-grid {
+    padding: 16px 16px 80px !important;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+    column-gap: 16px !important;
+    row-gap: 32px !important;
+  }
+}
+
+/* ---- Phones (<= 640px) -------------------------------------------- */
+@media (max-width: 640px) {
+
+  /* Nav — hide serif "CUE" wordmark below 500px, keep menu button */
+  .cue-nav > div:first-child > div:last-child {
+    font-size: 20px !important;
+  }
+
+  /* Hero — even tighter */
+  .cue-hero {
+    padding: 40px 16px 24px !important;
+  }
+  .cue-hero-title {
+    font-size: clamp(44px, 16vw, 96px) !important;
+    line-height: 0.92 !important;
+  }
+
+  /* Rail: 1 card at a time */
+  .cue-featured-scroller {
+    grid-auto-columns: 90vw !important;
+    gap: 12px !important;
+  }
+
+  /* Grid — one column below 640px */
+  .cue-grid {
+    grid-template-columns: 1fr !important;
+    row-gap: 24px !important;
+  }
+
+  /* Card meta padding */
+  .resource-card > div:last-child {
+    padding: 12px 14px 16px !important;
+  }
+}
+
+/* ---- Small phones (<= 400px) -------------------------------------- */
+@media (max-width: 400px) {
+
+  /* Hide the "resources" pill entirely — keep it under a longer press */
+  .cue-nav-count {
+    display: none !important;
+  }
+
+  /* Even tighter hero */
+  .cue-hero {
+    padding: 32px 12px 20px !important;
+  }
+  .cue-hero-title {
+    font-size: 44px !important;
+  }
+
+  /* Toggle even more compact */
+  .cue-type-toggle button {
+    padding: 5px 10px !important;
+    font-size: 10px !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Grid outer padding minimal */
+  .cue-grid {
+    padding: 12px 12px 60px !important;
+  }
+}
+
+/* ---- Skeleton pulse (used on first grid load) ---------------------- */
+@keyframes cuePulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.7; }
+}
+
+/* ---- Footer responsive (compact single-row) ------------------------ */
+@media (max-width: 560px) {
+  .cue-footer-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+}
+
+/* ---- Modal (detail view) already handles its own @media at 820px in
+   the component itself. No overrides needed here. --------------------- */
+
+/* ---- Reduce animations for users who ask (accessibility) ------------ */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
