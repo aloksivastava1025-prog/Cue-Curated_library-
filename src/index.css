@@ -10,6 +10,7 @@
   --danger:        #ff4d4d;
   --font-serif:    'Fraunces', 'Instrument Serif', Georgia, serif;
   --font-sans:     'Geist', -apple-system, sans-serif;
+  color-scheme:    dark;
 }
 
 * {

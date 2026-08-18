@@ -1,449 +1,506 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useUser, SignInButton, UserButton } from '@clerk/clerk-react'
 import { backend } from '../lib/backend.js'
 import Footer from '../components/Footer.jsx'
+import MonthlyWaitlistModal from '../components/MonthlyWaitlistModal.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
 import '../styles/overhaul.css'
 
 /**
- * CUE — Pricing page (v3).
- * Display type: Instrument Serif upright (refined editorial without italic).
- * UI type: Geist (sans, medium weight — no aggressive bolds).
- * Copy: rewritten in CUE voice — specific, taste-forward, honest about beta.
+ * CUE — Pricing page (v5, blueprint aesthetic, dark).
+ * Layout inspired by architectural blueprint: dashed grid lines, corner
+ * crosshairs, diagonal hatch background around a centered content plate.
+ * Adapted to CUE's dark editorial palette.
  */
 
-// Display type — Geist across the page. Medium weight (500) is refined
-// without being aggressive; tight tracking gives large sizes a premium
-// feel. No serif, no italic.
-const displayStyle = {
-  fontFamily: 'Geist, -apple-system, sans-serif',
-  fontWeight: 500,
-  fontStyle: 'normal',
-  letterSpacing: '-0.03em',
-  lineHeight: 1.05,
-}
+const FOUNDING_CAP = 50
 
-const priceStyle = {
-  fontFamily: 'Geist, -apple-system, sans-serif',
-  fontWeight: 500,
-  fontStyle: 'normal',
+// Reference font: Inter 400 — regular weight, no bold anywhere in pricing.
+const INTER = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+
+const displayStyle = {
+  fontFamily: INTER,
+  fontWeight: 400,
   letterSpacing: '-0.04em',
+  lineHeight: 1.1,
+}
+const priceStyle = {
+  fontFamily: INTER,
+  fontWeight: 400,
+  letterSpacing: '-0.03em',
   lineHeight: 1,
 }
+
+const LINE = 'rgba(255,255,255,0.14)'   // dashed grid line
+const CROSS = 'rgba(255,255,255,0.35)'  // crosshair colour
 
 export default function Pricing() {
   usePageMeta({
     title: 'Pricing — founding member',
-    description: 'Free forever for the essentials. Cue+ Individual $79 lifetime. Team $249 lifetime. Founding member pricing while it lasts.',
+    description: 'Founding 50 members. $99 lifetime. Everything Cue is and becomes.',
   })
   const { isSignedIn, user } = useUser()
-  const [reservingTier, setReservingTier] = useState(null)
-  const [reservedTier, setReservedTier] = useState(null)
-  const [error, setError] = useState('')
+  const [monthlyOpen, setMonthlyOpen] = useState(false)
+  const [foundingCount, setFoundingCount] = useState(0)
+  const [openFaq, setOpenFaq] = useState(null)
 
-  const reserve = async (tier) => {
-    setError('')
-    if (!isSignedIn) {
-      setError('Sign in first, then reserve your spot.')
-      return
-    }
-    setReservingTier(tier)
-    try {
-      const email = user?.primaryEmailAddress?.emailAddress
-      if (!email) throw new Error("Couldn't read the email on your account.")
-      await backend.subscribeWaitlist(email, `pricing-${tier}`)
-      setReservedTier(tier)
-    } catch (e) {
-      setError(e?.message || 'Could not save your spot. Try again shortly.')
-    } finally {
-      setReservingTier(null)
-    }
-  }
+  useEffect(() => {
+    let alive = true
+    backend.getFoundingCount()
+      .then((n) => { if (alive) setFoundingCount(n) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+
+  const spotsLeft = Math.max(FOUNDING_CAP - foundingCount, 0)
+  const foundingFilled = spotsLeft === 0
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'var(--font-sans)', color: 'var(--text)' }}>
-
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)', fontFamily: INTER, fontWeight: 400 }}>
       {/* Nav */}
-      <nav className="cue-nav" style={{ position: 'sticky', top: 0, zIndex: 100, padding: '16px 24px', background: '#060606', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-        <a href="#/" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', textDecoration: 'none' }}>
-          <div style={{ ...displayStyle, fontSize: '24px', color: 'var(--text)' }}>Cue</div>
+      <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+        <a href="#/" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, textDecoration: 'none' }}>
+          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 24, color: 'var(--text)' }}>CUE</span>
           <span style={{
-            fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
-            padding: '3px 8px', borderRadius: '999px',
+            fontSize: 9.5, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase',
+            padding: '3px 8px', borderRadius: 999,
             background: 'rgba(204,255,0,0.14)', color: '#ccff00',
             border: '1px solid rgba(204,255,0,0.45)', lineHeight: 1,
           }}>Beta</span>
         </a>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <a href="#/" style={{ fontSize: '12px', color: 'var(--text-dim)', textDecoration: 'none' }}>← Back to library</a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <a href="#/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
           {!isSignedIn ? (
             <SignInButton mode="modal">
-              <button style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Sign in</button>
+              <button style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>Sign in</button>
             </SignInButton>
           ) : (
-            <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }} />
+            <UserButton />
           )}
         </div>
       </nav>
 
-      {/* Hero — Instrument Serif upright, refined without italic */}
-      <section style={{ padding: '96px 24px 48px', textAlign: 'center' }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--electric)', fontWeight: 700, marginBottom: 20 }}>
-          Founding member pricing
+      {/* Header (no grid overlay — free-floating) */}
+      <section style={{ padding: '96px 24px 40px', textAlign: 'center' }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '5px 12px', border: '1px solid var(--border)',
+          background: '#0e0e10',
+          marginBottom: 24,
+        }}>
+          <span style={{ width: 6, height: 6, background: 'var(--electric)' }} />
+          <span style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 500 }}>
+            Simple · Founding member pricing
+          </span>
         </div>
         <h1 style={{
-          ...displayStyle,
-          fontSize: 'clamp(32px, 4.6vw, 60px)',
-          fontWeight: 300,
-          letterSpacing: '-0.02em',
-          lineHeight: 1.08,
-          margin: 0,
+          fontFamily: INTER,
+          fontWeight: 400,
+          letterSpacing: '-0.04em',
+          lineHeight: 1.1,
+          fontSize: 'clamp(38px, 5.4vw, 60px)',
+          margin: '0 0 14px 0',
           color: 'var(--text)',
         }}>
-          The library your<br />favorite sites steal from.
+          The founders' library.
         </h1>
-        <p style={{ margin: '32px auto 0', maxWidth: 560, fontSize: 15, lineHeight: 1.6, color: 'var(--text-dim)' }}>
-          Curated premium web experiences — sections, interactions, effects. Every item ships with production-ready code and an AI prompt that regenerates it in your stack. Free forever for the essentials. Cue+ is the whole library, for life.
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
+          Only 50 founding members. $99 lifetime.<br />
+          After the 50 fill, $99 is gone forever — everyone after pays $249.
+        </p>
+
+        {/* Live founding counter */}
+        <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 12, padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 999 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: foundingFilled ? 'var(--text-dim)' : 'var(--electric)' }} />
+          <span style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text)' }}>
+            {foundingFilled
+              ? 'Founding closed · Launch pricing live'
+              : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
+          </span>
+        </div>
+      </section>
+
+      {/* Blueprint canvas — grid lines ONLY around the pricing cards */}
+      <div className="cue-blueprint-canvas" style={{
+        padding: '20px 24px 60px',
+        backgroundImage: `repeating-linear-gradient(45deg, #0a0a0c, #0a0a0c 1px, #0d0d10 1px, #0d0d10 9px)`,
+      }}>
+        <div className="cue-blueprint-plate" style={{
+          position: 'relative',
+          maxWidth: 1080, margin: '0 auto',
+          background: '#0A0A0A',
+          minHeight: 620,
+        }}>
+          {/* Vertical dashed grid lines (3-column gutters) */}
+          <GridLine v pos="0%" />
+          <GridLine v pos="33.333%" />
+          <GridLine v pos="66.666%" />
+          <GridLine v pos="100%" />
+
+          {/* Horizontal dashed grid lines — top, mid (col-top / col-bottom split), bottom */}
+          <GridLine h pos="0%" crossPositions={['0%','33.333%','66.666%','100%']} />
+          <GridLine h pos="380px" crossPositions={['0%','33.333%','66.666%','100%']} />
+          <GridLine h pos="100%" crossPositions={['0%','33.333%','66.666%','100%']} />
+
+          {/* Content grid */}
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            {/* Columns area */}
+            <div className="cue-blueprint-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+
+              {/* FREE */}
+              <Col
+                title="Free"
+                description="Browse the library. Get a taste of Cue without committing."
+                price="$0"
+                subLine="No credit card required"
+                cta={<a href="#/" style={btnGhost}>Start browsing</a>}
+                features={[
+                  'Browse all 100 components',
+                  'Selected free components unlocked',
+                  '2 AI prompts per day',
+                  'Weekly drop newsletter',
+                  'Personal use only',
+                ]}
+              />
+
+              {/* CUE+ FOUNDING (highlighted, center) */}
+              <Col
+                title="Cue+ Founding"
+                description="Everything unlocked. Locked at the founding price for life."
+                crossedPrice="$249"
+                price="$99"
+                priceSub="lifetime"
+                badge={foundingFilled ? 'Founding closed' : 'Founding pick'}
+                subLine={foundingFilled
+                  ? '$249 lifetime for everyone now'
+                  : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, $99 is gone forever`}
+                highlight
+                cta={
+                  foundingFilled ? (
+                    <span style={{ ...btnGhost, opacity: 0.55, cursor: 'not-allowed' }}>Founding closed</span>
+                  ) : !isSignedIn ? (
+                    <SignInButton mode="modal">
+                      <button style={btnPrimary}>Claim founding spot</button>
+                    </SignInButton>
+                  ) : (
+                    <a href="#/checkout/founding" style={{ ...btnPrimary, textDecoration: 'none' }}>Claim founding spot</a>
+                  )
+                }
+                features={[
+                  'Full library, unlocked',
+                  'All future drops',
+                  { text: 'React source code', soon: true },
+                  { text: 'MCP support', soon: true },
+                  'Unlimited AI regenerates',
+                  'Commercial use',
+                  'Founding badge in profile',
+                ]}
+              />
+
+              {/* MONTHLY (waitlist decoy) */}
+              <Col
+                title="Monthly"
+                description="Try Cue without commitment. Cancel anytime — access ends on cancel."
+                price="$49"
+                priceSub="/month"
+                subLine="$588 over a year · launching after beta"
+                muted
+                cta={<button onClick={() => setMonthlyOpen(true)} style={btnGhost}>Notify me</button>}
+                features={[
+                  'Full library unlocked',
+                  'All future drops',
+                  'Cancel anytime',
+                  'Personal use only',
+                  'Access ends on cancel',
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Founding manifesto */}
+      <section style={{ padding: '80px 24px 96px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '5px 12px',
+          background: 'rgba(0,0,255,0.08)', border: '1px solid rgba(0,0,255,0.28)',
+          marginBottom: 28,
+        }}>
+          <span style={{ width: 6, height: 6, background: 'var(--electric)' }} />
+          <span style={{ fontSize: 10, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'var(--text)', fontWeight: 500 }}>
+            The Founding 50
+          </span>
+        </div>
+        <h2 style={{
+          fontFamily: INTER,
+          fontWeight: 400,
+          letterSpacing: '-0.04em', lineHeight: 1.1,
+          fontSize: 'clamp(28px, 4.2vw, 48px)',
+          margin: 0, color: 'var(--text)',
+          maxWidth: 780, marginLeft: 'auto', marginRight: 'auto',
+        }}>
+          You're not just a customer.<br />You're one of the first.
+        </h2>
+        <p style={{ margin: '28px auto 0', maxWidth: 560, fontSize: 14, lineHeight: 1.7, color: 'var(--text-dim)' }}>
+          Be one of the 50 founding members who believed in Cue before it was live.
+          After the fiftieth spot fills, $99 is gone — forever. Everyone after pays $249.
+          Your founding price stays with you for life.
         </p>
       </section>
 
-      {/* Three-tier grid */}
-      <section style={{
-        maxWidth: 1180, margin: '0 auto', padding: '20px 24px 40px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '20px',
-        alignItems: 'stretch',
-      }}>
-
-        {/* FREE */}
-        <PlanCard
-          label="Free"
-          title="Just browsing"
-          subtitle="Everything you need to look around."
-          price="$0"
-          suffix="forever"
-          bullets={[
-            'Full library — every curated component',
-            'Copy code + AI prompts for free items',
-            'New drops emailed as they ship',
-            'Live previews, teardowns, and stack notes',
-          ]}
-          ctaLabel="Start browsing"
-          ctaHref="#/"
-        />
-
-        {/* CUE+ INDIVIDUAL — highlighted */}
-        <PlanCard
-          highlight
-          badge="★ Founding · Limited"
-          label="Cue+"
-          title="The whole library"
-          subtitle="Every premium drop, yours for life."
-          price="$79"
-          strikePrice="$199"
-          suffix="one-time · lifetime"
-          scarcityNote="First 100 founding members · $199 after"
-          bullets={[
-            'Everything in Free',
-            'Every Cue+ premium component',
-            'All future drops — no recurring charges',
-            'License for personal & freelance work',
-            'Priority request queue',
-            'Founding-member badge on your profile',
-          ]}
-          ctaLabel="Reserve founding spot"
-          onCta={() => reserve('individual')}
-          reserving={reservingTier === 'individual'}
-          reserved={reservedTier === 'individual'}
-          isSignedIn={isSignedIn}
-        />
-
-        {/* CUE+ TEAM */}
-        <PlanCard
-          label="Cue+ Team"
-          title="For studios shipping client work"
-          subtitle="Ship faster without design debt."
-          price="$249"
-          strikePrice="$499"
-          suffix="one-time · lifetime · up to 5 seats"
-          bullets={[
-            'Everything in Cue+',
-            'Commercial license (paid client work)',
-            'Up to 5 team seats',
-            'White-label — deliver under your studio brand',
-            'Priority Slack channel with the team',
-            'Team-wide founding badge',
-          ]}
-          ctaLabel="Reserve team spot"
-          onCta={() => reserve('team')}
-          reserving={reservingTier === 'team'}
-          reserved={reservedTier === 'team'}
-          isSignedIn={isSignedIn}
-        />
-      </section>
-
-      {error && (
-        <div style={{ maxWidth: 720, margin: '0 auto 20px', padding: '10px 14px', background: 'rgba(255,77,77,0.08)', border: '1px solid rgba(255,77,77,0.28)', borderRadius: 6, fontSize: 12.5, color: 'var(--danger)', textAlign: 'center' }}>
-          {error}
+      {/* Founder story */}
+      <section style={{ padding: '48px 24px', maxWidth: 720, margin: '0 auto' }}>
+        <div style={{ fontSize: 10.5, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 500, marginBottom: 20 }}>
+          Built by
         </div>
-      )}
-
-      {/* Three quiet promises — a single tight row, no cards */}
-      <section style={{ maxWidth: 900, margin: '10px auto 0', padding: '10px 24px', display: 'flex', gap: 28, justifyContent: 'center', flexWrap: 'wrap', fontSize: 12.5, color: 'var(--text-dim)' }}>
-        <span>14-day refund</span>
-        <span style={{ opacity: 0.35 }}>·</span>
-        <span>Framework-agnostic</span>
-        <span style={{ opacity: 0.35 }}>·</span>
-        <span>Pay once, own forever</span>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 999,
+            background: 'linear-gradient(135deg, rgba(0,0,255,0.4), rgba(204,255,0,0.3))',
+            border: '1px solid var(--border)', flexShrink: 0,
+          }} />
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <div style={{ fontFamily: INTER, fontWeight: 500, fontSize: 18, marginBottom: 12, letterSpacing: '-0.01em' }}>Alok</div>
+            <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.7, color: 'var(--text-dim)' }}>
+              I'm building Cue in the open. Every drop, every component, every prompt — curated by hand, tested through hundreds of AI iterations, refined until it feels right.
+            </p>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: 'var(--text-dim)' }}>
+              Founding members shape what gets built next. Direct feedback, real replies, no support ticket queues. This is Cue before it becomes known — and you're welcome in.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* FAQ */}
-      <section style={{ maxWidth: 720, margin: '96px auto 40px', padding: '0 24px' }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--electric)', fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>Common questions</div>
-        <h2 style={{ ...displayStyle, fontSize: 'clamp(32px, 5vw, 56px)', textAlign: 'center', margin: '0 0 44px' }}>
-          Every quiet doubt, answered.
-        </h2>
-        <FaqItem
-          q="What is CUE, exactly?"
-          a="A curated library of premium, award-tier web experiences — sections, interactions, effects. Each item ships with the production code, an AI prompt that regenerates it in your stack (Cursor, v0, Bolt, Framer), and a short teardown explaining how it works."
-        />
-        <FaqItem
-          q="Free vs Cue+?"
-          a="Free lets you browse the entire library, copy free components, and get every new drop by email. Cue+ unlocks every premium (Cue+) component, adds a personal / freelance license, and includes all future drops forever. Cue+ Team extends that with commercial rights for client work and up to 5 seats."
-        />
-        <FaqItem
-          q="Is it really a one-time payment?"
-          a="Yes. Cue+ is a single lifetime purchase — no monthly, no yearly, no auto-renewal. Founding pricing ($79 / $249) locks in when you reserve; it rises to $199 / $499 once the first 100 spots go."
-        />
-        <FaqItem
-          q="Can I use CUE components in client projects?"
-          a="Cue+ Team includes a commercial license — ship them in paid client work, agency deliverables, monetized products. Cue+ (individual) covers personal + freelance. Free tier is personal / open-source only. In no tier can you resell the components as a library themselves."
-        />
-        <FaqItem
-          q="Which frameworks are supported?"
-          a="Most components are framework-agnostic — plain HTML/CSS/JS or React. Where an item leans on a library (GSAP, Framer Motion, Three.js), it's called out on the card. The AI prompt lets you regenerate the same effect for whichever stack you're using."
-        />
-        <FaqItem
-          q="What if I don't like it?"
-          a="14 days, no questions asked. Email us and we refund the full amount."
-        />
-        <FaqItem
-          q="When does the beta open?"
-          a="Founding members get first access. We're building openly — reserve your spot above and you'll be the first to know when checkout opens."
-        />
+      <section style={{ padding: '32px 24px 80px', maxWidth: 720, margin: '0 auto' }}>
+        <div style={{ fontSize: 10.5, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 500, marginBottom: 20 }}>
+          Common questions
+        </div>
+        <div style={{ display: 'grid', gap: 4 }}>
+          {FAQ.map((q, i) => (
+            <FaqItem key={i} q={q.q} a={q.a} open={openFaq === i} onToggle={() => setOpenFaq(openFaq === i ? null : i)} />
+          ))}
+        </div>
       </section>
 
       {/* Final CTA */}
-      <section style={{ maxWidth: 720, margin: '20px auto 40px', padding: '56px 24px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
-        <h3 style={{ ...displayStyle, fontSize: 'clamp(28px, 4vw, 48px)', margin: '0 0 14px' }}>
-          Stop shipping average.
-        </h3>
-        <p style={{ margin: '0 auto 28px', maxWidth: 460, color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.6 }}>
-          Founding pricing is capped at the first 100 spots. When those go, so does the lock.
-        </p>
-        <div style={{ display: 'inline-flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {!isSignedIn ? (
-            <SignInButton mode="modal">
-              <button style={{ padding: '13px 22px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em', cursor: 'pointer' }}>
-                Reserve founding spot
-              </button>
-            </SignInButton>
-          ) : reservedTier ? (
-            <span style={{ padding: '13px 22px', background: 'rgba(204,255,0,0.1)', border: '1px solid rgba(204,255,0,0.4)', borderRadius: 10, fontSize: 13.5, color: 'var(--text)', fontWeight: 600 }}>
-              ✓ You're on the founding list.
-            </span>
-          ) : (
-            <button
-              onClick={() => reserve('individual')}
-              disabled={reservingTier !== null}
-              style={{ padding: '13px 22px', background: reservingTier ? '#1c1c1e' : 'var(--electric)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em', cursor: reservingTier ? 'wait' : 'pointer' }}
-            >
-              {reservingTier ? 'Reserving…' : 'Reserve founding spot'}
-            </button>
-          )}
-          <a href="#/" style={{ padding: '13px 22px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13.5, fontWeight: 500, color: 'var(--text)', textDecoration: 'none' }}>
-            Browse the library
-          </a>
-        </div>
+      <section style={{ padding: '48px 24px 80px', textAlign: 'center' }}>
+        {!foundingFilled && (
+          <>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, letterSpacing: '0.04em' }}>
+              {foundingCount} of {FOUNDING_CAP} founding spots claimed
+            </div>
+            {!isSignedIn ? (
+              <SignInButton mode="modal">
+                <button style={{ ...btnPrimary, fontSize: 14, padding: '14px 28px', width: 'auto', minWidth: 220 }}>Claim founding spot</button>
+              </SignInButton>
+            ) : (
+              <a href="#/checkout/founding" style={{ ...btnPrimary, fontSize: 14, padding: '14px 28px', display: 'inline-block', minWidth: 220, textDecoration: 'none' }}>Claim founding spot</a>
+            )}
+            <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-dim)' }}>
+              14-day refund on payment errors · Founders lock $99 forever
+            </div>
+          </>
+        )}
       </section>
 
       <Footer />
+
+      <MonthlyWaitlistModal open={monthlyOpen} onClose={() => setMonthlyOpen(false)} />
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-function PlanCard({
-  label, title, subtitle,
-  price, strikePrice, suffix, scarcityNote,
-  bullets, ctaLabel, ctaHref, onCta,
-  highlight = false, badge,
-  reserving, reserved, isSignedIn,
-}) {
-  const cardBg = highlight ? 'var(--electric)' : '#141416'
-  const cardText = highlight ? '#fff' : 'var(--text)'
-  const dimText = highlight ? 'rgba(255,255,255,0.72)' : 'var(--text-dim)'
-  const dimmerText = highlight ? 'rgba(255,255,255,0.55)' : 'var(--text-dimmer)'
-  const bulletCheckBg = highlight ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.06)'
-  const bulletCheckColor = highlight ? '#fff' : 'var(--text-dim)'
-  const cardBorder = highlight ? 'transparent' : 'var(--border)'
-  const btnBg = highlight ? '#fff' : 'var(--electric)'
-  const btnText = highlight ? '#000' : '#fff'
+// ---------- Grid line + crosshair --------------------------------
 
-  const isSuccess = reserved
-
+function GridLine({ v, h, pos, crossPositions = [] }) {
+  const base = {
+    position: 'absolute',
+    pointerEvents: 'none',
+    zIndex: 3,
+  }
+  if (v) {
+    return (
+      <div style={{
+        ...base,
+        top: -16, bottom: -16,
+        left: pos, width: 1,
+        backgroundImage: `linear-gradient(to bottom, ${LINE} 50%, transparent 50%)`,
+        backgroundSize: '1px 8px',
+      }} />
+    )
+  }
   return (
     <div style={{
-      background: cardBg,
-      color: cardText,
-      border: `1px solid ${cardBorder}`,
-      borderRadius: 12,
-      padding: '28px 24px',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      boxShadow: highlight ? '0 20px 60px -25px rgba(0,0,255,0.5)' : 'none',
+      ...base,
+      left: -16, right: -16,
+      top: pos, height: 1,
+      backgroundImage: `linear-gradient(to right, ${LINE} 50%, transparent 50%)`,
+      backgroundSize: '8px 1px',
     }}>
-      {badge && (
-        <div style={{
-          position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-          padding: '5px 12px', borderRadius: 999,
-          background: '#ccff00', color: '#000',
-          fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-        }}>{badge}</div>
-      )}
-
-      <div style={{ fontSize: 10.5, letterSpacing: '0.18em', textTransform: 'uppercase', color: dimText, fontWeight: 600, marginBottom: 12 }}>{label}</div>
-      <h2 style={{ ...displayStyle, fontSize: 24, margin: '0 0 6px', color: cardText }}>{title}</h2>
-      <div style={{ color: dimText, fontSize: 13.5, marginBottom: 26, lineHeight: 1.5 }}>{subtitle}</div>
-
-      {/* Price */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
-        <span style={{ ...priceStyle, fontSize: 56, color: cardText }}>{price}</span>
-        {strikePrice && (
-          <span style={{ color: dimmerText, fontSize: 16, textDecoration: 'line-through' }}>{strikePrice}</span>
-        )}
-      </div>
-      <div style={{ color: dimText, fontSize: 12.5, marginBottom: scarcityNote ? 6 : 26 }}>{suffix}</div>
-      {scarcityNote && (
-        <div style={{ color: '#ccff00', fontSize: 11, letterSpacing: '0.06em', marginBottom: 26 }}>
-          {scarcityNote}
-        </div>
-      )}
-
-      {/* CTA */}
-      {onCta ? (
-        isSuccess ? (
-          <div style={{
-            padding: '12px 14px',
-            background: highlight ? 'rgba(255,255,255,0.15)' : 'rgba(204,255,0,0.1)',
-            border: highlight ? '1px solid rgba(255,255,255,0.35)' : '1px solid rgba(204,255,0,0.4)',
-            color: cardText,
-            borderRadius: 10, marginBottom: 24, fontSize: 13, textAlign: 'center', fontWeight: 600,
-          }}>✓ You're on the list. We'll email you when checkout opens.</div>
-        ) : isSignedIn ? (
-          <button
-            onClick={onCta}
-            disabled={reserving}
-            style={{
-              padding: '13px 16px',
-              background: reserving ? '#1c1c1e' : btnBg,
-              color: reserving ? 'var(--text-dimmer)' : btnText,
-              border: 'none', borderRadius: 10,
-              fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em',
-              cursor: reserving ? 'wait' : 'pointer',
-              marginBottom: 10,
-              fontFamily: 'var(--font-sans)',
-              transition: 'background 0.2s ease',
-            }}
-          >{reserving ? 'Reserving…' : ctaLabel}</button>
-        ) : (
-          <SignInButton mode="modal">
-            <button
-              style={{
-                padding: '13px 16px',
-                background: btnBg, color: btnText,
-                border: 'none', borderRadius: 10,
-                fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em',
-                cursor: 'pointer', marginBottom: 10,
-                fontFamily: 'var(--font-sans)',
-              }}
-            >{ctaLabel}</button>
-          </SignInButton>
-        )
-      ) : (
-        <a
-          href={ctaHref}
-          style={{
-            display: 'inline-block', textAlign: 'center',
-            padding: '13px 16px',
-            background: 'transparent',
-            color: cardText,
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-            fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em', textDecoration: 'none',
-            marginBottom: 24,
-          }}
-        >{ctaLabel}</a>
-      )}
-      {onCta && !isSuccess && (
-        <div style={{ fontSize: 11, color: dimmerText, marginBottom: 24, textAlign: 'center' }}>
-          No payment now. Locked founding price when checkout opens.
-        </div>
-      )}
-
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 11 }}>
-        {bullets.map((b, i) => (
-          <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13.5, color: cardText, lineHeight: 1.5 }}>
-            <span style={{
-              flex: '0 0 auto',
-              width: 18, height: 18, marginTop: 1, borderRadius: 999,
-              background: bulletCheckBg,
-              color: bulletCheckColor,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
-              border: highlight ? '1px solid rgba(255,255,255,0.28)' : '1px solid var(--border)',
-            }}>✓</span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
+      {crossPositions.map((cp, i) => <Crosshair key={i} left={cp} />)}
     </div>
   )
 }
 
-function GuaranteeCard({ title, body }) {
+function Crosshair({ left }) {
   return (
-    <div style={{ padding: '22px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 14 }}>
-      <div style={{ ...displayStyle, fontSize: 15, marginBottom: 6, color: 'var(--text)' }}>{title}</div>
-      <div style={{ fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.55 }}>{body}</div>
+    <div style={{
+      position: 'absolute', width: 9, height: 9,
+      left, top: 0.5,
+      transform: 'translate(-50%, -50%)',
+      zIndex: 4, pointerEvents: 'none',
+    }}>
+      <span style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 1, background: CROSS }} />
+      <span style={{ position: 'absolute', left: 4, top: 0, bottom: 0, width: 1, background: CROSS }} />
     </div>
   )
 }
 
-function FaqItem({ q, a }) {
-  const [open, setOpen] = useState(false)
+// ---------- Column ------------------------------------------------
+
+function Col({
+  title, description, price, priceSub, crossedPrice, subLine,
+  cta, badge, highlight, muted, features = [],
+}) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      opacity: muted ? 0.85 : 1,
+      background: highlight ? 'rgba(0,0,255,0.04)' : 'transparent',
+    }}>
+      {/* Top block — FIXED height so CTAs align across all three columns */}
+      <div className="cue-col-top" style={{ padding: 40, display: 'flex', flexDirection: 'column', height: 380, boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 500, color: 'var(--text)' }}>{title}</h3>
+          {badge && (
+            <span style={{
+              padding: '4px 8px',
+              background: 'rgba(0,0,255,0.18)',
+              color: '#fff', border: '1px solid rgba(0,0,255,0.4)',
+              fontSize: 9.5, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}>{badge}</span>
+          )}
+        </div>
+        {description && (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.55 }}>{description}</p>
+        )}
+
+        <div style={{ margin: '24px 0 8px', display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+          {crossedPrice && (
+            <span style={{
+              ...priceStyle, fontSize: 22, color: 'var(--text-dim)',
+              textDecoration: 'line-through', opacity: 0.55,
+            }}>{crossedPrice}</span>
+          )}
+          <span style={{ ...priceStyle, fontSize: 48, color: 'var(--text)' }}>{price}</span>
+          {priceSub && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{priceSub}</span>}
+        </div>
+
+        {subLine && (
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12, lineHeight: 1.5, minHeight: 18 }}>
+            {subLine}
+          </div>
+        )}
+
+        <div style={{ marginTop: 'auto', paddingTop: 20 }}>{cta}</div>
+      </div>
+
+      {/* Bottom block — features list, fixed min height for consistent bottom edge */}
+      <div className="cue-col-bottom" style={{ padding: 40, minHeight: 240, borderTop: `1px dashed ${LINE}`, boxSizing: 'border-box' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {features.map((f, i) => {
+            const isObj = typeof f === 'object'
+            const text = isObj ? f.text : f
+            const soon = isObj && f.soon
+            return (
+              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: 'var(--text)', lineHeight: 1.2 }}>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={highlight ? 'var(--electric)' : 'var(--text-dim)'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>
+                  {text}
+                  {soon && (
+                    <span style={{
+                      marginLeft: 6, padding: '1px 6px',
+                      background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.28)',
+                      color: '#ccff00', fontSize: 9, fontWeight: 500, letterSpacing: '0.08em',
+                    }}>SOON</span>
+                  )}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+// ---------- FAQ ---------------------------------------------------
+
+function FaqItem({ q, a, open, onToggle }) {
   return (
     <div style={{ borderBottom: '1px solid var(--border)' }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          width: '100%', padding: '20px 4px', background: 'transparent', border: 'none',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-          color: 'var(--text)', textAlign: 'left', cursor: 'pointer',
-          fontFamily: 'Geist, -apple-system, sans-serif',
-          fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em',
-        }}
-      >
+      <button onClick={onToggle} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 4px', background: 'transparent', border: 'none',
+        color: 'var(--text)', fontSize: 14.5, textAlign: 'left', cursor: 'pointer',
+        fontFamily: 'var(--font-sans)', letterSpacing: '-0.005em',
+      }}>
         <span>{q}</span>
-        <span style={{ color: 'var(--text-dim)', fontSize: 22, lineHeight: 1, transition: 'transform 0.2s ease', transform: open ? 'rotate(45deg)' : 'rotate(0deg)' }}>+</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease', color: 'var(--text-dim)' }}>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
       {open && (
-        <div style={{ padding: '0 4px 20px', color: 'var(--text-dim)', fontSize: 14, lineHeight: 1.65, fontFamily: 'var(--font-sans)' }}>
-          {a}
-        </div>
+        <div style={{ padding: '0 4px 18px', fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-dim)' }}>{a}</div>
       )}
     </div>
   )
+}
+
+// ---------- Static content ----------------------------------------
+
+const FAQ = [
+  { q: 'What am I buying right now?', a: '100 curated components with AI prompts. Every weekly drop. React source code and MCP support as they ship — free for Cue+ members. Locked at $99 lifetime for the first 50 founding members.' },
+  { q: 'What is live today vs coming soon?', a: 'Live: 100 components + AI prompts, unlimited regenerates for Cue+, weekly drops. Coming next few weeks: React source code for the top 20 components. Coming Q2: MCP support. All future drops included in your Cue+ lifetime.' },
+  { q: 'Why lifetime, not subscription?', a: "Cue isn't a service you keep logging into. You copy a prompt, ship, close the tab. Charging you every month for something you touch twice a week feels wrong. Pay once, own it." },
+  { q: 'What happens after the founding 50 fills?', a: 'Price becomes $249 lifetime for everyone after. Founding members keep their $99 forever — no future price change ever applies to them. That is the founding promise.' },
+  { q: 'Refund policy?', a: 'Payment errors (duplicate charges, failed provisioning) — refunded within 3 business days. Within 24 hours of purchase and no premium content copied — full refund. See the Refund page for exact eligibility.' },
+  { q: 'Can I use these in client work?', a: 'Yes. Cue+ includes personal and commercial use across unlimited projects. You cannot resell Cue prompts as your own library or train an AI on them. See the License page.' },
+  { q: 'Why pay when AI writes components?', a: 'AI produces generic. The gap between "a hero section" and "a hero section that feels like the Awwwards site of the day" is not a prompt-length problem — it is a taste problem. Each Cue prompt is refined through hundreds of AI iterations. You get iteration nine, not iteration one.' },
+  { q: 'What if Cue shuts down?', a: '60 days written notice. Everything you unlocked stays downloadable. Pro-rata refund for anything under 12 months old. It is in the Terms.' },
+]
+
+// ---------- Styles ------------------------------------------------
+
+const btnPrimary = {
+  width: '100%',
+  padding: '12px 18px',
+  background: 'var(--electric)',
+  color: '#fff',
+  border: 'none',
+  fontSize: 13, fontWeight: 500, letterSpacing: '0.02em',
+  cursor: 'pointer',
+  fontFamily: INTER,
+  transition: 'background 0.15s ease',
+  textAlign: 'center',
+  boxSizing: 'border-box',
+}
+const btnGhost = {
+  width: '100%',
+  padding: '12px 18px',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'var(--text)',
+  border: '1px solid var(--border)',
+  fontSize: 13, fontWeight: 500, letterSpacing: '0.02em',
+  cursor: 'pointer',
+  fontFamily: INTER,
+  textAlign: 'center',
+  textDecoration: 'none',
+  display: 'inline-block',
+  boxSizing: 'border-box',
 }

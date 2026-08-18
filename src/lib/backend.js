@@ -251,6 +251,36 @@ const supabaseAdapter = {
     return { ok: true }
   },
 
+  // Monthly waitlist — fake-door demand test for $49/mo tier.
+  async joinMonthlyWaitlist({ email, source = 'pricing-page' }) {
+    const clean = String(email || '').trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Please enter a valid email')
+    const { error } = await supabase
+      .from('monthly_waitlist')
+      .insert({ email: clean, source, referrer: typeof document !== 'undefined' ? (document.referrer || null) : null })
+    if (error) {
+      if (/duplicate|unique/i.test(error.message || '')) return { alreadyOnList: true }
+      if (/does not exist|schema cache|not found/i.test(error.message || '')) {
+        throw new Error('Waitlist is coming online — please try again shortly.')
+      }
+      throw error
+    }
+    return { alreadyOnList: false }
+  },
+
+  // Founding counter — how many paying Cue+ users so far.
+  // Reads from user_profiles.plan; returns 0 if table doesn't exist yet.
+  async getFoundingCount() {
+    try {
+      const { count, error } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('plan', 'cue_plus')
+      if (error) return 0
+      return count || 0
+    } catch { return 0 }
+  },
+
   // ---- Feedback threading (reply system) ----------------------------
   // Each feedback row is the root of a thread. Both admin and user
   // messages live in feedback_messages.

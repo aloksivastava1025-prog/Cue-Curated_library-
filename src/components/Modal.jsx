@@ -112,6 +112,13 @@ export default function Modal({ item, onClose, showToast }) {
   if (!item) return null;
 
   const onCopy = async (which) => {
+    // Even free prompts require sign-in. Free = lead capture, not free-for-all
+    // — signup emails are the strongest signal for a beta.
+    if (!isSignedIn) {
+      if (showToast) showToast('Sign in to copy — takes 10 seconds');
+      clerk.openSignIn?.({ redirectUrl: window.location.href });
+      return;
+    }
     let text = '';
     if (which === 'code') text = item.code || '';
     else if (which === 'prompt') text = content || item.prompt || '';
@@ -308,6 +315,7 @@ export default function Modal({ item, onClose, showToast }) {
               useCaseText={item.use_case || ''}
               copied={copied}
               onCopy={onCopy}
+              isSignedIn={isSignedIn}
             />
           )}
         </div>
@@ -327,7 +335,7 @@ export default function Modal({ item, onClose, showToast }) {
 
 // ---------------------------------------------------------------------------
 // Free item: Code / Prompt / Use Case tabs
-function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy }) {
+function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn }) {
   const TABS = [
     { key: 'code',     label: 'Code',     present: hasCode },
     { key: 'prompt',   label: 'Prompt',   present: hasPrompt },
@@ -373,35 +381,71 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
         </div>
       )}
 
-      {/* Body */}
-      <div
-        className="custom-scrollbar"
-        data-lenis-prevent
-        style={{
-          flex: 1, minHeight: 160, maxHeight: 340,
-          background: isProse ? 'transparent' : '#0b0b0d',
-          border: isProse ? 'none' : '1px solid var(--border)',
-          borderRadius: 8, padding: isProse ? '4px 0' : 16, overflow: 'auto',
-        }}
-      >
-        {loading ? (
-          <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: 20, textAlign: 'center' }}>Loading…</div>
-        ) : isEmpty ? (
-          <div style={{ color: 'var(--text-dimmer)', fontSize: 12.5, padding: 12, fontStyle: 'italic' }}>
-            {active === 'code' ? 'No component code available for this item.' : active === 'prompt' ? 'No prompt available for this item.' : 'No use case notes for this item.'}
+      {/* Body — signed-out users see a blurred + overlay-locked version so
+          the text is teasingly visible but not readable / selectable. */}
+      <div style={{ position: 'relative' }}>
+        <div
+          className="custom-scrollbar"
+          data-lenis-prevent
+          style={{
+            flex: 1, minHeight: 160, maxHeight: 340,
+            background: isProse ? 'transparent' : '#0b0b0d',
+            border: isProse ? 'none' : '1px solid var(--border)',
+            borderRadius: 8, padding: isProse ? '4px 0' : 16, overflow: 'auto',
+            filter: (!isSignedIn && !isEmpty) ? 'blur(6px)' : 'none',
+            userSelect: (!isSignedIn && !isEmpty) ? 'none' : 'auto',
+            pointerEvents: (!isSignedIn && !isEmpty) ? 'none' : 'auto',
+            transition: 'filter 0.25s ease',
+          }}
+        >
+          {loading ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: 20, textAlign: 'center' }}>Loading…</div>
+          ) : isEmpty ? (
+            <div style={{ color: 'var(--text-dimmer)', fontSize: 12.5, padding: 12, fontStyle: 'italic' }}>
+              {active === 'code' ? 'No component code available for this item.' : active === 'prompt' ? 'No prompt available for this item.' : 'No use case notes for this item.'}
+            </div>
+          ) : isProse ? (
+            <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.6, color: 'var(--text)' }}>
+              {bodyText}
+            </p>
+          ) : (
+            <pre style={{ margin: 0, fontFamily: 'Menlo, Consolas, monospace', fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-dim)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {bodyText}
+            </pre>
+          )}
+        </div>
+
+        {/* Locked overlay for signed-out users */}
+        {!isSignedIn && !isEmpty && !loading && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 10,
+            background: 'linear-gradient(180deg, rgba(11,11,13,0.35) 0%, rgba(11,11,13,0.72) 60%, rgba(11,11,13,0.85) 100%)',
+            borderRadius: 8,
+            padding: 20,
+            textAlign: 'center',
+          }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 999,
+              background: 'rgba(0,0,255,0.14)', border: '1px solid rgba(0,0,255,0.45)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff',
+            }}>
+              <LockIcon size={18} />
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#fff' }}>
+              Sign in to see the {active === 'prompt' ? 'prompt' : active === 'code' ? 'code' : 'notes'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', maxWidth: 320, lineHeight: 1.5 }}>
+              Free — takes 10 seconds. Sign in unlocks selected components + 2 AI prompts a day.
+            </div>
           </div>
-        ) : isProse ? (
-          <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.6, color: 'var(--text)' }}>
-            {bodyText}
-          </p>
-        ) : (
-          <pre style={{ margin: 0, fontFamily: 'Menlo, Consolas, monospace', fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-dim)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {bodyText}
-          </pre>
         )}
       </div>
 
-      {/* Copy button */}
+      {/* Copy button — signed-out users see a sign-in gate first */}
       <button
         onClick={() => onCopy(active)}
         disabled={isEmpty}
@@ -417,8 +461,22 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
           transition: 'transform 0.15s ease, background 0.2s ease',
         }}
       >
-        {copied === active ? (<><CheckIcon /> Copied</>) : (`Copy ${activeLabel.toLowerCase()}`)}
+        {copied === active ? (
+          <><CheckIcon /> Copied</>
+        ) : !isSignedIn ? (
+          <>
+            <LockIcon size={14} />
+            Sign in to copy {activeLabel.toLowerCase()}
+          </>
+        ) : (
+          `Copy ${activeLabel.toLowerCase()}`
+        )}
       </button>
+      {!isSignedIn && !isEmpty && (
+        <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+          Free — sign in takes 10 seconds
+        </div>
+      )}
     </div>
   );
 }

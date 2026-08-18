@@ -10,6 +10,9 @@ import Saved from './pages/Saved.jsx';
 import Footer from './components/Footer.jsx';
 import EditorialCard from './components/EditorialCard.jsx';
 import FeaturedRail from './components/FeaturedRail.jsx';
+import TagFilter, { normalizeTag } from './components/TagFilter.jsx';
+import TierFilter from './components/TierFilter.jsx';
+import { isPremium as isPremiumItem } from './lib/promptHelpers.js';
 import WaitlistCTA from './components/WaitlistCTA.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
@@ -60,6 +63,8 @@ function MainApp() {
   const [route, setRoute] = useState(window.location.hash);
   const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'sections' | 'interactions'
+  const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'paid'
+  const [tagsFilter, setTagsFilter] = useState([]);    // array of lowercase tags (OR match)
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
@@ -84,17 +89,34 @@ function MainApp() {
   // drops disappear into the middle of the grid and users think we stopped
   // shipping. Rail is a spotlight above, grid stays complete below.
   const sortedByNewest = [...allPrompts].sort((a, b) => itemDate(b) - itemDate(a));
-  const visiblePrompts = typeFilter === 'all'
-    ? sortedByNewest
-    : sortedByNewest.filter((p) => {
-        const t = itemType(p);
-        return typeFilter === 'sections' ? t === 'section' : t === 'interaction';
-      });
+
+  const matchesType = (p) => {
+    if (typeFilter === 'all') return true;
+    const t = itemType(p);
+    return typeFilter === 'sections' ? t === 'section' : t === 'interaction';
+  };
+  const matchesTier = (p) => {
+    if (tierFilter === 'all') return true;
+    const paid = isPremiumItem(p);
+    return tierFilter === 'paid' ? paid : !paid;
+  };
+  const matchesTags = (p) => {
+    if (!tagsFilter.length) return true;
+    const itemTags = (p.tags || []).map(normalizeTag);
+    // OR: item matches if it carries ANY of the selected tags.
+    return tagsFilter.some((t) => itemTags.includes(t));
+  };
+
+  const visiblePrompts = sortedByNewest.filter((p) => matchesType(p) && matchesTier(p) && matchesTags(p));
   const counts = {
     all: allPrompts.length,
     sections: allPrompts.filter((p) => itemType(p) === 'section').length,
     interactions: allPrompts.filter((p) => itemType(p) === 'interaction').length,
+    free: allPrompts.filter((p) => !isPremiumItem(p)).length,
+    paid: allPrompts.filter((p) =>  isPremiumItem(p)).length,
   };
+  const clearFilters = () => { setTypeFilter('all'); setTierFilter('all'); setTagsFilter([]); };
+  const anyFilterOn = typeFilter !== 'all' || tierFilter !== 'all' || tagsFilter.length > 0;
 
   useEffect(() => {
     const handleHash = () => setRoute(window.location.hash);
@@ -246,9 +268,34 @@ function MainApp() {
       {/* Design of the Day rail — only rendered if there are featured items */}
       <FeaturedRail items={featured} onOpen={setSelectedItem} />
 
-      {/* Type filter toggle — All / Sections / Interactions */}
-      <div className="cue-type-toggle" style={{ maxWidth: '1500px', margin: '0 auto', padding: '8px 24px 4px', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ display: 'inline-flex', padding: 4, background: '#0e0e10', border: '1px solid var(--border)', borderRadius: 999, gap: 2 }}>
+      {/* Filter bar — 3-column grid so the center toggle is TRULY centered
+          regardless of how wide the left/right dropdowns get. */}
+      <div className="cue-filter-bar" style={{
+        maxWidth: '1500px', margin: '0 auto',
+        padding: '12px 24px 4px',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+        gap: 12,
+      }}>
+        {/* Left: tag dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifySelf: 'start' }}>
+          <TagFilter items={allPrompts} selected={tagsFilter} onChange={setTagsFilter} />
+          {anyFilterOn && (
+            <button
+              onClick={clearFilters}
+              style={{
+                padding: '6px 12px', height: 30, borderRadius: 999,
+                background: 'transparent', color: 'var(--text-dim)',
+                border: '1px solid var(--border)',
+                fontSize: 11, cursor: 'pointer', letterSpacing: '0.02em',
+              }}
+            >Clear all</button>
+          )}
+        </div>
+
+        {/* Center: type segmented control */}
+        <div style={{ display: 'inline-flex', padding: 4, background: '#0e0e10', border: '1px solid var(--border)', borderRadius: 999, gap: 2, justifySelf: 'center' }}>
           {[
             { key: 'all',          label: 'All',          count: counts.all },
             { key: 'sections',     label: 'Sections',     count: counts.sections },
@@ -260,20 +307,13 @@ function MainApp() {
                 key={t.key}
                 onClick={() => setTypeFilter(t.key)}
                 style={{
-                  padding: '8px 18px',
-                  borderRadius: 999,
+                  padding: '8px 18px', borderRadius: 999,
                   background: on ? 'var(--electric)' : 'transparent',
                   color: on ? '#fff' : 'var(--text-dim)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
+                  border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase',
                   transition: 'background 0.2s ease, color 0.2s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
                 }}
               >
                 <span>{t.label}</span>
@@ -282,7 +322,50 @@ function MainApp() {
             );
           })}
         </div>
+
+        {/* Right: tier dropdown */}
+        <div style={{ justifySelf: 'end' }}>
+          <TierFilter value={tierFilter} counts={counts} onChange={setTierFilter} />
+        </div>
       </div>
+
+      {/* Selected tag chips — user sees exactly what's applied */}
+      {tagsFilter.length > 0 && (
+        <div style={{
+          maxWidth: '1500px', margin: '0 auto', padding: '10px 24px 0',
+          display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginRight: 4 }}>Filtered by</span>
+          {tagsFilter.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setTagsFilter(tagsFilter.filter((t) => t !== tag))}
+              title="Remove"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '4px 10px 4px 12px', borderRadius: 999,
+                background: 'rgba(0,0,255,0.10)', border: '1px solid rgba(0,0,255,0.35)',
+                color: 'var(--text)', fontSize: 11.5, cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              <span>{tag}</span>
+              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          ))}
+          <button
+            onClick={() => setTagsFilter([])}
+            style={{
+              marginLeft: 4, padding: '4px 10px', borderRadius: 999,
+              background: 'transparent', border: '1px solid var(--border)',
+              color: 'var(--text-dim)', fontSize: 10.5, cursor: 'pointer',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+            }}
+          >Clear</button>
+        </div>
+      )}
 
       {/* Grid Section */}
       <section className="cue-grid" style={{ padding: '20px 24px 120px', maxWidth: '1500px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', columnGap: '24px', rowGap: '48px' }}>
@@ -316,7 +399,7 @@ function MainApp() {
                 <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '520px', margin: '0 auto 24px' }}>
                   No {typeFilter} in the library yet. Try a different filter, or check back after the next drop.
                 </p>
-                <button onClick={() => setTypeFilter('all')} style={{ padding: '10px 20px', background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '999px', cursor: 'pointer', fontSize: '12px', letterSpacing: '0.04em' }}>Show all</button>
+                <button onClick={clearFilters} style={{ padding: '10px 20px', background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '999px', cursor: 'pointer', fontSize: '12px', letterSpacing: '0.04em' }}>Clear filters</button>
               </>
             )}
           </div>

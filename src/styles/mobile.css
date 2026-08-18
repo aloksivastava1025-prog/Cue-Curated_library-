@@ -145,6 +145,35 @@
   50%      { opacity: 0.7; }
 }
 
+/* ---- Filter bar responsive: stack into single column on smaller screens */
+@media (max-width: 900px) {
+  .cue-filter-bar {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    justify-items: center !important;
+  }
+  .cue-filter-bar > div {
+    justify-self: center !important;
+  }
+}
+
+/* ---- Pricing page responsive ---------------------------------------- */
+@media (max-width: 900px) {
+  .cue-price-grid,
+  .cue-roadmap,
+  .cue-blueprint-cols {
+    grid-template-columns: 1fr !important;
+  }
+  /* Fixed column heights only apply to desktop 3-across layout. */
+  .cue-col-top {
+    height: auto !important;
+    min-height: 320px;
+  }
+  .cue-blueprint-plate {
+    min-height: 0 !important;
+  }
+}
+
 /* ---- Footer responsive (compact single-row) ------------------------ */
 @media (max-width: 560px) {
   .cue-footer-row {
