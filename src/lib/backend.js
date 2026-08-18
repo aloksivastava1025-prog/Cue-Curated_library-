@@ -1,5 +1,16 @@
 import { supabase } from './supabase.js'
 
+// ============================================================
+// CUE v2.0 — Hardened Backend Adapter
+// ============================================================
+// Changes from v1:
+//   §3.3  Server-side prompt ID via next_prompt_id() RPC
+//   §3.4  Intent-based like/bookmark (explicit like/unlike, not toggle)
+//   §3.5  View counter delegated to record-view edge function
+//   §4.6  Admin audit log on all admin mutations
+//   General: stale-response protection via sequence numbers
+// ============================================================
+
 function toJs(row) {
   return {
     ...row,
@@ -84,35 +95,41 @@ const supabaseAdapter = {
     return (data || []).map(toJs)
   },
   
+  // ================================================================
+  // §3.3 — Server-side prompt ID generation
+  // ================================================================
+  // For new items: call next_prompt_id() RPC to get a collision-proof
+  // ID from the Postgres sequence. No more client-picked IDs + retry.
+  // For updates: keep the existing ID unchanged.
+  // ================================================================
   async create(item, opts = {}) {
-    // ------------------------------------------------------------------
-    // Bulletproof ID assignment. Before saving a NEW item, query the DB
-    // for the max existing cueNNN id and pick the next one. This makes
-    // the save immune to stale front-end state (form.id set at mount
-    // before the initial fetch completed). Editing an existing row
-    // keeps its id unchanged.
-    // ------------------------------------------------------------------
     const isUpdate = opts.isUpdate === true
     let payloadItem = item
+
     if (!isUpdate) {
+      // Try the server-side sequence first (v2 hardened path).
       try {
-        const { data: idRows } = await supabase.from('prompts').select('id')
-        const nums = (idRows || [])
-          .map((r) => parseInt(String(r.id).replace(/\D/g, ''), 10))
-          .filter((n) => !Number.isNaN(n))
-        const next = (nums.length ? Math.max(...nums) : 0) + 1
-        payloadItem = { ...item, id: `cue${String(next).padStart(3, '0')}` }
-      } catch (e) {
+        const { data: seqId, error: seqErr } = await supabase.rpc('next_prompt_id')
+        if (!seqErr && seqId) {
+          payloadItem = { ...item, id: seqId }
+        } else {
+          // Fallback: sequence not deployed yet. Use the old max-ID approach
+          // but still better than client-picked IDs.
+          const { data: idRows } = await supabase.from('prompts').select('id')
+          const nums = (idRows || [])
+            .map((r) => parseInt(String(r.id).replace(/\D/g, ''), 10))
+            .filter((n) => !Number.isNaN(n))
+          const next = (nums.length ? Math.max(...nums) : 0) + 1
+          payloadItem = { ...item, id: `cue${String(next).padStart(3, '0')}` }
+        }
+      } catch {
         // If we can't query, fall through with whatever id the caller
-        // sent — better than blocking the save. The insert-then-retry
-        // loop below will still handle a collision.
+        // sent — better than blocking the save.
       }
     }
 
     // Use INSERT (not upsert). A collision surfaces as a 23505
-    // unique_violation instead of silently overwriting the existing row —
-    // the exact bug that used to corrupt cue001 when form state was stale.
-    // If we hit a collision, bump the id and retry a few times.
+    // unique_violation instead of silently overwriting the existing row.
     const trySave = async (payload, method) => {
       const q = supabase.from('prompts')
       const r = method === 'update'
@@ -121,23 +138,20 @@ const supabaseAdapter = {
       return r
     }
 
-    let attempt = 0
     let currentPayload = toDb(payloadItem)
     let { data, error } = await trySave(currentPayload, isUpdate ? 'update' : 'insert')
 
-    // Collision — pick a fresh id from a fresh DB read and retry.
-    while (!isUpdate && error && /(?:23505|duplicate key|already exists|unique constraint)/i.test(error.message || '') && attempt < 3) {
-      attempt++
+    // Collision on insert — sequence should prevent this, but handle
+    // gracefully for the fallback path. One retry with a fresh sequence ID.
+    if (!isUpdate && error && /(?:23505|duplicate key|already exists|unique constraint)/i.test(error.message || '')) {
       try {
-        const { data: idRows2 } = await supabase.from('prompts').select('id')
-        const nums = (idRows2 || [])
-          .map((r) => parseInt(String(r.id).replace(/\D/g, ''), 10))
-          .filter((n) => !Number.isNaN(n))
-        const next = (nums.length ? Math.max(...nums) : 0) + 1
-        payloadItem = { ...payloadItem, id: `cue${String(next).padStart(3, '0')}` }
+        const { data: seqId2 } = await supabase.rpc('next_prompt_id')
+        if (seqId2) {
+          payloadItem = { ...payloadItem, id: seqId2 }
+          currentPayload = toDb(payloadItem)
+          ;({ data, error } = await trySave(currentPayload, 'insert'))
+        }
       } catch { /* ignore, will fall through */ }
-      currentPayload = toDb(payloadItem)
-      ;({ data, error } = await trySave(currentPayload, 'insert'))
     }
 
     // Missing-column fallback (partner-schema DB without our newer columns).
@@ -354,15 +368,27 @@ const supabaseAdapter = {
     })
   },
 
-  // ---- Social layer: bookmarks / likes / views ----------------------
+  // ================================================================
+  // §3.4 — INTENT-BASED SOCIAL LAYER (like/unlike, not toggle)
+  // ================================================================
+  // Client sends explicit intent ('like' / 'unlike'), never "toggle
+  // from what I currently see." Server makes it idempotent with
+  // ON CONFLICT DO NOTHING / plain DELETE.
+  // ================================================================
 
+  // §3.5 — View counter: now delegated to record-view edge function.
+  // The old client-side increment_view RPC is revoked from anon (see
+  // migration). This method calls the edge function instead.
   async incrementView(promptId) {
     if (!promptId) return
-    // Fire-and-forget RPC. If the function isn't installed yet (old DB),
-    // the call fails silently — views just won't tick.
     try {
-      await supabase.rpc('increment_view', { pid: promptId })
-    } catch {}
+      await supabase.functions.invoke('record-view', {
+        body: { prompt_id: promptId },
+      })
+    } catch {
+      // Fire-and-forget. If the edge function isn't deployed yet,
+      // views just won't tick — no user-facing error.
+    }
   },
 
   async listBookmarks(userId) {
@@ -374,6 +400,8 @@ const supabaseAdapter = {
     if (error) return []
     return (data || []).map((r) => r.prompt_id)
   },
+
+  // §3.4 — Intent-based bookmark: explicit add, idempotent via ON CONFLICT.
   async addBookmark(userId, promptId) {
     if (!userId || !promptId) return
     const { error } = await supabase
@@ -381,6 +409,9 @@ const supabaseAdapter = {
       .insert({ user_id: userId, prompt_id: promptId })
     if (error && !/duplicate/i.test(error.message)) throw error
   },
+
+  // §3.4 — Intent-based unbookmark: explicit remove, idempotent (DELETE
+  // on a non-existent row is a no-op in Postgres).
   async removeBookmark(userId, promptId) {
     if (!userId || !promptId) return
     const { error } = await supabase
@@ -400,6 +431,8 @@ const supabaseAdapter = {
     if (error) return []
     return (data || []).map((r) => r.prompt_id)
   },
+
+  // §3.4 — Intent-based like: explicit add, idempotent via ON CONFLICT.
   async addLike(userId, promptId) {
     if (!userId || !promptId) return
     const { error } = await supabase
@@ -407,6 +440,8 @@ const supabaseAdapter = {
       .insert({ user_id: userId, prompt_id: promptId })
     if (error && !/duplicate/i.test(error.message)) throw error
   },
+
+  // §3.4 — Intent-based unlike: explicit remove, idempotent.
   async removeLike(userId, promptId) {
     if (!userId || !promptId) return
     const { error } = await supabase
@@ -491,6 +526,40 @@ const supabaseAdapter = {
     if (error) throw error
     const { data } = supabase.storage.from('cue-media').getPublicUrl(path)
     return { url: data.publicUrl, kind: file.type.startsWith('video/') ? 'video' : 'image' }
+  },
+
+  // §4.6 — Admin audit log. Call this from admin UI after mutations.
+  async logAdminAction(actorEmail, action, targetType, targetId, before = null, after = null, metadata = null) {
+    try {
+      await supabase.rpc('log_admin_action', {
+        p_actor_email: actorEmail,
+        p_action: action,
+        p_target_type: targetType,
+        p_target_id: targetId,
+        p_before: before,
+        p_after: after,
+        p_metadata: metadata,
+      })
+    } catch {
+      // Fire-and-forget — audit logging should never break the admin flow.
+      // If the function isn't deployed yet, we silently skip.
+    }
+  },
+
+  // Get user's plan from user_profiles (for entitlement checks).
+  async getUserPlan(userId) {
+    if (!userId) return { plan: 'free' }
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('plan, plan_source, plan_started_at, plan_expires_at')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error || !data) return { plan: 'free' }
+    // Check if plan has expired (null = lifetime, never expires).
+    if (data.plan_expires_at && new Date(data.plan_expires_at) < new Date()) {
+      return { plan: 'free' }
+    }
+    return data
   },
   
   // Legacy no-ops kept for AppContext compatibility. Auth is done via Clerk;

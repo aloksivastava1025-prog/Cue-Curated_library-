@@ -2,12 +2,28 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import nodemailer from "npm:nodemailer";
 import { createClient } from "npm:@supabase/supabase-js";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// §4.4 — CORS allow-list (not '*')
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5230',
+  'https://usecue.com',
+  'https://www.usecue.com',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

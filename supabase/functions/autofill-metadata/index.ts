@@ -16,6 +16,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.44.2';
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -140,6 +142,35 @@ serve(async (req) => {
   try {
     if (req.method !== "POST") {
       return json({ error: "Method not allowed" }, 405);
+    }
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return json({ error: "Missing authorization header" }, 401);
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    const { data: ok, error: rlError } = await supabase.rpc(
+      "check_and_increment_rate_limit",
+      {
+        p_key: `autofill:${user.id}`,
+        p_max: 30,
+        p_window_seconds: 60,
+      }
+    );
+
+    if (rlError || !ok) {
+      return json({ error: "Rate limit exceeded (max 30 per minute)" }, 429);
     }
 
     const body = await req.json().catch(() => ({}));

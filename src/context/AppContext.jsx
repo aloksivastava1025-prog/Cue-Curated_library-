@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { prompts as seedPrompts } from '../data/prompts.js'
 import { backend } from '../lib/backend.js'
@@ -105,30 +105,49 @@ export function AppProvider({ children }) {
     )))
   }, [])
 
+  // §3.4 — In-flight tracking: prevent double-clicks from sending
+  // duplicate requests. Each item gets locked during its server round-trip.
+  const inflightRef = useRef(new Set())
+
+  // §3.4 — Intent-based bookmark: sends explicit add/remove, not toggle.
+  // Disables re-entry during in-flight request to prevent race conditions.
   const toggleBookmark = useCallback(async (promptId) => {
     if (!clerkUserId) return { needsAuth: true }
+    if (inflightRef.current.has(`bm:${promptId}`)) return {} // in-flight, ignore
+    inflightRef.current.add(`bm:${promptId}`)
+
     const isSaved = bookmarkedIds.has(promptId)
+    // Optimistic UI update
     setBookmarkedIds((prev) => {
       const next = new Set(prev)
       isSaved ? next.delete(promptId) : next.add(promptId)
       return next
     })
     try {
+      // §3.4 — Explicit intent: add or remove, not toggle.
       if (isSaved) await backend.removeBookmark(clerkUserId, promptId)
       else         await backend.addBookmark(clerkUserId, promptId)
     } catch (e) {
+      // Rollback on failure
       setBookmarkedIds((prev) => {
         const next = new Set(prev)
         isSaved ? next.add(promptId) : next.delete(promptId)
         return next
       })
+    } finally {
+      inflightRef.current.delete(`bm:${promptId}`)
     }
     return {}
   }, [clerkUserId, bookmarkedIds])
 
+  // §3.4 — Intent-based like: sends explicit add/remove, not toggle.
   const toggleLike = useCallback(async (promptId) => {
     if (!clerkUserId) return { needsAuth: true }
+    if (inflightRef.current.has(`lk:${promptId}`)) return {} // in-flight, ignore
+    inflightRef.current.add(`lk:${promptId}`)
+
     const isLiked = likedIds.has(promptId)
+    // Optimistic UI update
     setLikedIds((prev) => {
       const next = new Set(prev)
       isLiked ? next.delete(promptId) : next.add(promptId)
@@ -136,15 +155,19 @@ export function AppProvider({ children }) {
     })
     bumpLikeCount(promptId, isLiked ? -1 : +1)
     try {
+      // §3.4 — Explicit intent: add or remove, not toggle.
       if (isLiked) await backend.removeLike(clerkUserId, promptId)
       else         await backend.addLike(clerkUserId, promptId)
     } catch (e) {
+      // Rollback on failure
       setLikedIds((prev) => {
         const next = new Set(prev)
         isLiked ? next.add(promptId) : next.delete(promptId)
         return next
       })
       bumpLikeCount(promptId, isLiked ? +1 : -1)
+    } finally {
+      inflightRef.current.delete(`lk:${promptId}`)
     }
     return {}
   }, [clerkUserId, likedIds, bumpLikeCount])

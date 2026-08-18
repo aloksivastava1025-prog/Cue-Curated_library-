@@ -25,8 +25,8 @@
 
 ### Business model
 - **Free tier** — preview access, limited items
-- **Cue+ Individual** — $79 lifetime, single user
-- **Cue+ Team** — $249 lifetime, up to 5 seats
+- **Cue+ Individual** — Available as Annual Subscription or Lifetime Deal, single user
+- **Cue+ Team** — Available as Annual Subscription or Lifetime Deal, up to 5 seats
 - **Payment** — Dodo Payments (India-based, global support)
 - **Content update cadence** — weekly drops (planned)
 
@@ -105,8 +105,9 @@
 │  Edge functions:                                    │
 │    autofill-metadata    (admin AI autofill proxy)    │
 │    send-contact         (contact form → email)       │
-│    create-checkout      (payment session, planned)   │
+│    create-checkout      (payment session)            │
 │    dodo-webhook         (payment event handler)      │
+│    record-view          (deduped view tracking)      │
 │                                                     │
 │  Row-level security (RLS):                          │
 │    Beta permissive → prod locked via Clerk JWT       │
@@ -126,7 +127,7 @@
 
 **Visitor clicks a card:**
 1. `setSelectedItem(item)` opens `<Modal>`
-2. Modal calls `registerView(item.id)` → localStorage checked, if not seen in 12h → `backend.incrementView` RPC
+2. Modal calls `registerView(item.id)` → edge function `record-view` hashes IP + UA and dedups via DB constraint
 3. Modal fetches full prompt content (free) OR shows paywall (premium)
 4. User can copy, like, save, share
 
@@ -140,7 +141,7 @@
 1. `<FeedbackModal>` collects `{ kind, message, email }`
 2. Auto-fills email from Clerk if signed in (readonly)
 3. `backend.submitFeedback` → `feedback` table INSERT
-4. DB trigger: rate-limit 3/10min per email or referrer
+4. DB trigger: atomic rate-limit `check_and_increment_rate_limit` (3/10min per email or referrer)
 
 **Admin replies:**
 1. Admin opens `#/admin/inbox`, sees feedback list
@@ -248,15 +249,15 @@ Inline toggles on published list: [★] featured, [♥] publish/draft
 
 ### 4.6 Purchase flow (planned)
 ```
-User on #/pricing → picks Individual or Team
+User on #/pricing → picks Individual or Team AND Annual or Lifetime billing
   ↓
 Click "Get Cue+" → sign in if needed
   ↓
-Redirect to Dodo checkout (hosted URL) with product_id + user email
+Redirect to Dodo checkout (hosted URL) with specific product_id (annual vs lifetime) + user email
   ↓
-User pays → Dodo webhook fires → dodo-webhook edge function
+User pays/subscribes → Dodo webhook fires (`payment.succeeded` or `subscription.active`) → dodo-webhook edge function
   ↓
-Function verifies signature → user_profiles.plan = 'cue_plus'
+Function verifies signature + checks idempotency → user_profiles.plan = 'cue_plus', sets `plan_expires_at` based on billing cycle
   ↓
 User returns → #/checkout/success → confirmation
   ↓
@@ -270,7 +271,7 @@ Next modal open on premium item: paywall gone, prompt visible
 ### `prompts` — the library items
 | Column | Type | Notes |
 |---|---|---|
-| id | text PK | e.g. `cue001`, `cue034` |
+| id | text PK | e.g. `cue001` (generated via `next_prompt_id()` sequence) |
 | title | text | Item name |
 | category | text | e.g. "Sliders & Marquees" |
 | section | text | Grouping (optional) |
@@ -355,6 +356,12 @@ Next modal open on premium item: paywall gone, prompt visible
 | team_owner_id | text (for team plans) |
 | team_seats | int |
 | created_at, updated_at | timestamptz |
+
+### v2 Hardening Tables
+- **`payment_events`** — idempotency keys (webhook-id) for Dodo webhook
+- **`rate_limit_windows`** — row-locked atomic counters for feedback submission
+- **`prompt_views`** — composite PK `(prompt_id, viewer_key, viewed_on)` for deduped view tracking
+- **`admin_audit_log`** — immutable log of all admin mutations
 
 ### `is_cue_admin()` — Postgres helper
 Centralises the admin allow-list. Used in all RLS policies:
@@ -609,15 +616,17 @@ Other security measures already in place:
 - ✅ Feedback rate-limit trigger (3 per 10min per email)
 - ✅ No `dangerouslySetInnerHTML` anywhere
 - ✅ AI autofill schema tightly scoped (only 8 allowed fields)
+- ✅ Webhook idempotency and signature verification active
+- ✅ View counters deduped via server-side IP hashing
+- ✅ Atomic rate-limiting prevents concurrent feedback flooding
+- ✅ Immutable admin audit log tracks all content mutations
 
 ---
 
 ## 12. Known limitations
 
-- **View counter** anon-callable, can be inflated by an attacker (fix: move behind edge function)
 - **Waitlist has no CAPTCHA** — bots can flood (fix: Cloudflare Turnstile)
 - **No Clerk user-delete webhook** — deleting a Clerk user leaves orphan rows in bookmarks/likes/feedback (DPDP right-to-erasure gap)
-- **Prompt IDs client-picked** — safe now with retry, but a proper server-side generator would be cleaner
 - **No email delivery** — all "we'll follow up" messages are placeholder until Resend wired
 - **No search** — grows in value once library has 100+ items
 - **No shareable item URLs** — `#/item/cue001` would enable social sharing
