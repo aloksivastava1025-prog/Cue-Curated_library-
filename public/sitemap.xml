@@ -1,37 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!--
+    Cue uses hash-based routing (/#/pricing etc.). Google's crawler
+    treats the fragment as an in-page anchor, so only the root URL
+    reliably enters the index. We list the root plus the legal pages
+    (which stand on their own for compliance queries) and keep the
+    file trivially maintainable. Regenerate when we migrate to
+    browser routing.
+  -->
   <url>
-    <loc>https://cue.design/</loc>
+    <loc>https://usecue.dev/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://cue.design/#/pricing</loc>
+    <loc>https://usecue.dev/#/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://cue.design/#/saved</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://cue.design/#/legal/privacy</loc>
+    <loc>https://usecue.dev/#/legal/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://cue.design/#/legal/terms</loc>
+    <loc>https://usecue.dev/#/legal/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://cue.design/#/legal/refund</loc>
+    <loc>https://usecue.dev/#/legal/refund</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://cue.design/#/legal/license</loc>
+    <loc>https://usecue.dev/#/legal/license</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

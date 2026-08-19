@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0A0A0A"/>
+
+  <!-- Grid lines (subtle) -->
+  <g stroke="rgba(255,255,255,0.04)" stroke-width="1">
+    <line x1="0"    y1="210" x2="1200" y2="210"/>
+    <line x1="0"    y1="420" x2="1200" y2="420"/>
+    <line x1="400"  y1="0"   x2="400"  y2="630"/>
+    <line x1="800"  y1="0"   x2="800"  y2="630"/>
+  </g>
+
+  <!-- Cross markers at grid intersections -->
+  <g stroke="rgba(255,255,255,0.35)" stroke-width="1.5">
+    <path d="M395 205 L405 215 M405 205 L395 215"/>
+    <path d="M795 205 L805 215 M805 205 L795 215"/>
+    <path d="M395 415 L405 425 M405 415 L395 425"/>
+    <path d="M795 415 L805 425 M805 415 L795 425"/>
+  </g>
+
+  <!-- Eyebrow -->
+  <text x="600" y="200"
+        font-family="Inter, sans-serif"
+        font-size="20"
+        font-weight="700"
+        letter-spacing="4"
+        fill="#0000FF"
+        text-anchor="middle">
+    A CURATED LIBRARY FOR AI-NATIVE BUILDERS
+  </text>
+
+  <!-- Wordmark -->
+  <text x="600" y="360"
+        font-family="Fraunces, 'Instrument Serif', Georgia, serif"
+        font-size="180"
+        font-style="italic"
+        font-weight="300"
+        letter-spacing="-6"
+        fill="#F2F2EF"
+        text-anchor="middle">
+    Cue.
+  </text>
+
+  <!-- Sub headline -->
+  <text x="600" y="440"
+        font-family="Inter, sans-serif"
+        font-size="26"
+        font-weight="400"
+        fill="rgba(255,255,255,0.55)"
+        text-anchor="middle">
+    Copy · paste · ship
+  </text>
+
+  <!-- Bottom pill: pricing hook -->
+  <g transform="translate(600 540)">
+    <rect x="-170" y="-24" width="340" height="48" rx="24"
+          fill="none"
+          stroke="rgba(204,255,0,0.45)"
+          stroke-width="1.5"/>
+    <text x="0" y="6"
+          font-family="Inter, sans-serif"
+          font-size="16"
+          font-weight="500"
+          letter-spacing="2"
+          fill="#CCFF00"
+          text-anchor="middle">
+      $99 LIFETIME · FOUNDING 50 ONLY
+    </text>
+  </g>
+</svg>

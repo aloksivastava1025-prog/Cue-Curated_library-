@@ -1,6 +1,29 @@
+# Cue — robots.txt
+# Hash-fragment disallow lines (Disallow: /#/admin) are IGNORED by
+# search engines — the fragment is client-side only. Admin routes are
+# already gated by client-side auth, and the app returns a shell page
+# to any deep URL. There is nothing sensitive to disallow here.
+
 User-agent: *
 Allow: /
-Disallow: /#/admin
-Disallow: /#/admin/inbox
 
-Sitemap: https://cue.design/sitemap.xml
+# Aggressive AI crawlers that scrape content for training. Opt out.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+Sitemap: https://usecue.dev/sitemap.xml
