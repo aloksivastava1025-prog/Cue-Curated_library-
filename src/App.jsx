@@ -371,64 +371,55 @@ function MainApp() {
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'relative', zIndex: 2 }}>
-          {/* Pre-headline pill — glassy translucent outer, white inner
-              chip with dark text (reference: 'Early Access · Agentic AI
-              for SMBs'). Fade + slide-in on first render so it feels
-              like a stage-direction landing on the page. */}
-          <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
+          {/* Pre-headline pill — pixel-matched to the user's Tailwind
+              reference (bg-white/10 · ring-1 ring-white/15 ·
+              backdrop-blur · inner bg-white/90 text-neutral-900).
+              Right label carries a Cue-native tagline instead of
+              'Agentic AI — Built for SMBs'. */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 12,
-              padding: '6px 14px 6px 6px',
-              background: 'rgba(255,255,255,0.08)',
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.14)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              borderRadius: 999,
+              display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
+              padding: '8px 10px',                                          /* py-2 px-2.5 */
+              background: 'rgba(255,255,255,0.10)',                         /* bg-white/10 */
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',          /* ring-1 ring-white/15 */
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: 9999,                                           /* rounded-full */
               textDecoration: 'none',
               transition: 'transform 0.2s ease, background 0.2s ease',
             }}>
               <span style={{
                 display: 'inline-flex', alignItems: 'center',
-                fontSize: 11, fontWeight: 500,
-                color: '#0A0A0A',
-                background: 'rgba(255,255,255,0.92)',
-                borderRadius: 999,
-                padding: '3px 10px',
-                lineHeight: 1.35,
+                fontSize: 12, fontWeight: 500,                              /* text-xs font-medium */
+                color: '#171717',                                           /* text-neutral-900 */
+                background: 'rgba(255,255,255,0.90)',                       /* bg-white/90 */
+                borderRadius: 9999,                                         /* rounded-full */
+                padding: '2px 8px',                                          /* py-0.5 px-2 */
                 fontFamily: 'var(--font-sans)',
-                letterSpacing: '0.005em',
+                lineHeight: 1.4,
               }}>Early Access</span>
               <span style={{
-                fontSize: 13, fontWeight: 500,
-                color: 'rgba(255,255,255,0.92)',
+                fontSize: 14, fontWeight: 500,                              /* text-sm font-medium */
+                color: 'rgba(255,255,255,0.90)',                            /* text-white/90 */
                 fontFamily: 'var(--font-sans)',
-                letterSpacing: '0.005em',
-                display: 'inline-flex', alignItems: 'center', gap: 8,
+                lineHeight: 1.4,
               }}>
-                {!foundingFilled && (
-                  <span style={{
-                    width: 6, height: 6, borderRadius: 999,
-                    background: 'var(--electric)',
-                    boxShadow: '0 0 10px rgba(0,0,255,0.85)',
-                    display: 'inline-block',
-                  }} />
-                )}
                 {foundingFilled
                   ? 'Founding closed — launch pricing live'
-                  : `${spotsLeft} of ${FOUNDING_CAP} founding spots · $99 lifetime`}
+                  : `${spotsLeft} founding spots left · $99 lifetime`}
               </span>
             </a>
           </div>
           <style>{`
             @keyframes cue-hero-pill-in {
-              from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-              to   { opacity: 1; transform: translateY(0)    scale(1);    }
+              from { opacity: 0; transform: translateY(-8px); }
+              to   { opacity: 1; transform: translateY(0);    }
             }
             .cue-hero-pill {
-              animation: cue-hero-pill-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+              animation: cue-hero-pill-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
             }
             .cue-hero-pill:hover {
-              background: rgba(255,255,255,0.11) !important;
+              background: rgba(255,255,255,0.14) !important;
               transform: translateY(-1px);
             }
           `}</style>
