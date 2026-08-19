@@ -125,17 +125,41 @@ export default function Modal({ item, onClose, showToast }) {
     return () => { alive = false; };
   }, [isSignedIn, user?.id, isCuePlus, item?.id]);
 
-  // Live countdown to next reset. Ticks every 30s (minute-granular
-  // is enough; per-second would burn battery on a mostly-idle
-  // background modal).
+  // Live countdown to next reset. Ticks every 30s once the user
+  // has hit the daily limit.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!dailyResetAt || dailyRemaining !== 0) return;
+    if (dailyRemaining !== 0) return;
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
-  }, [dailyResetAt, dailyRemaining]);
-  const resetCountdown = React.useMemo(() => {
-    if (!dailyResetAt) return null;
+  }, [dailyRemaining]);
+
+  // Auto-refresh the limit when the tab regains focus so a user
+  // who waited out the 24h window and comes back sees fresh state
+  // without a hard reload. Also fires once when the countdown
+  // reaches zero.
+  useEffect(() => {
+    if (!isSignedIn || !user?.id || isCuePlus) return;
+    const refetch = () => {
+      backend.peekDailyCopy(user.id).then((r) => {
+        setDailyRemaining(r?.remaining ?? null);
+        if (r?.reset_at) setDailyResetAt(r.reset_at);
+        else if ((r?.remaining ?? 0) > 0) setDailyResetAt(null);
+      }).catch(() => {});
+    };
+    const onFocus = () => refetch();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [isSignedIn, user?.id, isCuePlus]);
+
+  const resetCountdown = useMemo(() => {
+    // No explicit reset_at? Fall back to a safe generic. The RPC
+    // will still auto-heal on next peek when the window rolls.
+    if (!dailyResetAt) return dailyRemaining === 0 ? 'under 24h' : null;
     const ms = new Date(dailyResetAt).getTime() - now;
     if (ms <= 0) return 'any moment';
     const totalMin = Math.floor(ms / 60000);
@@ -143,7 +167,7 @@ export default function Modal({ item, onClose, showToast }) {
     const m = totalMin % 60;
     if (h > 0) return `${h}h ${m}m`;
     return `${m}m`;
-  }, [dailyResetAt, now]);
+  }, [dailyResetAt, dailyRemaining, now]);
 
   // Fetch full prompt content for free items on open; premium stays locked.
   useEffect(() => {
@@ -206,6 +230,11 @@ export default function Modal({ item, onClose, showToast }) {
       try {
         const r = await backend.recordDailyCopy(user.id);
         setDailyRemaining(r?.remaining ?? null);
+        // Capture reset_at from the record response too — the peek
+        // call at modal open returns no reset_at for a fresh window
+        // (nothing to reset yet), so this is the only reliable
+        // source once the user actually starts consuming copies.
+        if (r?.reset_at) setDailyResetAt(r.reset_at);
         if (r && r.allowed === false) {
           if (showToast) showToast('Free daily limit reached — upgrade to Cue+ for unlimited.');
           import('../lib/analytics.js').then(({ events }) => events.dailyLimitHit());
