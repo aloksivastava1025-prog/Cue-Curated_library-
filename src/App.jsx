@@ -22,6 +22,9 @@ import SignInCard from './components/SignInCard.jsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import { identify as identifyAnalytics, resetAnalytics } from './lib/analytics.js';
+import { backend } from './lib/backend.js';
+
+const FOUNDING_CAP = 50;
 import { usePageMeta } from './hooks/usePageMeta.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -91,6 +94,32 @@ function MainApp() {
     if (isSignedIn && user) identifyAnalytics(user);
     else if (!isSignedIn) resetAnalytics();
   }, [isSignedIn, user?.id]);
+
+  // Live founding-spot counter — surfaces scarcity on the homepage
+  // so a visitor who never scrolls to /pricing still sees the cap.
+  const [foundingCount, setFoundingCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    backend.getFoundingCount()
+      .then((n) => { if (alive) setFoundingCount(n); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Cue+ plan lookup — used to badge the signed-in avatar so paying
+  // members get a permanent visual acknowledgement of their status.
+  const [userPlan, setUserPlan] = useState('free');
+  useEffect(() => {
+    let alive = true;
+    if (!isSignedIn || !user?.id) { setUserPlan('free'); return; }
+    backend.getMyProfile(user.id, user)
+      .then((p) => { if (alive) setUserPlan(p?.plan || 'free'); })
+      .catch(() => { if (alive) setUserPlan('free'); });
+    return () => { alive = false; };
+  }, [isSignedIn, user?.id]);
+  const isCuePlus = userPlan === 'cue_plus' || userPlan === 'cue_plus_team';
+  const spotsLeft = Math.max(FOUNDING_CAP - foundingCount, 0);
+  const foundingFilled = spotsLeft === 0;
 
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback } = useApp();
   const { openAuth } = useAuth();
@@ -293,15 +322,36 @@ function MainApp() {
               style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}
             >Join Cue</button>
           ) : (
-            <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }}>
-              <UserButton.MenuItems>
-                <UserButton.Link
-                  label="Billing & invoices"
-                  labelIcon={<BillingIcon />}
-                  href="/#/billing"
-                />
-              </UserButton.MenuItems>
-            </UserButton>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {isCuePlus && (
+                <a
+                  href="#/billing"
+                  aria-label="Cue+ member — view billing"
+                  style={{
+                    fontSize: 9.5, fontWeight: 700, letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    color: '#ccff00',
+                    padding: '3px 8px', borderRadius: 999,
+                    background: 'rgba(204,255,0,0.12)',
+                    border: '1px solid rgba(204,255,0,0.45)',
+                    lineHeight: 1, textDecoration: 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                  }}
+                >
+                  <span style={{ fontSize: 10 }}>✦</span>
+                  Cue+
+                </a>
+              )}
+              <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }}>
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label="Billing & invoices"
+                    labelIcon={<BillingIcon />}
+                    href="/#/billing"
+                  />
+                </UserButton.MenuItems>
+              </UserButton>
+            </div>
           )}
         </div>
       </nav>
@@ -311,6 +361,43 @@ function MainApp() {
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'relative', zIndex: 2 }}>
+          {/* Pre-headline badge row — Beta status + live founding-spots
+              counter. Small enough that it doesn't compete with the
+              hero word, present enough that scarcity is visible without
+              scrolling to /pricing. */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: 10,
+            flexWrap: 'wrap', marginBottom: 22,
+          }}>
+            <span style={{
+              fontSize: 10.5, fontWeight: 600, letterSpacing: '0.18em',
+              textTransform: 'uppercase', color: '#ccff00',
+              padding: '4px 10px', borderRadius: 999,
+              background: 'rgba(204,255,0,0.10)',
+              border: '1px solid rgba(204,255,0,0.42)',
+              lineHeight: 1.2,
+            }}>Beta</span>
+            <a href="#/pricing" style={{
+              fontSize: 10.5, fontWeight: 500, letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: foundingFilled ? 'var(--text-dim)' : 'var(--text)',
+              padding: '4px 10px', borderRadius: 999,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid var(--border)',
+              textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              lineHeight: 1.2,
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: 999,
+                background: foundingFilled ? 'var(--text-dim)' : 'var(--electric)',
+                boxShadow: foundingFilled ? 'none' : '0 0 8px rgba(0,0,255,0.7)',
+              }} />
+              {foundingFilled
+                ? 'Founding closed'
+                : `${spotsLeft} of ${FOUNDING_CAP} founding spots left`}
+            </a>
+          </div>
           <h1 className="cue-hero-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(56px, 13vw, 200px)', fontStyle: 'italic', letterSpacing: '-0.035em', lineHeight: 0.9, color: 'var(--text)' }}>
             {headline}
           </h1>
