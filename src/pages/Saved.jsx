@@ -40,7 +40,15 @@ export default function Saved() {
               style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
             >Sign in</button>
           ) : (
-            <UserButton />
+            <UserButton>
+              <UserButton.MenuItems>
+                <UserButton.Link
+                  label="Billing & invoices"
+                  labelIcon={<span style={{ display: 'inline-block', width: 16, height: 16 }}>▤</span>}
+                  href="/#/billing"
+                />
+              </UserButton.MenuItems>
+            </UserButton>
           )}
         </div>
       </nav>

@@ -61,6 +61,16 @@ function itemType(item) {
   return SECTION_KEYWORDS.some((k) => cat.includes(k)) ? 'section' : 'interaction';
 }
 
+// Receipt icon for the Clerk UserButton custom menu item.
+function BillingIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M3 1.5v13l1.5-1 1.5 1 1.5-1 1.5 1 1.5-1 1.5 1v-13" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M5.5 5h5M5.5 8h5M5.5 11h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 function MainApp() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [route, setRoute] = useState(window.location.hash);
@@ -183,6 +193,10 @@ function MainApp() {
     return <Billing variant="cancel" />;
   }
 
+  if (route === '#/billing' || route === '#/account') {
+    return <Billing variant="account" />;
+  }
+
   if (route.startsWith('#/legal/')) {
     const slug = route.replace('#/legal/', '');
     return <Legal slug={slug} />;
@@ -268,7 +282,15 @@ function MainApp() {
               style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}
             >Join Cue</button>
           ) : (
-            <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }} />
+            <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }}>
+              <UserButton.MenuItems>
+                <UserButton.Link
+                  label="Billing & invoices"
+                  labelIcon={<BillingIcon />}
+                  href="/#/billing"
+                />
+              </UserButton.MenuItems>
+            </UserButton>
           )}
         </div>
       </nav>

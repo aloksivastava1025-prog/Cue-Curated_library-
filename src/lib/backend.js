@@ -652,6 +652,18 @@ const supabaseAdapter = {
   // by the edge function so the webhook can bind the payment to the
   // right Clerk user even when the customer types a different email
   // into Dodo's hosted checkout.
+  async getMyBilling(clerkUser) {
+    if (!clerkUser?.id) return null
+    const email = clerkUser?.primaryEmailAddress?.emailAddress
+      || clerkUser?.emailAddresses?.[0]?.emailAddress
+      || null
+    const { data, error } = await supabase.functions.invoke('get-my-billing', {
+      body: { userId: clerkUser.id, email },
+    })
+    if (error) throw new Error(error.message || 'Could not load billing')
+    return data
+  },
+
   async createFoundingCheckout(clerkUser, { billingCycle = 'lifetime', planType = 'cue_plus' } = {}) {
     if (!clerkUser?.id) throw new Error('Sign in required')
     const email = clerkUser?.primaryEmailAddress?.emailAddress

@@ -14,7 +14,190 @@ import { usePageMeta } from '../hooks/usePageMeta.js'
  * rather than pretending they've been upgraded.
  */
 export default function Billing({ variant = 'success' }) {
-  return variant === 'cancel' ? <BillingCancel /> : <BillingSuccess />
+  if (variant === 'cancel')  return <BillingCancel />
+  if (variant === 'account') return <BillingAccount />
+  return <BillingSuccess />
+}
+
+// ---------- ACCOUNT ------------------------------------------------
+
+function BillingAccount() {
+  usePageMeta({ title: 'Billing & invoices' })
+  const { user, isSignedIn } = useUser()
+  const [billing, setBilling] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    if (!isSignedIn || !user?.id) { setLoading(false); return }
+    let alive = true
+    backend.getMyBilling(user)
+      .then((b) => { if (alive) setBilling(b) })
+      .catch((e) => { if (alive) setErr(e?.message || 'Could not load billing') })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [isSignedIn, user?.id])
+
+  if (!isSignedIn) {
+    return (
+      <Shell>
+        <Eyebrow color="var(--text-dim)">Account</Eyebrow>
+        <Title>Sign in to view billing.</Title>
+        <a href="#/" style={ctaStyle}>Back to library</a>
+      </Shell>
+    )
+  }
+
+  const plan = billing?.plan || 'free'
+  const isCuePlus = plan === 'cue_plus' || plan === 'cue_plus_team'
+  const started = billing?.plan_started_at
+    ? new Date(billing.plan_started_at).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+      })
+    : '—'
+
+  const supaBase = import.meta.env.VITE_SUPABASE_URL || ''
+  const invoiceUrl = (pid) =>
+    `${supaBase}/functions/v1/get-invoice?payment_id=${encodeURIComponent(pid)}`
+
+  return (
+    <Shell>
+      <Eyebrow color="var(--electric)">Billing & invoices</Eyebrow>
+      <div style={{ textAlign: 'left', maxWidth: 560, margin: '0 auto' }}>
+        <h1 style={{
+          fontFamily: 'var(--font-serif)', fontWeight: 300, fontStyle: 'italic',
+          fontSize: 'clamp(36px, 6vw, 52px)', letterSpacing: '-0.03em',
+          margin: '0 0 32px', lineHeight: 1.05, textAlign: 'center',
+        }}>Your plan.</h1>
+
+        {/* Plan card */}
+        <div style={cardStyle}>
+          <Row label="Plan" value={
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {isCuePlus ? (
+                <>
+                  <span style={badgeStyle('cue_plus')}>Cue+ Founding</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>$99 lifetime</span>
+                </>
+              ) : (
+                <>
+                  <span style={badgeStyle('free')}>Free</span>
+                  <a href="#/pricing" style={{ fontSize: 12, color: 'var(--electric)', textDecoration: 'none' }}>Upgrade →</a>
+                </>
+              )}
+            </span>
+          } />
+          <Divider />
+          <Row label="Started" value={<span style={{ fontSize: 13 }}>{started}</span>} />
+          {billing?.email && (
+            <>
+              <Divider />
+              <Row label="Billed to" value={<span style={{ fontSize: 13 }}>{billing.email}</span>} />
+            </>
+          )}
+        </div>
+
+        {/* Invoice history */}
+        <h2 style={sectionHeadingStyle}>Invoices</h2>
+        {loading && <Meta>Loading…</Meta>}
+        {!loading && err && <Meta style={{ color: '#ff6b6b' }}>{err}</Meta>}
+        {!loading && !err && (!billing?.history || billing.history.length === 0) && (
+          <Meta>No invoices yet.</Meta>
+        )}
+        {!loading && billing?.history?.length > 0 && (
+          <div style={cardStyle}>
+            {billing.history.map((h, i) => (
+              <React.Fragment key={h.payment_id}>
+                {i > 0 && <Divider />}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text)' }}>
+                      {h.amount != null && h.currency
+                        ? `${(h.amount / 100).toFixed(2)} ${h.currency}`
+                        : 'Cue+ Founding'}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+                      {h.at ? new Date(h.at).toLocaleString(undefined, {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: 'numeric', minute: '2-digit',
+                      }) : ''}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-dimmer)', marginTop: 2, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {h.payment_id}
+                    </div>
+                  </div>
+                  <a href={invoiceUrl(h.payment_id)} target="_blank" rel="noopener noreferrer" style={ghostBtn}>
+                    Download PDF
+                  </a>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12, flexWrap: 'wrap' }}>
+          <a href="#/" style={ctaStyle}>Back to library</a>
+          <a href={`mailto:hello@usecue.com?subject=${encodeURIComponent('Billing question')}`} style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
+            Contact support
+          </a>
+        </div>
+      </div>
+    </Shell>
+  )
+}
+
+function Row({ label, value }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '12px 0' }}>
+      <div style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
+      <div>{value}</div>
+    </div>
+  )
+}
+function Divider() {
+  return <div style={{ height: 1, background: 'var(--border)', opacity: 0.5 }} />
+}
+const cardStyle = {
+  background: 'rgba(255,255,255,0.02)',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  padding: '4px 20px',
+}
+const sectionHeadingStyle = {
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase',
+  color: 'var(--text-dim)',
+  margin: '32px 0 12px',
+}
+function badgeStyle(kind) {
+  const map = {
+    cue_plus:  { bg: 'rgba(204,255,0,0.14)', fg: '#ccff00', bd: 'rgba(204,255,0,0.45)' },
+    free:      { bg: 'rgba(255,255,255,0.06)', fg: 'var(--text)', bd: 'var(--border)' },
+  }
+  const c = map[kind] || map.free
+  return {
+    display: 'inline-block',
+    padding: '3px 10px',
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    background: c.bg,
+    color: c.fg,
+    border: `1px solid ${c.bd}`,
+  }
+}
+const ghostBtn = {
+  fontSize: 12,
+  padding: '8px 14px',
+  borderRadius: 999,
+  border: '1px solid var(--border)',
+  color: 'var(--text)',
+  textDecoration: 'none',
+  whiteSpace: 'nowrap',
 }
 
 // ---------- SUCCESS ------------------------------------------------
