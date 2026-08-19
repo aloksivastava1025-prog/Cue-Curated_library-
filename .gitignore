@@ -10,3 +10,4 @@ dist
 # Supabase edge-function secrets (server-side keys — NEVER commit)
 supabase/.env
 supabase/functions/**/.env
+.tmp/
