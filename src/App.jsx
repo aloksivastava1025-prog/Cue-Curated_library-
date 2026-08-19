@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SignInButton, UserButton, useUser } from '@clerk/clerk-react';
+import { SignInButton, UserButton, useUser, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import Lenis from 'lenis';
 import Modal from './components/Modal.jsx';
 import Admin from './pages/Admin.jsx';
@@ -458,6 +458,19 @@ function AppShell() {
 }
 
 export default function App() {
+  // Clerk's OAuth flow redirects the browser to /sso-callback (a real
+  // pathname, not a hash route). This app otherwise uses hash routing,
+  // so without a handler here the page just sits blank at that URL.
+  // AuthenticateWithRedirectCallback finalises the OAuth handshake and
+  // then sends the user to `redirectUrl`.
+  if (typeof window !== 'undefined' && window.location.pathname === '/sso-callback') {
+    return (
+      <AuthenticateWithRedirectCallback
+        signInFallbackRedirectUrl="/"
+        signUpFallbackRedirectUrl="/"
+      />
+    );
+  }
   return (
     <ErrorBoundary>
       <AuthProvider>
