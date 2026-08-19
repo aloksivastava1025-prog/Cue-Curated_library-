@@ -137,7 +137,7 @@ function MainApp() {
   const savedCount = bookmarkedIds?.size || 0;
   usePageMeta({
     title: 'A curated library for AI-native builders',
-    description: 'Battle-tested prompts and interactions for Bolt, v0, Cursor, and Framer. Copy, paste, ship.',
+    description: 'Every AI tool ships the same-looking hero. Cue is the taste layer that fixes that — hand-picked prompts for Bolt, v0, Cursor, and Framer.',
   });
 
   // "Design of the Day" rail — items admin flagged with rail = 'featured'.
@@ -414,8 +414,8 @@ function MainApp() {
           <div style={{ marginTop: '24px', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '26px', color: 'var(--text)' }}>
             New drop <span style={{ color: 'var(--electric)' }}>today</span>
           </div>
-          <p style={{ margin: '40px auto 0', maxWidth: '520px', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.55 }}>
-            Battle-tested prompts for Bolt, v0, Cursor, and Framer. Stop endlessly tweaking and start shipping. Awwwards-tier interactions saved locally.
+          <p style={{ margin: '40px auto 0', maxWidth: '540px', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.6 }}>
+            Every AI tool ships the same-looking hero. Cue is the taste layer that fixes that — hand-picked prompts for Bolt, v0, Cursor, and Framer that land you at the version worth shipping to a client.
           </p>
           <WaitlistCTA source="newsletter-hero" />
         </div>
