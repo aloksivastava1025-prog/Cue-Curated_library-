@@ -184,7 +184,7 @@ export default function Pricing() {
                 subLine="No credit card required"
                 cta={<a href="#/" style={btnGhost}>Start browsing</a>}
                 features={[
-                  'Browse all 100 components',
+                  'Browse all 50+ components',
                   'Selected free components unlocked',
                   'Works with Framer, Bolt, v0, Cursor',
                   '2 AI prompts per day',
@@ -499,8 +499,8 @@ function FaqItem({ q, a, open, onToggle }) {
 // ---------- Static content ----------------------------------------
 
 const FAQ = [
-  { q: 'What am I buying right now?', a: '100 curated components with AI prompts. Every weekly drop. React source code and MCP support as they ship — free for Cue+ members. Locked at $99 lifetime for the first 50 founding members.' },
-  { q: 'What is live today vs coming soon?', a: 'Live: 100 components + AI prompts, unlimited regenerates for Cue+, weekly drops. Coming next few weeks: React source code for the top 20 components. Coming Q2: MCP support. All future drops included in your Cue+ lifetime.\n\nMeanwhile — a founding-member perk: if you need production code for any specific component before it ships publicly, email me and I will personally hand-ship that component\'s code to you. That is one of the ways founding pricing pays for itself.' },
+  { q: 'What am I buying right now?', a: '50+ curated components with AI prompts. Every weekly drop. React source code and MCP support as they ship — free for Cue+ members. Locked at $99 lifetime for the first 50 founding members.' },
+  { q: 'What is live today vs coming soon?', a: 'Live: 50+ components + AI prompts, unlimited regenerates for Cue+, weekly drops. Coming next few weeks: React source code for the top 20 components. Coming Q2: MCP support. All future drops included in your Cue+ lifetime.\n\nMeanwhile — a founding-member perk: if you need production code for any specific component before it ships publicly, email me and I will personally hand-ship that component\'s code to you. That is one of the ways founding pricing pays for itself.' },
   { q: 'Why lifetime, not subscription?', a: "Cue isn't a service you keep logging into. You copy a prompt, ship, close the tab. Charging you every month for something you touch twice a week feels wrong. Pay once, own it." },
   { q: 'What happens after the founding 50 fills?', a: 'Price becomes $249 lifetime for everyone after. Founding members keep their $99 forever — no future price change ever applies to them. That is the founding promise.' },
   { q: 'Refund policy?', a: 'Payment errors (duplicate charges, failed provisioning) — refunded within 3 business days. Within 24 hours of purchase and no premium content copied — full refund. See the Refund page for exact eligibility.' },
