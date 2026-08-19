@@ -437,27 +437,15 @@ export default function Admin() {
     }
     setAutofilling(true);
     try {
-      // DEV: hit the local Vite proxy plugin (no Supabase deploy needed).
-      // PROD: hit the deployed Supabase edge function.
-      // To remove the local-dev path later, keep just the else-branch.
-      let data, error;
-      if (import.meta.env.DEV) {
-        const resp = await fetch('/api/dev-autofill', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ prompt: form.prompt }),
-        });
-        const json = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(json?.error || `HTTP ${resp.status}`);
-        data = json;
-      } else {
-        const invoked = await supabase.functions.invoke('autofill-metadata', {
-          body: { prompt: form.prompt },
-        });
-        data = invoked.data;
-        error = invoked.error;
-        if (error) throw new Error(error.message || 'AI request failed');
-      }
+      // Always hit the deployed Supabase edge function. The old
+      // dev-only Vite proxy path relied on Node's built-in fetch,
+      // which is buggy on Node 16 and randomly returns 'fetch failed'
+      // against api.anthropic.com. Dev usage bills Anthropic the same
+      // as prod either way, so the single path is simpler.
+      const { data, error } = await supabase.functions.invoke('autofill-metadata', {
+        body: { prompt: form.prompt },
+      });
+      if (error) throw new Error(error.message || 'AI request failed');
       if (!data?.metadata) throw new Error('No metadata returned');
       // AI response is strictly limited to metadata fields. Even so, whitelist
       // once more on the client before showing the preview.
