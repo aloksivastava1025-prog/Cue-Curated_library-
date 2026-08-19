@@ -24,6 +24,18 @@ function BillingSuccess() {
   const { user, isSignedIn } = useUser()
   const [state, setState] = useState('polling') // polling | ready | pending | error
   const [attempts, setAttempts] = useState(0)
+  const [invoice, setInvoice] = useState(null) // { paymentId, invoiceUrl }
+
+  // Read `?payment_id=...` from Dodo's redirect so we can offer an
+  // invoice download button on the success screen. Dodo appends this
+  // param on hosted checkout completion.
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href)
+      const pid = url.searchParams.get('payment_id') || url.searchParams.get('paymentId')
+      if (pid) setInvoice({ paymentId: pid })
+    } catch {}
+  }, [])
 
   // Poll user_profiles.plan every 2s for up to 60s.
   // The webhook usually lands within 3–10s in test mode.
@@ -84,7 +96,19 @@ function BillingSuccess() {
             Your founding spot is locked at $99, forever. Full library
             unlocked. All future drops included.
           </Body>
-          <a href="#/" style={ctaStyle}>Start exploring →</a>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="#/" style={ctaStyle}>Start exploring →</a>
+            {invoice?.paymentId && (
+              <a
+                href={`https://app.dodopayments.com/payments/${invoice.paymentId}/invoice`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}
+              >
+                Download invoice
+              </a>
+            )}
+          </div>
+          <Meta>Invoice also emailed to you.</Meta>
         </>
       )}
       {state === 'pending' && (
