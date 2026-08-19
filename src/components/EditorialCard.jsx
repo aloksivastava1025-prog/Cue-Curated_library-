@@ -173,7 +173,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 500, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
             {primaryCategory}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {/* Like */}
             <button
               type="button"
@@ -184,16 +184,17 @@ export default function EditorialCard({ item, setSelectedItem }) {
                 setLikeAnim(true); setTimeout(() => setLikeAnim(false), 350);
                 toggleLike(item.id);
               }}
+              className="cue-card-action"
               style={cardActionBtn(isLiked, isLiked ? '#ff4d6d' : 'var(--text-dim)')}
             >
-              <svg viewBox="0 0 24 24" width="12" height="12" fill={isLiked ? '#ff4d6d' : 'none'} stroke={isLiked ? '#ff4d6d' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: likeAnim ? 'scale(1.35)' : 'scale(1)', transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)' }} aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill={isLiked ? '#ff4d6d' : 'none'} stroke={isLiked ? '#ff4d6d' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: likeAnim ? 'scale(1.35)' : 'scale(1)', transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)' }} aria-hidden="true">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
-              <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.02em' }}>{formatCount(item.like_count)}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.02em', minWidth: 8 }}>{formatCount(item.like_count)}</span>
             </button>
             {/* Views (display only) */}
-            <span title="Views" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: 'var(--text-dim)' }}>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <span title="Views" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-dim)', padding: '6px 8px' }}>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
@@ -208,27 +209,42 @@ export default function EditorialCard({ item, setSelectedItem }) {
                 if (!isSignedIn) { openAuth('sign-in'); return; }
                 toggleBookmark(item.id);
               }}
+              className="cue-card-action"
               style={cardActionBtn(isBookmarked, isBookmarked ? 'var(--electric)' : 'var(--text-dim)')}
             >
-              <svg viewBox="0 0 24 24" width="12" height="12" fill={isBookmarked ? 'var(--electric)' : 'none'} stroke={isBookmarked ? 'var(--electric)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill={isBookmarked ? 'var(--electric)' : 'none'} stroke={isBookmarked ? 'var(--electric)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Hover affordance for the like/bookmark chips — makes it
+          clear these are actual buttons and not passive labels. */}
+      <style>{`
+        .cue-card-action:hover {
+          background: rgba(255,255,255,0.06) !important;
+          border-color: rgba(255,255,255,0.16) !important;
+          transform: translateY(-1px);
+        }
+        .cue-card-action:active {
+          transform: translateY(0);
+        }
+      `}</style>
     </article>
   );
 }
 
 const cardActionBtn = (active, color) => ({
-  display: 'inline-flex', alignItems: 'center', gap: 4,
-  padding: '3px 6px',
-  background: 'transparent',
-  border: '1px solid ' + (active ? color : 'transparent'),
+  display: 'inline-flex', alignItems: 'center', gap: 5,
+  padding: '6px 10px',
+  minHeight: 30,
+  background: active ? 'rgba(255,255,255,0.02)' : 'transparent',
+  border: '1px solid ' + (active ? color : 'rgba(255,255,255,0.08)'),
   borderRadius: 999,
   color,
   cursor: 'pointer',
-  transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+  transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease',
   lineHeight: 1,
 });
