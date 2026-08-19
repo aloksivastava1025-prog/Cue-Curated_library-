@@ -35,6 +35,30 @@ const priceStyle = {
 const LINE = 'rgba(255,255,255,0.14)'   // dashed grid line
 const CROSS = 'rgba(255,255,255,0.35)'  // crosshair colour
 
+// Dodo founding checkout — hosted page URL from Dodo dashboard.
+// Product: pdt_0Nli24brA9WRChcou0t9T ($99 lifetime)
+// Return URLs (success + cancel) are handled by Dodo's product-level
+// configuration; the app also renders /billing/success + /billing/cancel
+// as fallback pages. Access is granted ONLY via the webhook — never on
+// redirect alone.
+const DODO_FOUNDING_CHECKOUT_URL = 'https://dodo.pe/cue-founding-99-1787116458621'
+
+// Build a checkout URL with the current user's email prefilled + a
+// deterministic reference so the Dodo webhook can attribute the payment
+// back to a specific Clerk user_id.
+function buildCheckoutUrl(user) {
+  const url = new URL(DODO_FOUNDING_CHECKOUT_URL)
+  const email = user?.primaryEmailAddress?.emailAddress
+  if (email) url.searchParams.set('email', email)
+  if (user?.id) {
+    // Passed straight through to the webhook via Dodo metadata — the
+    // dodo-webhook function reads this to upsert the correct row.
+    url.searchParams.set('metadata_user_id', user.id)
+    url.searchParams.set('reference', user.id)
+  }
+  return url.toString()
+}
+
 export default function Pricing() {
   usePageMeta({
     title: 'Pricing — founding member',
@@ -185,7 +209,7 @@ export default function Pricing() {
                   ) : !isSignedIn ? (
                     <button onClick={() => openAuth('sign-up')} style={btnPrimary}>Claim founding spot</button>
                   ) : (
-                    <a href="#/checkout/founding" style={{ ...btnPrimary, textDecoration: 'none' }}>Claim founding spot</a>
+                    <a href={buildCheckoutUrl(user)} style={{ ...btnPrimary, textDecoration: 'none' }}>Claim founding spot</a>
                   )
                 }
                 features={[
@@ -299,7 +323,7 @@ export default function Pricing() {
             {!isSignedIn ? (
               <button onClick={() => openAuth('sign-up')} style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px' }}>Claim founding spot</button>
             ) : (
-              <a href="#/checkout/founding" style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px', textDecoration: 'none' }}>Claim founding spot</a>
+              <a href={buildCheckoutUrl(user)} style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px', textDecoration: 'none' }}>Claim founding spot</a>
             )}
             <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-dim)' }}>
               14-day refund on payment errors · Founders lock $99 forever

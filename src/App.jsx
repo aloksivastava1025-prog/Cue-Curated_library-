@@ -7,6 +7,7 @@ import AdminInbox from './pages/AdminInbox.jsx';
 import Pricing from './pages/Pricing.jsx';
 import Legal from './pages/Legal.jsx';
 import Saved from './pages/Saved.jsx';
+import Billing from './pages/Billing.jsx';
 import Footer from './components/Footer.jsx';
 import EditorialCard from './components/EditorialCard.jsx';
 import FeaturedRail from './components/FeaturedRail.jsx';
@@ -172,6 +173,14 @@ function MainApp() {
 
   if (route === '#/saved') {
     return <Saved />;
+  }
+
+  if (route === '#/billing/success') {
+    return <Billing variant="success" />;
+  }
+
+  if (route === '#/billing/cancel') {
+    return <Billing variant="cancel" />;
   }
 
   if (route.startsWith('#/legal/')) {

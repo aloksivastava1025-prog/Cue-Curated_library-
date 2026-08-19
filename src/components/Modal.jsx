@@ -85,7 +85,23 @@ export default function Modal({ item, onClose, showToast }) {
     };
   }, [item, onClose]);
 
-  const isPremium = isPremiumItem(item);
+  // Paywall gates on TWO things:
+  //   1. Item marked premium (item.tier === 'premium'/'paid')
+  //   2. User does NOT have an active Cue+ plan
+  // Cue+ members open premium items unlocked.
+  const isPremiumMarker = isPremiumItem(item);
+  const [userPlan, setUserPlan] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    if (!isSignedIn || !user?.id) { setUserPlan('free'); return; }
+    backend.getMyProfile(user.id)
+      .then((p) => { if (alive) setUserPlan(p?.plan || 'free'); })
+      .catch(() => { if (alive) setUserPlan('free'); });
+    return () => { alive = false; };
+  }, [isSignedIn, user?.id]);
+  const isCuePlus = userPlan === 'cue_plus' || userPlan === 'cue_plus_team';
+  // Show paywall only if item is premium AND user is not entitled.
+  const isPremium = isPremiumMarker && !isCuePlus;
 
   // Fetch full prompt content for free items on open; premium stays locked.
   useEffect(() => {
