@@ -338,12 +338,25 @@ export default function Pricing() {
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: 999,
-            background: 'linear-gradient(135deg, rgba(0,0,255,0.4), rgba(204,255,0,0.3))',
+            width: 72, height: 72, borderRadius: 999,
             border: '1px solid var(--border)', flexShrink: 0,
-          }} />
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, rgba(0,0,255,0.4), rgba(204,255,0,0.3))',
+          }}>
+            <img
+              src="/founder.jpg"
+              alt="Alok — founder, Cue"
+              width={72} height={72}
+              loading="lazy"
+              style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+            />
+          </div>
           <div style={{ flex: 1, minWidth: 240 }}>
-            <div style={{ fontFamily: INTER, fontWeight: 500, fontSize: 18, marginBottom: 12, letterSpacing: '-0.01em' }}>Alok</div>
+            <div style={{ fontFamily: INTER, fontWeight: 500, fontSize: 18, marginBottom: 4, letterSpacing: '-0.01em' }}>Alok</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-dim)', letterSpacing: '0.04em', marginBottom: 14 }}>
+              Founder, Cue ·{' '}
+              <a href="https://x.com/Alok619308" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.16)' }}>@Alok619308</a>
+            </div>
             <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.7, color: 'var(--text-dim)' }}>
               I'm building Cue in the open. Every drop, every component, every prompt — curated by hand, tested through hundreds of AI iterations, refined until it feels right.
             </p>
