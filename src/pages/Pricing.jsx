@@ -337,20 +337,17 @@ export default function Pricing() {
           Built by
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 999,
-            border: '1px solid var(--border)', flexShrink: 0,
-            overflow: 'hidden',
-            background: 'linear-gradient(135deg, rgba(0,0,255,0.4), rgba(204,255,0,0.3))',
-          }}>
-            <img
-              src="/founder.jpg"
-              alt="Alok — founder, Cue"
-              width={72} height={72}
-              loading="lazy"
-              style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
-            />
-          </div>
+          <img
+            src="/founder.jpg"
+            alt="Alok — founder, Cue"
+            width={72} height={72}
+            loading="lazy"
+            style={{
+              width: 72, height: 72, borderRadius: 999,
+              objectFit: 'cover', display: 'block', flexShrink: 0,
+              background: 'transparent',
+            }}
+          />
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ fontFamily: INTER, fontWeight: 500, fontSize: 18, marginBottom: 4, letterSpacing: '-0.01em' }}>Alok</div>
             <div style={{ fontSize: 11.5, color: 'var(--text-dim)', letterSpacing: '0.04em', marginBottom: 14 }}>

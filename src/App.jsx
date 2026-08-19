@@ -371,41 +371,52 @@ function MainApp() {
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'relative', zIndex: 2 }}>
-          {/* Pre-headline badge row — Beta status + live founding-spots
-              counter. Small enough that it doesn't compete with the
-              hero word, present enough that scarcity is visible without
-              scrolling to /pricing. */}
-          <div style={{
-            display: 'flex', justifyContent: 'center', gap: 10,
-            flexWrap: 'wrap', marginBottom: 22,
-          }}>
-            <span style={{
-              fontSize: 10.5, fontWeight: 600, letterSpacing: '0.18em',
-              textTransform: 'uppercase', color: '#ccff00',
-              padding: '4px 10px', borderRadius: 999,
-              background: 'rgba(204,255,0,0.10)',
-              border: '1px solid rgba(204,255,0,0.42)',
-              lineHeight: 1.2,
-            }}>Beta</span>
+          {/* Pre-headline unified pill — inner 'Beta' chip on the left,
+              live scarcity counter on the right. One continuous pill
+              with a subtle electric-blue outer glow so it reads as a
+              single 'status stamp' above the hero word. */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
             <a href="#/pricing" style={{
-              fontSize: 10.5, fontWeight: 500, letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: foundingFilled ? 'var(--text-dim)' : 'var(--text)',
-              padding: '4px 10px', borderRadius: 999,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid var(--border)',
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              padding: '5px 16px 5px 5px',
+              background: '#0e0e10',
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 999,
               textDecoration: 'none',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              lineHeight: 1.2,
-            }}>
+              color: 'var(--text)',
+              boxShadow: foundingFilled
+                ? '0 0 0 1px rgba(255,255,255,0.03)'
+                : '0 0 40px -8px rgba(0,0,255,0.55), 0 0 20px -6px rgba(204,255,0,0.25)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
+            >
               <span style={{
-                width: 6, height: 6, borderRadius: 999,
-                background: foundingFilled ? 'var(--text-dim)' : 'var(--electric)',
-                boxShadow: foundingFilled ? 'none' : '0 0 8px rgba(0,0,255,0.7)',
-              }} />
-              {foundingFilled
-                ? 'Founding closed'
-                : `${spotsLeft} of ${FOUNDING_CAP} founding spots left`}
+                fontSize: 10.5, fontWeight: 700, letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: 'var(--text)',
+                padding: '5px 12px', borderRadius: 999,
+                background: 'rgba(255,255,255,0.06)',
+                lineHeight: 1,
+              }}>Beta</span>
+              <span style={{
+                fontSize: 13, letterSpacing: '0.01em',
+                color: foundingFilled ? 'var(--text-dim)' : 'var(--text)',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                fontWeight: 500,
+              }}>
+                {!foundingFilled && (
+                  <span style={{
+                    width: 6, height: 6, borderRadius: 999,
+                    background: 'var(--electric)',
+                    boxShadow: '0 0 8px rgba(0,0,255,0.9)',
+                  }} />
+                )}
+                {foundingFilled
+                  ? 'Founding closed — launch pricing live'
+                  : `${spotsLeft} of ${FOUNDING_CAP} founding spots · $99 lifetime`}
+              </span>
             </a>
           </div>
           <h1 className="cue-hero-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(56px, 13vw, 200px)', fontStyle: 'italic', letterSpacing: '-0.035em', lineHeight: 0.9, color: 'var(--text)' }}>
