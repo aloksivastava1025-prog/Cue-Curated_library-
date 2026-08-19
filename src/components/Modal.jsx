@@ -107,17 +107,43 @@ export default function Modal({ item, onClose, showToast }) {
   // the counter renders correctly before any click. Refetched when
   // the modal changes user/item so the number stays honest.
   const [dailyRemaining, setDailyRemaining] = useState(null); // null = unknown/loading, -1 = unlimited
+  const [dailyResetAt, setDailyResetAt] = useState(null); // ISO timestamp for countdown
   useEffect(() => {
     let alive = true;
     if (!isSignedIn || !user?.id || isCuePlus) {
       setDailyRemaining(isCuePlus ? -1 : null);
+      setDailyResetAt(null);
       return;
     }
     backend.peekDailyCopy(user.id)
-      .then((r) => { if (alive) setDailyRemaining(r?.remaining ?? null); })
+      .then((r) => {
+        if (!alive) return;
+        setDailyRemaining(r?.remaining ?? null);
+        setDailyResetAt(r?.reset_at || null);
+      })
       .catch(() => { if (alive) setDailyRemaining(null); });
     return () => { alive = false; };
   }, [isSignedIn, user?.id, isCuePlus, item?.id]);
+
+  // Live countdown to next reset. Ticks every 30s (minute-granular
+  // is enough; per-second would burn battery on a mostly-idle
+  // background modal).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!dailyResetAt || dailyRemaining !== 0) return;
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [dailyResetAt, dailyRemaining]);
+  const resetCountdown = React.useMemo(() => {
+    if (!dailyResetAt) return null;
+    const ms = new Date(dailyResetAt).getTime() - now;
+    if (ms <= 0) return 'any moment';
+    const totalMin = Math.floor(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }, [dailyResetAt, now]);
 
   // Fetch full prompt content for free items on open; premium stays locked.
   useEffect(() => {
@@ -389,6 +415,7 @@ export default function Modal({ item, onClose, showToast }) {
               isSignedIn={isSignedIn}
               isCuePlus={isCuePlus}
               dailyRemaining={dailyRemaining}
+              resetCountdown={resetCountdown}
             />
           )}
         </div>
@@ -408,7 +435,7 @@ export default function Modal({ item, onClose, showToast }) {
 
 // ---------------------------------------------------------------------------
 // Free item: Code / Prompt / Use Case tabs
-function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn, isCuePlus, dailyRemaining }) {
+function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn, isCuePlus, dailyRemaining, resetCountdown }) {
   const TABS = [
     { key: 'code',     label: 'Code',     present: hasCode },
     { key: 'prompt',   label: 'Prompt',   present: hasPrompt },
@@ -423,6 +450,12 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
   const bodyText = active === 'code' ? codeText : active === 'prompt' ? promptText : useCaseText;
   const isEmpty = !bodyText || !bodyText.trim();
   const isProse = active === 'use_case'; // use case = readable text, not monospace
+  // Free tier: 2 prompt copies per 24h. Once exhausted, we must
+  // hide the actual text — otherwise the daily limit is trivially
+  // bypassed by manual select-copy from the modal body.
+  const isPromptTab = active === 'prompt';
+  const outOfFree = isSignedIn && !isCuePlus && isPromptTab && dailyRemaining === 0;
+  const blockContent = (!isSignedIn && !isEmpty) || outOfFree;
 
   const activeLabel = TABS.find((t) => t.key === active)?.label || active;
 
@@ -465,9 +498,9 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             background: isProse ? 'transparent' : '#0b0b0d',
             border: isProse ? 'none' : '1px solid var(--border)',
             borderRadius: 8, padding: isProse ? '4px 0' : 16, overflow: 'auto',
-            filter: (!isSignedIn && !isEmpty) ? 'blur(6px)' : 'none',
-            userSelect: (!isSignedIn && !isEmpty) ? 'none' : 'auto',
-            pointerEvents: (!isSignedIn && !isEmpty) ? 'none' : 'auto',
+            filter: blockContent ? 'blur(6px)' : 'none',
+            userSelect: blockContent ? 'none' : 'auto',
+            pointerEvents: blockContent ? 'none' : 'auto',
             transition: 'filter 0.25s ease',
           }}
         >
@@ -516,13 +549,63 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             </div>
           </div>
         )}
+
+        {/* Daily-limit-reached overlay for free signed-in users on
+            the prompt tab. Blurs the underlying content and pushes
+            an upgrade CTA + live countdown to the next reset. */}
+        {outOfFree && !isEmpty && !loading && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 12,
+            background: 'linear-gradient(180deg, rgba(11,11,13,0.4) 0%, rgba(11,11,13,0.78) 60%, rgba(11,11,13,0.9) 100%)',
+            borderRadius: 8, padding: 20, textAlign: 'center',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 999,
+              background: 'rgba(204,255,0,0.12)', border: '1px solid rgba(204,255,0,0.45)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              color: '#ccff00', fontSize: 20,
+            }}>✦</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>
+              You've used today's 2 free prompt copies
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-dim)', maxWidth: 340, lineHeight: 1.55 }}>
+              Cue+ unlocks unlimited prompts, every future drop, and the full library — $99 lifetime.
+            </div>
+            <a href="#/pricing" style={{
+              marginTop: 4, padding: '10px 20px', borderRadius: 999,
+              background: 'var(--electric)', color: '#fff',
+              fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
+              textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              boxShadow: '0 6px 20px -6px rgba(0,0,255,0.6)',
+            }}>
+              Upgrade to Cue+ <span style={{ fontSize: 15 }}>→</span>
+            </a>
+            {resetCountdown && (
+              <div style={{
+                marginTop: 2, fontSize: 11.5, color: 'var(--text-dim)',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: 999,
+                  background: '#ccff00', display: 'inline-block',
+                  boxShadow: '0 0 8px rgba(204,255,0,0.6)',
+                }} />
+                Free limit resets in {resetCountdown}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Copy button. Signed-out users see a sign-in gate; free users
-          who've spent today's 2 prompt-copies see an upgrade CTA. */}
+          who've spent today's 2 prompt-copies see an upgrade CTA.
+          isPromptTab + outOfFree are computed once at the top of the
+          component so the overlay above and this button share state. */}
       {(() => {
-        const isPromptTab = active === 'prompt'
-        const outOfFree = isSignedIn && !isCuePlus && isPromptTab && dailyRemaining === 0
         const disabled = isEmpty || outOfFree
         return (
           <>
@@ -569,7 +652,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             )}
             {outOfFree && (
               <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
-                Daily limit reached — resets at midnight UTC
+                Daily limit reached{resetCountdown ? ` — resets in ${resetCountdown}` : ''}
               </div>
             )}
           </>
