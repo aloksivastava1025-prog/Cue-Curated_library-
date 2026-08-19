@@ -472,6 +472,48 @@ const supabaseAdapter = {
     return data || []
   },
 
+  // Admin-initiated conversation — starts a fresh thread with any
+  // user by email. Reuses the feedback + feedback_messages tables so
+  // the user's existing inbox bell picks it up automatically. The
+  // feedback row records who the message is TO (email), and the
+  // actual message body lives in feedback_messages so the read-count
+  // arithmetic in listThreadsForEmail stays consistent.
+  async adminMessageUser({ toEmail, body }) {
+    const clean = String(body || '').trim()
+    if (!clean) throw new Error('Empty message')
+    if (clean.length > 4000) throw new Error('Message too long (max 4000 chars)')
+    const emailLower = String(toEmail || '').trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      throw new Error('Enter a valid recipient email')
+    }
+    // 1. Root feedback row — marks the thread as admin-initiated.
+    const { data: fb, error: fbErr } = await supabase
+      .from('feedback')
+      .insert({
+        kind: 'other',
+        message: '(Admin-initiated conversation)',
+        email: emailLower,
+        source: 'admin-initiated',
+      })
+      .select()
+      .single()
+    if (fbErr) throw fbErr
+    // 2. First message — the actual body — attributed to admin so the
+    // user's inbox counts it as an unread admin reply.
+    const { data: msg, error: msgErr } = await supabase
+      .from('feedback_messages')
+      .insert({
+        feedback_id: fb.id,
+        body: clean,
+        author: 'admin',
+        author_email: null,
+      })
+      .select()
+      .single()
+    if (msgErr) throw msgErr
+    return { feedback: fb, message: msg }
+  },
+
   async postMessage({ feedbackId, body, author, authorEmail = null }) {
     const clean = String(body || '').trim()
     if (!clean) throw new Error('Empty message')

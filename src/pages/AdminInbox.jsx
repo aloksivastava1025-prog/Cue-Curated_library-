@@ -170,6 +170,9 @@ export default function AdminInbox() {
         </div>
       </div>
 
+      {/* Compose new message to a specific user */}
+      <ComposeToUser onSent={load} />
+
       {/* Export bar */}
       <div style={{ maxWidth: 900, margin: '18px auto 0', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         {(tab === 'all' || tab === 'feedback') && feedback.length > 0 && (
@@ -413,3 +416,132 @@ const btnGhost = {
 const hint = {
   padding: '30px 8px', color: 'var(--text-dim)', fontSize: 13,
 };
+
+// -----------------------------------------------------------------
+// Compose a fresh admin-to-user message. Creates a new feedback row
+// with source='admin-initiated' plus the first admin message; the
+// user's existing UserInbox bell picks it up on their next poll (60s
+// interval) and shows the unread badge.
+// -----------------------------------------------------------------
+function ComposeToUser({ onSent }) {
+  const [open, setOpen] = useState(false);
+  const [toEmail, setToEmail] = useState('');
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [err, setErr] = useState('');
+  const [ok, setOk] = useState('');
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr(''); setOk('');
+    if (sending) return;
+    setSending(true);
+    try {
+      await backend.adminMessageUser({ toEmail, body });
+      setOk(`Message sent to ${toEmail}. They'll see it in their inbox bell next poll.`);
+      setBody('');
+      setToEmail('');
+      if (onSent) await onSent();
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div style={{ maxWidth: 900, margin: '18px auto 0', padding: '0 24px' }}>
+      <div style={{
+        background: '#0e0e10', border: '1px solid var(--border)', borderRadius: 10,
+        overflow: 'hidden',
+      }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            width: '100%', padding: '12px 16px', background: 'transparent',
+            border: 'none', color: 'var(--text)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontFamily: 'var(--font-sans)', fontSize: 12.5, textAlign: 'left',
+          }}
+        >
+          <span style={{
+            width: 22, height: 22, borderRadius: 999,
+            background: 'rgba(0,0,255,0.16)', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 700,
+          }}>✉</span>
+          <span style={{ fontWeight: 600 }}>Compose message to a user</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>
+            {open ? '— close' : '— start a fresh thread with any signed-up user by email'}
+          </span>
+          <span style={{ marginLeft: 'auto', color: 'var(--text-dim)' }}>{open ? '▾' : '▸'}</span>
+        </button>
+
+        {open && (
+          <form onSubmit={submit} style={{ padding: '4px 16px 16px', display: 'grid', gap: 10 }}>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                To (user's email)
+              </span>
+              <input
+                type="email"
+                value={toEmail}
+                onChange={(e) => setToEmail(e.target.value)}
+                placeholder="user@example.com"
+                required
+                autoComplete="off"
+                style={{
+                  padding: '9px 12px', borderRadius: 6,
+                  background: '#0a0a0c', border: '1px solid var(--border)',
+                  color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-sans)',
+                }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Message
+              </span>
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Write a short, direct message. Markdown not supported yet — plain text only. Max 4000 chars."
+                required
+                rows={5}
+                maxLength={4000}
+                style={{
+                  padding: '10px 12px', borderRadius: 6,
+                  background: '#0a0a0c', border: '1px solid var(--border)',
+                  color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-sans)',
+                  resize: 'vertical', minHeight: 100, lineHeight: 1.5,
+                }}
+              />
+              <span style={{ fontSize: 10.5, color: 'var(--text-dim)', textAlign: 'right' }}>
+                {body.length} / 4000
+              </span>
+            </label>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                type="submit"
+                disabled={!toEmail.trim() || !body.trim() || sending}
+                style={{
+                  padding: '9px 18px', borderRadius: 999,
+                  background: (!toEmail.trim() || !body.trim() || sending) ? '#1c1c1e' : 'var(--electric)',
+                  color: (!toEmail.trim() || !body.trim() || sending) ? 'var(--text-dimmer)' : '#fff',
+                  border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {sending ? 'Sending…' : 'Send message'}
+              </button>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                Delivered inside CUE — user sees a badge on their nav inbox bell within a minute.
+              </span>
+            </div>
+            {ok  && <div style={{ fontSize: 11.5, color: '#ccff00' }}>{ok}</div>}
+            {err && <div style={{ fontSize: 11.5, color: 'var(--danger)' }}>{err}</div>}
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
