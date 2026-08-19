@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { useUser, SignInButton, UserButton } from '@clerk/clerk-react'
+import { useUser, UserButton } from '@clerk/clerk-react'
 import { backend } from '../lib/backend.js'
+import { useAuth } from '../hooks/useAuth.jsx'
 import Footer from '../components/Footer.jsx'
 import MonthlyWaitlistModal from '../components/MonthlyWaitlistModal.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
@@ -40,6 +41,7 @@ export default function Pricing() {
     description: 'Founding 50 members. $99 lifetime. Everything Cue is and becomes.',
   })
   const { isSignedIn, user } = useUser()
+  const { openAuth } = useAuth()
   const [monthlyOpen, setMonthlyOpen] = useState(false)
   const [foundingCount, setFoundingCount] = useState(0)
   const [openFaq, setOpenFaq] = useState(null)
@@ -71,9 +73,10 @@ export default function Pricing() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <a href="#/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
           {!isSignedIn ? (
-            <SignInButton mode="modal">
-              <button style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>Sign in</button>
-            </SignInButton>
+            <button
+              onClick={() => openAuth('sign-in')}
+              style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500 }}
+            >Sign in</button>
           ) : (
             <UserButton />
           )}
@@ -157,6 +160,7 @@ export default function Pricing() {
                 features={[
                   'Browse all 100 components',
                   'Selected free components unlocked',
+                  'Works with Framer, Bolt, v0, Cursor',
                   '2 AI prompts per day',
                   'Weekly drop newsletter',
                   'Personal use only',
@@ -179,17 +183,17 @@ export default function Pricing() {
                   foundingFilled ? (
                     <span style={{ ...btnGhost, opacity: 0.55, cursor: 'not-allowed' }}>Founding closed</span>
                   ) : !isSignedIn ? (
-                    <SignInButton mode="modal">
-                      <button style={btnPrimary}>Claim founding spot</button>
-                    </SignInButton>
+                    <button onClick={() => openAuth('sign-up')} style={btnPrimary}>Claim founding spot</button>
                   ) : (
                     <a href="#/checkout/founding" style={{ ...btnPrimary, textDecoration: 'none' }}>Claim founding spot</a>
                   )
                 }
                 features={[
                   'Full library, unlocked',
+                  'Works with Framer, Bolt, v0, Cursor',
                   'All future drops',
                   { text: 'React source code', soon: true },
+                  'Request any component\'s code — I ship it personally',
                   { text: 'MCP support', soon: true },
                   'Unlimited AI regenerates',
                   'Commercial use',
@@ -208,6 +212,7 @@ export default function Pricing() {
                 cta={<button onClick={() => setMonthlyOpen(true)} style={btnGhost}>Notify me</button>}
                 features={[
                   'Full library unlocked',
+                  'Works with Framer, Bolt, v0, Cursor',
                   'All future drops',
                   'Cancel anytime',
                   'Personal use only',
@@ -292,11 +297,9 @@ export default function Pricing() {
               {foundingCount} of {FOUNDING_CAP} founding spots claimed
             </div>
             {!isSignedIn ? (
-              <SignInButton mode="modal">
-                <button style={{ ...btnPrimary, fontSize: 14, padding: '14px 28px', width: 'auto', minWidth: 220 }}>Claim founding spot</button>
-              </SignInButton>
+              <button onClick={() => openAuth('sign-up')} style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px' }}>Claim founding spot</button>
             ) : (
-              <a href="#/checkout/founding" style={{ ...btnPrimary, fontSize: 14, padding: '14px 28px', display: 'inline-block', minWidth: 220, textDecoration: 'none' }}>Claim founding spot</a>
+              <a href="#/checkout/founding" style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px', textDecoration: 'none' }}>Claim founding spot</a>
             )}
             <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-dim)' }}>
               14-day refund on payment errors · Founders lock $99 forever
@@ -399,11 +402,16 @@ function Col({
           {priceSub && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{priceSub}</span>}
         </div>
 
-        {subLine && (
-          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12, lineHeight: 1.5, minHeight: 18 }}>
-            {subLine}
-          </div>
-        )}
+        {/* Always render the sub-line slot with a fixed height so the CTA
+            aligns horizontally across all three columns even when one
+            card's sub-line wraps to two lines. */}
+        <div style={{
+          fontSize: 12, color: 'var(--text-dim)',
+          marginBottom: 12, lineHeight: 1.5,
+          height: 40, overflow: 'hidden',
+        }}>
+          {subLine || ''}
+        </div>
 
         <div style={{ marginTop: 'auto', paddingTop: 20 }}>{cta}</div>
       </div>
@@ -456,7 +464,7 @@ function FaqItem({ q, a, open, onToggle }) {
         </svg>
       </button>
       {open && (
-        <div style={{ padding: '0 4px 18px', fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-dim)' }}>{a}</div>
+        <div style={{ padding: '0 4px 18px', fontSize: 13.5, lineHeight: 1.7, color: 'var(--text-dim)', whiteSpace: 'pre-wrap' }}>{a}</div>
       )}
     </div>
   )
@@ -466,11 +474,12 @@ function FaqItem({ q, a, open, onToggle }) {
 
 const FAQ = [
   { q: 'What am I buying right now?', a: '100 curated components with AI prompts. Every weekly drop. React source code and MCP support as they ship — free for Cue+ members. Locked at $99 lifetime for the first 50 founding members.' },
-  { q: 'What is live today vs coming soon?', a: 'Live: 100 components + AI prompts, unlimited regenerates for Cue+, weekly drops. Coming next few weeks: React source code for the top 20 components. Coming Q2: MCP support. All future drops included in your Cue+ lifetime.' },
+  { q: 'What is live today vs coming soon?', a: 'Live: 100 components + AI prompts, unlimited regenerates for Cue+, weekly drops. Coming next few weeks: React source code for the top 20 components. Coming Q2: MCP support. All future drops included in your Cue+ lifetime.\n\nMeanwhile — a founding-member perk: if you need production code for any specific component before it ships publicly, email me and I will personally hand-ship that component\'s code to you. That is one of the ways founding pricing pays for itself.' },
   { q: 'Why lifetime, not subscription?', a: "Cue isn't a service you keep logging into. You copy a prompt, ship, close the tab. Charging you every month for something you touch twice a week feels wrong. Pay once, own it." },
   { q: 'What happens after the founding 50 fills?', a: 'Price becomes $249 lifetime for everyone after. Founding members keep their $99 forever — no future price change ever applies to them. That is the founding promise.' },
   { q: 'Refund policy?', a: 'Payment errors (duplicate charges, failed provisioning) — refunded within 3 business days. Within 24 hours of purchase and no premium content copied — full refund. See the Refund page for exact eligibility.' },
   { q: 'Can I use these in client work?', a: 'Yes. Cue+ includes personal and commercial use across unlimited projects. You cannot resell Cue prompts as your own library or train an AI on them. See the License page.' },
+  { q: 'Can I use these in Framer?', a: 'Yes — two ways.\n\n1. Framer AI: paste any Cue prompt into Framer\'s AI panel. Most work directly; some scroll / WebGL-heavy ones may need one re-prompt for Framer\'s constraint system.\n\n2. Code Components: once the React code ships (weeks away), drop it into Framer via Insert → Code Component. Fully editable in your canvas.\n\nFounding members can request code for any specific component now — email me and I ship it personally.' },
   { q: 'Why pay when AI writes components?', a: 'AI produces generic. The gap between "a hero section" and "a hero section that feels like the Awwwards site of the day" is not a prompt-length problem — it is a taste problem. Each Cue prompt is refined through hundreds of AI iterations. You get iteration nine, not iteration one.' },
   { q: 'What if Cue shuts down?', a: '60 days written notice. Everything you unlocked stays downloadable. Pro-rata refund for anything under 12 months old. It is in the Terms.' },
 ]

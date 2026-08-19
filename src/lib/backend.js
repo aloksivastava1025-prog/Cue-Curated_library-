@@ -276,6 +276,16 @@ const supabaseAdapter = {
     return data || []
   },
 
+  async listMonthlyWaitlist(limit = 500) {
+    const { data, error } = await supabase
+      .from('monthly_waitlist')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return data || []
+  },
+
   // Anonymous feedback / component request submission.
   // kind: 'improvement' | 'component_request' | 'other'
   async submitFeedback({ kind, message, email, source = 'homepage-footer' }) {
@@ -322,6 +332,79 @@ const supabaseAdapter = {
       throw error
     }
     return { alreadyOnList: false }
+  },
+
+  // ---- User profiles + onboarding -----------------------------------
+
+  // Ensures a row exists for this Clerk user. Called on every sign-in.
+  // Idempotent — on conflict do nothing.
+  async ensureUserProfile(clerkUser) {
+    if (!clerkUser?.id) return null
+    const email = clerkUser.primaryEmailAddress?.emailAddress || ''
+    const firstName = clerkUser.firstName || ''
+    const lastName = clerkUser.lastName || ''
+    const full_name = `${firstName} ${lastName}`.trim() || null
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: clerkUser.id,
+        email,
+        full_name,
+      }, { onConflict: 'user_id', ignoreDuplicates: false })
+      .select()
+      .single()
+    if (error) {
+      if (/does not exist|not found/i.test(error.message || '')) return null
+      console.warn('ensureUserProfile', error)
+      return null
+    }
+    return data
+  },
+
+  async getMyProfile(clerkUserId) {
+    if (!clerkUserId) return null
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', clerkUserId)
+      .maybeSingle()
+    if (error) return null
+    return data
+  },
+
+  async updateMyProfile(clerkUserId, patch) {
+    if (!clerkUserId) throw new Error('Not signed in')
+    const clean = {}
+    if (patch.display_name !== undefined) clean.display_name = String(patch.display_name).trim() || null
+    if (patch.avatar_url !== undefined)   clean.avatar_url   = patch.avatar_url || null
+    if (patch.onboarded_at !== undefined) clean.onboarded_at = patch.onboarded_at
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(clean)
+      .eq('user_id', clerkUserId)
+      .select()
+      .single()
+    if (error) {
+      if (/duplicate|unique/i.test(error.message || '') && clean.display_name) {
+        throw new Error('That username is taken. Try another.')
+      }
+      throw error
+    }
+    return data
+  },
+
+  async uploadAvatar(clerkUserId, file) {
+    if (!clerkUserId || !file) throw new Error('Missing file')
+    if (file.size > 5 * 1024 * 1024) throw new Error('Image must be under 5MB')
+    if (!/^image\//.test(file.type)) throw new Error('Only images (PNG / JPEG / WebP) allowed')
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `avatars/${clerkUserId}-${Date.now()}.${ext}`
+    const { error } = await supabase.storage
+      .from('cue-media')
+      .upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: true })
+    if (error) throw error
+    const { data } = supabase.storage.from('cue-media').getPublicUrl(path)
+    return data.publicUrl
   },
 
   // Founding counter — how many paying Cue+ users so far.

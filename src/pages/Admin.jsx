@@ -500,9 +500,9 @@ export default function Admin() {
     const safeId = isEditing ? form.id : nextId(allPrompts);
     const payload = { ...form, id: safeId, createdAt: isEditing ? undefined : new Date().toISOString() };
     try {
-      // backend.create handles the "column missing" fallback internally —
-      // it retries with a legacy-only payload if new columns aren't in the DB.
-      await addDraft(payload);
+      // Pass isUpdate on edits — otherwise backend.create picks a fresh
+      // id and INSERTs, creating a duplicate row.
+      await addDraft(payload, { isUpdate: isEditing });
       showToast(`Saved "${form.title}" (${form.status})`);
       cancelEdit();
     } catch (e) {
@@ -514,7 +514,7 @@ export default function Admin() {
     }
   };
 
-  const beginEdit = (item) => {
+  const beginEdit = async (item) => {
     setIsEditing(true);
     // Start from EMPTY_FORM so every field has a defined default; overlay item;
     // then explicitly coerce strings/arrays. Legacy seed items miss many of the
@@ -542,6 +542,20 @@ export default function Admin() {
     setSaveError(null);
     setAutofillError(null);
     setUploadStatus({ image: null, video: null });
+
+    // Prompt content lives in a separate `prompt_contents` table for
+    // security. List rows only carry metadata, so on Edit we fetch the
+    // full prompt text and merge it into the form.
+    if (!item.prompt && item.id) {
+      try {
+        const fullPrompt = await backend.getPromptContent(item.id);
+        if (fullPrompt) {
+          setForm((f) => (f && f.id === item.id ? { ...f, prompt: fullPrompt } : f));
+        }
+      } catch (e) {
+        // Non-blocking — user can still edit metadata even if prompt fetch fails.
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast(`Editing: ${item.title}`);
   };

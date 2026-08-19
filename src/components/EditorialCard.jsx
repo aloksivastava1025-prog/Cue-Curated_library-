@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useClerk, useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
 
 function formatCount(n) {
@@ -13,7 +14,7 @@ function formatCount(n) {
 export default function EditorialCard({ item, setSelectedItem }) {
   const { bookmarkedIds, likedIds, toggleBookmark, toggleLike } = useApp();
   const { isSignedIn } = useUser();
-  const clerk = useClerk();
+  const { openAuth } = useAuth();
   const isBookmarked = bookmarkedIds?.has(item.id);
   const isLiked = likedIds?.has(item.id);
   const [likeAnim, setLikeAnim] = useState(false);
@@ -179,7 +180,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
               aria-label={isLiked ? 'Unlike' : 'Like'}
               onClick={(e) => {
                 e.stopPropagation();
-                if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                if (!isSignedIn) { openAuth('sign-in'); return; }
                 setLikeAnim(true); setTimeout(() => setLikeAnim(false), 350);
                 toggleLike(item.id);
               }}
@@ -204,7 +205,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
               aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
               onClick={(e) => {
                 e.stopPropagation();
-                if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                if (!isSignedIn) { openAuth('sign-in'); return; }
                 toggleBookmark(item.id);
               }}
               style={cardActionBtn(isBookmarked, isBookmarked ? 'var(--electric)' : 'var(--text-dim)')}

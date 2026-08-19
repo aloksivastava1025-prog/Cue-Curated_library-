@@ -3,6 +3,7 @@ import { copyToClipboard } from '../hooks/useClipboard.js';
 import { backend } from '../lib/backend.js';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
 
 function formatCount(n) {
@@ -54,6 +55,7 @@ const isImage = (src) => !!src && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(sr
 export default function Modal({ item, onClose, showToast }) {
   const { user, isSignedIn } = useUser();
   const clerk = useClerk();
+  const { openAuth } = useAuth();
   const { bookmarkedIds, likedIds, toggleBookmark, toggleLike, registerView } = useApp();
   const isBookmarked = bookmarkedIds?.has(item?.id);
   const isLiked = likedIds?.has(item?.id);
@@ -116,7 +118,7 @@ export default function Modal({ item, onClose, showToast }) {
     // — signup emails are the strongest signal for a beta.
     if (!isSignedIn) {
       if (showToast) showToast('Sign in to copy — takes 10 seconds');
-      clerk.openSignIn?.({ redirectUrl: window.location.href });
+      openAuth('sign-in');
       return;
     }
     let text = '';
@@ -140,7 +142,7 @@ export default function Modal({ item, onClose, showToast }) {
   const onBuyIndividual = async () => {
     if (!isSignedIn) {
       if (showToast) showToast('Sign in to purchase');
-      clerk.openSignIn({ redirectUrl: window.location.href });
+      openAuth('sign-in');
       return;
     }
     if (showToast) showToast('Opening secure checkout…');
@@ -262,7 +264,7 @@ export default function Modal({ item, onClose, showToast }) {
               <button
                 type="button"
                 onClick={() => {
-                  if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                  if (!isSignedIn) { openAuth('sign-in'); return; }
                   setLikeAnim(true); setTimeout(() => setLikeAnim(false), 350);
                   toggleLike(item.id);
                 }}
@@ -286,7 +288,7 @@ export default function Modal({ item, onClose, showToast }) {
               <button
                 type="button"
                 onClick={() => {
-                  if (!isSignedIn) { clerk.openSignIn?.(); return; }
+                  if (!isSignedIn) { openAuth('sign-in'); return; }
                   toggleBookmark(item.id);
                 }}
                 style={modalActionBtn(isBookmarked, isBookmarked ? 'var(--electric)' : 'var(--text)')}

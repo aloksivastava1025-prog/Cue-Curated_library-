@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { useUser, SignInButton, UserButton } from '@clerk/clerk-react'
+import { useUser, UserButton } from '@clerk/clerk-react'
+import { useAuth } from '../hooks/useAuth.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import EditorialCard from '../components/EditorialCard.jsx'
 import Modal from '../components/Modal.jsx'
@@ -13,6 +14,7 @@ import { usePageMeta } from '../hooks/usePageMeta.js'
 export default function Saved() {
   usePageMeta({ title: 'Your saved items', description: 'Items you bookmarked from the CUE library.' })
   const { user, isSignedIn } = useUser()
+  const { openAuth } = useAuth()
   const { allPrompts, bookmarkedIds } = useApp()
   const [selectedItem, setSelectedItem] = useState(null)
 
@@ -33,9 +35,10 @@ export default function Saved() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <a href="#/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
           {!isSignedIn ? (
-            <SignInButton mode="modal">
-              <button style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Sign in</button>
-            </SignInButton>
+            <button
+              onClick={() => openAuth('sign-in')}
+              style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+            >Sign in</button>
           ) : (
             <UserButton />
           )}
@@ -65,9 +68,10 @@ export default function Saved() {
           <p style={{ fontSize: 14.5, color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: 24 }}>
             Sign in to save items to your library. It's free — bookmark anything you like, come back for it later.
           </p>
-          <SignInButton mode="modal">
-            <button style={{ padding: '12px 24px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Sign in to CUE</button>
-          </SignInButton>
+          <button
+            onClick={() => openAuth('sign-in')}
+            style={{ padding: '12px 24px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >Sign in to CUE</button>
         </div>
       ) : saved.length === 0 ? (
         <div style={{ padding: '20px 24px 120px', textAlign: 'center' }}>

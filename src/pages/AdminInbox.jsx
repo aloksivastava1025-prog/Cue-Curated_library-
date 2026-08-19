@@ -54,9 +54,10 @@ const KIND_COLOR = {
 };
 
 export default function AdminInbox() {
-  const [tab, setTab] = useState('all'); // all | feedback | waitlist
+  const [tab, setTab] = useState('all'); // all | feedback | waitlist | monthly
   const [feedback, setFeedback] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
+  const [monthly, setMonthly] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastSeen, setLastSeen] = useState(() => {
@@ -66,8 +67,12 @@ export default function AdminInbox() {
   async function load() {
     setLoading(true); setError(null);
     try {
-      const [fb, wl] = await Promise.all([backend.listFeedback(), backend.listWaitlist()]);
-      setFeedback(fb); setWaitlist(wl);
+      const [fb, wl, mo] = await Promise.all([
+        backend.listFeedback(),
+        backend.listWaitlist(),
+        backend.listMonthlyWaitlist(),
+      ]);
+      setFeedback(fb); setWaitlist(wl); setMonthly(mo);
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -81,8 +86,9 @@ export default function AdminInbox() {
     const cutoff = lastSeen ? new Date(lastSeen).getTime() : 0;
     const fbNew = feedback.filter((r) => new Date(rowCreatedAt(r)).getTime() > cutoff).length;
     const wlNew = waitlist.filter((r) => new Date(rowCreatedAt(r)).getTime() > cutoff).length;
-    return { feedback: fbNew, waitlist: wlNew, total: fbNew + wlNew };
-  }, [feedback, waitlist, lastSeen]);
+    const moNew = monthly.filter((r) => new Date(rowCreatedAt(r)).getTime() > cutoff).length;
+    return { feedback: fbNew, waitlist: wlNew, monthly: moNew, total: fbNew + wlNew + moNew };
+  }, [feedback, waitlist, monthly, lastSeen]);
 
   function markAllRead() {
     const now = new Date().toISOString();
@@ -93,10 +99,12 @@ export default function AdminInbox() {
   const merged = useMemo(() => {
     const fb = feedback.map((r) => ({ ...r, __kind: 'feedback', __ts: rowCreatedAt(r) }));
     const wl = waitlist.map((r) => ({ ...r, __kind: 'waitlist', __ts: rowCreatedAt(r) }));
-    return [...fb, ...wl].sort((a, b) => new Date(b.__ts || 0) - new Date(a.__ts || 0));
-  }, [feedback, waitlist]);
+    const mo = monthly.map((r) => ({ ...r, __kind: 'monthly',  __ts: rowCreatedAt(r) }));
+    return [...fb, ...wl, ...mo].sort((a, b) => new Date(b.__ts || 0) - new Date(a.__ts || 0));
+  }, [feedback, waitlist, monthly]);
 
   const rows = tab === 'feedback' ? feedback
+             : tab === 'monthly'  ? monthly
              : tab === 'waitlist' ? waitlist
              : merged;
 
@@ -131,9 +139,10 @@ export default function AdminInbox() {
       <div style={{ padding: '20px 24px 0', display: 'flex', justifyContent: 'center' }}>
         <div style={{ display: 'inline-flex', padding: 4, background: '#0e0e10', border: '1px solid var(--border)', borderRadius: 999, gap: 2 }}>
           {[
-            { key: 'all',       label: 'All',       count: merged.length,   badge: unread.total },
-            { key: 'feedback',  label: 'Feedback',  count: feedback.length, badge: unread.feedback },
-            { key: 'waitlist',  label: 'Waitlist',  count: waitlist.length, badge: unread.waitlist },
+            { key: 'all',       label: 'All',        count: merged.length,   badge: unread.total },
+            { key: 'feedback',  label: 'Feedback',   count: feedback.length, badge: unread.feedback },
+            { key: 'waitlist',  label: 'Waitlist',   count: waitlist.length, badge: unread.waitlist },
+            { key: 'monthly',   label: 'Monthly',    count: monthly.length,  badge: unread.monthly },
           ].map((t) => {
             const on = tab === t.key;
             return (
@@ -179,6 +188,13 @@ export default function AdminInbox() {
             { label: 'source',     get: (r) => r.source || '' },
           ]))} style={btnGhost}>Export waitlist CSV</button>
         )}
+        {(tab === 'all' || tab === 'monthly') && monthly.length > 0 && (
+          <button onClick={() => download('cue-monthly-interest.csv', toCSV(monthly, [
+            { label: 'created_at', get: (r) => rowCreatedAt(r) },
+            { label: 'email',      get: (r) => r.email },
+            { label: 'source',     get: (r) => r.source || '' },
+          ]))} style={btnGhost}>Export monthly CSV</button>
+        )}
       </div>
 
       {/* Body */}
@@ -201,8 +217,16 @@ export default function AdminInbox() {
 
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
           {rows.map((r) => {
-            const kind = r.__kind || (r.message !== undefined ? 'feedback' : 'waitlist');
+            const inferKind = () => {
+              if (r.__kind) return r.__kind;
+              if (r.message !== undefined) return 'feedback';
+              // Distinguish monthly vs waitlist by source pattern
+              if (r.source === 'pricing-monthly') return 'monthly';
+              return 'waitlist';
+            };
+            const kind = inferKind();
             const isFb = kind === 'feedback';
+            const isMonthly = kind === 'monthly';
             const _new = isNew(r);
             return (
               <li key={`${kind}-${r.id || rowCreatedAt(r)}`} style={{
@@ -213,10 +237,16 @@ export default function AdminInbox() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: isFb && r.message ? 8 : 0 }}>
                   <span style={{
                     padding: '2px 8px', fontSize: 10, fontWeight: 700, borderRadius: 999,
-                    background: isFb ? (KIND_COLOR[r.kind] || KIND_COLOR.other) : 'rgba(255,255,255,0.06)',
+                    background: isFb
+                      ? (KIND_COLOR[r.kind] || KIND_COLOR.other)
+                      : isMonthly
+                        ? 'rgba(0,0,255,0.14)'
+                        : 'rgba(255,255,255,0.06)',
                     color: 'var(--text)', letterSpacing: '0.08em', textTransform: 'uppercase',
                   }}>
-                    {isFb ? (KIND_LABEL[r.kind] || 'Feedback') : 'Waitlist'}
+                    {isFb ? (KIND_LABEL[r.kind] || 'Feedback')
+                          : isMonthly ? 'Monthly interest'
+                          : 'Waitlist'}
                   </span>
                   {r.source && (
                     <span style={{ fontSize: 10.5, color: 'var(--text-dim)', letterSpacing: '0.04em' }}>

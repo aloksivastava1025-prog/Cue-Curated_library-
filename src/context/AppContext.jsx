@@ -202,8 +202,11 @@ export function AppProvider({ children }) {
     [filter]
   )
 
-  const addDraft = useCallback(async (item) => {
-    const created = await backend.create(item)
+  const addDraft = useCallback(async (item, opts = {}) => {
+    // Pass isUpdate through to the backend so edits UPDATE the existing
+    // row instead of getting a fresh id + INSERT (which would silently
+    // create a duplicate card).
+    const created = await backend.create(item, opts)
     setDrafts((prev) => {
       const idx = prev.findIndex(p => p.id === created.id)
       if (idx >= 0) {

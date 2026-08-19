@@ -17,6 +17,8 @@ import WaitlistCTA from './components/WaitlistCTA.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
+import SignInCard from './components/SignInCard.jsx';
+import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import { usePageMeta } from './hooks/usePageMeta.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
@@ -69,6 +71,7 @@ function MainApp() {
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback } = useApp();
+  const { openAuth } = useAuth();
   const savedCount = bookmarkedIds?.size || 0;
   usePageMeta({
     title: 'A curated library for AI-native builders',
@@ -208,6 +211,26 @@ function MainApp() {
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
           <a href="#/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
+          <button
+            onClick={() => openFeedback('nav')}
+            className="cue-nav-suggest"
+            title="Suggest an improvement"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 12px', height: 30, borderRadius: 999,
+              background: 'transparent', border: '1px solid var(--border)',
+              color: 'var(--text)', cursor: 'pointer',
+              fontSize: 11.5, fontFamily: 'var(--font-sans)', letterSpacing: '0.02em',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+          >
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 8h6M9 12h6m-6 4h4M4 4h16v13H8l-4 4V4z" />
+            </svg>
+            <span>Suggest</span>
+          </button>
           <UserInbox />
           <NavMenu
             items={[
@@ -221,13 +244,6 @@ function MainApp() {
                 ),
               },
               {
-                label: 'Suggest improvement',
-                onClick: () => openFeedback('nav-menu'),
-                icon: (
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 8h6M9 12h6m-6 4h4M4 4h16v13H8l-4 4V4z" /></svg>
-                ),
-              },
-              {
                 label: 'Admin',
                 href: '#/admin',
                 hidden: !isAdmin,
@@ -238,9 +254,10 @@ function MainApp() {
             ]}
           />
           {!isSignedIn ? (
-            <SignInButton mode="modal">
-              <button style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Join Cue</button>
-            </SignInButton>
+            <button
+              onClick={() => openAuth('sign-in')}
+              style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}
+            >Join Cue</button>
           ) : (
             <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }} />
           )}
@@ -421,10 +438,12 @@ function MainApp() {
 
 function AppShell() {
   const { feedbackOpen, feedbackSource, closeFeedback } = useApp();
+  const { authOpen, authMode, closeAuth } = useAuth();
   return (
     <>
       <MainApp />
       <FeedbackModal open={feedbackOpen} onClose={closeFeedback} source={feedbackSource} />
+      <SignInCard open={authOpen} mode={authMode} onClose={closeAuth} />
     </>
   );
 }
@@ -432,9 +451,11 @@ function AppShell() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <AppShell />
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider>
+          <AppShell />
+        </AppProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
