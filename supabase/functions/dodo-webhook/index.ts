@@ -153,10 +153,21 @@ serve(async (req) => {
         ? new Date(Date.now() + 368 * 24 * 60 * 60 * 1000).toISOString() 
         : null
 
+      // Dodo customer id — used as the source-of-truth identifier that
+      // survives across sign-in/sign-out and pre-signup purchases.
+      const dodoCustomerId = event.data?.customer?.customer_id
+        || event.data?.customer_id
+        || null
+      const paymentId = event.data?.payment_id || event.data?.id || null
+      const productId = event.data?.product_id
+        || event.data?.product_cart?.[0]?.product_id
+        || null
+
       // Attribute the payment to a user. Ordered fallbacks:
       //   1. event.data.metadata.user_id      (best — set by our create-checkout API)
       //   2. event.data.metadata.reference    (also passed via URL params)
       //   3. Lookup user_profiles by email    (Dodo hosted checkout — email always present)
+      //   4. Lookup user_profiles by dodo_customer_id (returning customer)
       let resolvedUserId = userId
         || event.data?.metadata?.reference
         || event.data?.reference
@@ -170,8 +181,33 @@ serve(async (req) => {
           .maybeSingle()
         if (byEmail?.user_id) {
           resolvedUserId = byEmail.user_id
-          log.info('Resolved user_id via email fallback', { email, userId: resolvedUserId })
+          log.info('Resolved user_id via email fallback', { email, userId: resolvedUserId, paymentId, productId })
         }
+      }
+
+      if (!resolvedUserId && dodoCustomerId) {
+        const { data: byCustomer } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('dodo_customer_id', dodoCustomerId)
+          .maybeSingle()
+        if (byCustomer?.user_id) {
+          resolvedUserId = byCustomer.user_id
+          log.info('Resolved user_id via dodo_customer_id', { dodoCustomerId, userId: resolvedUserId, paymentId })
+        }
+      }
+
+      // §7 self-heal — no existing profile row for this payer. Create
+      // one keyed on Dodo customer id (or email hash if none). This
+      // guarantees a payment.succeeded event ALWAYS grants entitlement,
+      // even for a user who hasn't signed into CUE yet or whose
+      // ensureUserProfile call silently failed. When they later sign
+      // in with the matching email, ensureUserProfile will merge.
+      if (!resolvedUserId && email) {
+        // Use dodo customer id as the temporary user_id anchor so the
+        // row is uniquely identifiable and self-heal-safe.
+        resolvedUserId = dodoCustomerId ? `dodo:${dodoCustomerId}` : `email:${email.toLowerCase()}`
+        log.warn('No profile row; self-heal creating one', { email, userId: resolvedUserId, paymentId, productId })
       }
 
       if (resolvedUserId) {
@@ -186,12 +222,13 @@ serve(async (req) => {
 
         const payload: Record<string, unknown> = {
           user_id: resolvedUserId,
-          email: email || '',
+          email: (email || '').toLowerCase(),
           plan: planType,
           plan_source: 'dodo',
           plan_expires_at: planExpiresAt,
           team_owner_id: resolvedUserId,
           team_seats: teamSeats,
+          dodo_customer_id: dodoCustomerId,
         }
         // Only set plan_started_at on FIRST-time insert. Renewals should
         // preserve the original date.

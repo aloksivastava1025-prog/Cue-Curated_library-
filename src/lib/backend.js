@@ -338,17 +338,40 @@ const supabaseAdapter = {
 
   // Ensures a row exists for this Clerk user. Called on every sign-in.
   // Idempotent — on conflict do nothing.
+  // Manually re-run the paid-but-locked reconciliation.
+  // Called from /billing/success if 20s of polling hasn't unlocked the user.
+  async reconcile() {
+    try {
+      const { data } = await supabase.rpc('reconcile_paid_but_locked')
+      return data || null
+    } catch { return null }
+  },
+
   async ensureUserProfile(clerkUser) {
     if (!clerkUser?.id) return null
     const email = clerkUser.primaryEmailAddress?.emailAddress || ''
     const firstName = clerkUser.firstName || ''
     const lastName = clerkUser.lastName || ''
     const full_name = `${firstName} ${lastName}`.trim() || null
+
+    // First: call the merge RPC so any pre-existing self-healed row
+    // (from a payment that landed before this Clerk user signed in)
+    // gets linked to this Clerk user_id and their plan is preserved.
+    try {
+      await supabase.rpc('link_user_profile_to_clerk', {
+        p_clerk_user_id: clerkUser.id,
+        p_email:         email,
+        p_full_name:     full_name,
+      })
+    } catch { /* fall through to plain upsert */ }
+
+    // Then upsert to fill any missing fields on the (possibly newly-
+    // linked) row.
     const { data, error } = await supabase
       .from('user_profiles')
       .upsert({
         user_id: clerkUser.id,
-        email,
+        email:   email.toLowerCase(),
         full_name,
       }, { onConflict: 'user_id', ignoreDuplicates: false })
       .select()

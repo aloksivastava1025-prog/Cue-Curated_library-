@@ -46,6 +46,13 @@ function BillingSuccess() {
         }
       } catch { /* keep polling */ }
 
+      // After 20s (10 ticks) still locked — call the reconciliation
+      // function once. This catches payments where webhook attribution
+      // failed but a matching payment_events row exists.
+      if (tries === 10) {
+        try { await backend.reconcile() } catch {}
+      }
+
       if (tries >= MAX_TRIES) {
         if (!cancelled) setState('pending')
         return
