@@ -31,20 +31,16 @@ function corsHeaders(req: Request) {
   }
 }
 
-// Generate a viewer key from IP + user-agent (or user ID).
-// This is a SHA-256 hash so we don't store raw IPs.
+// Generate a viewer key from IP + user-agent.
+//
+// SECURITY NOTE: the previous version accepted a bare `Authorization`
+// JWT and trusted its `sub` claim WITHOUT verifying the signature — a
+// hostile client could forge any user_id and dedup would break under
+// arbitrary keys. Until we wire full Clerk JWKS verification server-side
+// here, we always use the IP+UA hash. Dedup accuracy per real user is
+// slightly weaker (same user on 2 networks counts twice) but every viewer
+// key is now derived from headers we can trust.
 async function viewerKey(req: Request): Promise<string> {
-  // Try to extract Clerk user ID from JWT if present.
-  const authHeader = req.headers.get('Authorization')
-  if (authHeader) {
-    try {
-      const token = authHeader.replace('Bearer ', '')
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      if (payload.sub) return `user:${payload.sub}`
-    } catch { /* fall through to IP-based */ }
-  }
-
-  // For anonymous visitors: hash IP + user-agent.
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || req.headers.get('x-real-ip')
     || 'unknown'

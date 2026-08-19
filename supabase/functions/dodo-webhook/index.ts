@@ -154,19 +154,33 @@ serve(async (req) => {
         : null
 
       if (userId) {
-        // Upsert user_profiles — creates if doesn't exist, updates if it does.
+        // First check if row already exists — we do NOT want to overwrite
+        // plan_started_at on a subscription renewal event. Original signup
+        // date is analytics/audit gold.
+        const { data: existing } = await supabase
+          .from('user_profiles')
+          .select('plan_started_at')
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        const payload: Record<string, unknown> = {
+          user_id: userId,
+          email: email || '',
+          plan: planType,
+          plan_source: 'dodo',
+          plan_expires_at: planExpiresAt,
+          team_owner_id: userId,
+          team_seats: teamSeats,
+        }
+        // Only set plan_started_at on FIRST-time insert. Renewals should
+        // preserve the original date.
+        if (!existing?.plan_started_at) {
+          payload.plan_started_at = new Date().toISOString()
+        }
+
         const { error: upsertError } = await supabase
           .from('user_profiles')
-          .upsert({
-            user_id: userId,
-            email: email || '',
-            plan: planType,
-            plan_source: 'dodo',
-            plan_started_at: new Date().toISOString(),
-            plan_expires_at: planExpiresAt,
-            team_owner_id: userId,
-            team_seats: teamSeats,
-          }, { onConflict: 'user_id' })
+          .upsert(payload, { onConflict: 'user_id' })
 
         if (upsertError) {
           log.error('Failed to upgrade user plan', {

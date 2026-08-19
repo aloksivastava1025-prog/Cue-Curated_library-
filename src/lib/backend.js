@@ -210,6 +210,48 @@ const supabaseAdapter = {
     return { alreadyOnList: false }
   },
 
+  // Monthly waitlist — fake-door demand test for $49/mo tier.
+  // Restored during v2 hardening merge; MonthlyWaitlistModal + AdminInbox
+  // Monthly tab depend on this helper.
+  async joinMonthlyWaitlist({ email, source = 'pricing-page' }) {
+    const clean = String(email || '').trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Please enter a valid email')
+    const { error } = await supabase
+      .from('monthly_waitlist')
+      .insert({ email: clean, source, referrer: typeof document !== 'undefined' ? (document.referrer || null) : null })
+    if (error) {
+      if (/duplicate|unique/i.test(error.message || '')) return { alreadyOnList: true }
+      if (/does not exist|schema cache|not found/i.test(error.message || '')) {
+        throw new Error('Waitlist is coming online — please try again shortly.')
+      }
+      throw error
+    }
+    return { alreadyOnList: false }
+  },
+
+  async listMonthlyWaitlist(limit = 500) {
+    const { data, error } = await supabase
+      .from('monthly_waitlist')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return data || []
+  },
+
+  // Founding counter — how many paying Cue+ users so far.
+  // Reads from user_profiles.plan; returns 0 if table doesn't exist yet.
+  async getFoundingCount() {
+    try {
+      const { count, error } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('plan', 'cue_plus')
+      if (error) return 0
+      return count || 0
+    } catch { return 0 }
+  },
+
   // Admin inbox — list feedback + waitlist submissions (newest first).
   // Client-side gated by isAdmin. Backend RLS is currently anon-open
   // (see supabase-migration-admin-inbox.sql). Tighten via edge function

@@ -356,19 +356,59 @@ alter table public.turnstile_tokens_seen enable row level security;
 -- ============================================================
 
 create or replace function public.delete_user_cascade(p_user_id text)
-returns void language plpgsql security definer as $$
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text;
 begin
-  delete from public.prompt_bookmarks   where user_id = p_user_id;
-  delete from public.prompt_likes       where user_id = p_user_id;
-  delete from public.feedback_messages  where author_email = (
-    select email from public.user_profiles where user_id = p_user_id
+  -- Grab the email once — used for tables keyed on email rather than
+  -- Clerk user_id.
+  select email into v_email
+  from public.user_profiles
+  where user_id = p_user_id;
+
+  -- 1. Owned-by-user_id — hard delete
+  delete from public.prompt_bookmarks where user_id = p_user_id;
+  delete from public.prompt_likes     where user_id = p_user_id;
+
+  -- 2. Owned-by-email — hard delete (only when we know the email)
+  if v_email is not null then
+    delete from public.feedback_messages where author_email = v_email;
+    -- waitlist_emails and monthly_waitlist may not exist in every env;
+    -- guard the deletes so this function stays idempotent across setups.
+    if exists (select 1 from information_schema.tables where table_schema='public' and table_name='waitlist_emails') then
+      delete from public.waitlist_emails where email = v_email;
+    end if;
+    if exists (select 1 from information_schema.tables where table_schema='public' and table_name='monthly_waitlist') then
+      delete from public.monthly_waitlist where email = v_email;
+    end if;
+  end if;
+
+  -- 3. Feedback: keep content for admin analytics, remove PII
+  if v_email is not null then
+    update public.feedback set email = null where email = v_email;
+  end if;
+
+  -- 4. Finally, remove the profile itself
+  delete from public.user_profiles where user_id = p_user_id;
+
+  return json_build_object(
+    'user_id',    p_user_id,
+    'email',      v_email,
+    'deleted_at', now()
   );
-  update public.feedback set email = null where email = (
-    select email from public.user_profiles where user_id = p_user_id
-  );
-  delete from public.user_profiles      where user_id = p_user_id;
 end;
 $$;
+
+-- Server-only. Anon / authenticated cannot invoke — Clerk webhook uses
+-- the service_role key to call it via RPC.
+revoke execute on function public.delete_user_cascade(text) from public;
+revoke execute on function public.delete_user_cascade(text) from anon;
+revoke execute on function public.delete_user_cascade(text) from authenticated;
+grant  execute on function public.delete_user_cascade(text) to service_role;
 
 
 -- ============================================================

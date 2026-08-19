@@ -1,101 +1,117 @@
 // ============================================================
-// CUE v2.0 — Clerk Webhook (Production-Hardened)
-// ============================================================
-// Handles Clerk webhook events, specifically `user.deleted` to
-// trigger the `delete_user_cascade` DPDP compliance function.
+// CUE — Clerk webhook handler
+//
+// Receives user.deleted events from Clerk and cascades the deletion
+// across every CUE table that holds that user's data (DPDP compliance).
+//
+// Only user.deleted is wired for now; user.created / user.updated are
+// accepted with 200 OK so Clerk's dashboard doesn't flag them as
+// failures, but they don't trigger any action yet.
+//
+// Deploy:
+//   supabase functions deploy clerk-webhook
+//
+// Secrets required (Supabase Dashboard → Edge Functions → Secrets):
+//   CLERK_WEBHOOK_SECRET      — from Clerk Dashboard → Webhooks → your endpoint
+//   SUPABASE_URL              — auto-populated by Supabase
+//   SUPABASE_SERVICE_ROLE_KEY — from Supabase Settings → API (⚠️ god key)
 // ============================================================
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
-import { Webhook } from "https://esm.sh/svix@1.15.0"
+import { serve }         from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { Webhook }       from 'https://esm.sh/svix@1.15.0'
 
-// Structured logger
-function createLogger(requestId: string) {
-  const base = { service: 'clerk-webhook', requestId }
-  return {
-    info: (msg: string, data?: Record<string, unknown>) =>
-      console.log(JSON.stringify({ ...base, level: 'info', msg, ...data })),
-    warn: (msg: string, data?: Record<string, unknown>) =>
-      console.warn(JSON.stringify({ ...base, level: 'warn', msg, ...data })),
-    error: (msg: string, data?: Record<string, unknown>) =>
-      console.error(JSON.stringify({ ...base, level: 'error', msg, ...data })),
-  }
+const CLERK_WEBHOOK_SECRET = Deno.env.get('CLERK_WEBHOOK_SECRET')
+const SUPABASE_URL         = Deno.env.get('SUPABASE_URL')
+const SERVICE_ROLE_KEY     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+const cors = {
+  'Access-Control-Allow-Origin':  '*', // webhooks come from Clerk, not browsers
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-serve(async (req) => {
-  const requestId = crypto.randomUUID()
-  const log = createLogger(requestId)
+function log(event: string, data: Record<string, unknown> = {}) {
+  console.log(JSON.stringify({ ts: new Date().toISOString(), event, ...data }))
+}
 
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 })
+    return new Response('Method not allowed', { status: 405, headers: cors })
   }
 
-  const SIGNING_SECRET = Deno.env.get('CLERK_WEBHOOK_SECRET')
-
-  if (!SIGNING_SECRET) {
-    log.error('CLERK_WEBHOOK_SECRET is not configured')
-    return new Response('Error: Please configure CLERK_WEBHOOK_SECRET', {
-      status: 500,
+  if (!CLERK_WEBHOOK_SECRET || !SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    log('config_missing', {
+      hasSecret:      Boolean(CLERK_WEBHOOK_SECRET),
+      hasSupabaseUrl: Boolean(SUPABASE_URL),
+      hasServiceKey:  Boolean(SERVICE_ROLE_KEY),
     })
+    return new Response('Server misconfigured', { status: 500, headers: cors })
   }
 
-  // Get the headers and body
-  const svix_id = req.headers.get('svix-id')
-  const svix_timestamp = req.headers.get('svix-timestamp')
-  const svix_signature = req.headers.get('svix-signature')
+  // ---------- 1. Verify signature -----------------------------------
+  const svixId        = req.headers.get('svix-id')
+  const svixTimestamp = req.headers.get('svix-timestamp')
+  const svixSignature = req.headers.get('svix-signature')
 
-  if (!svix_id || !svix_timestamp || !svix_signature) {
-    log.warn('Missing svix headers')
-    return new Response('Error: Missing Svix headers', {
-      status: 400,
-    })
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    log('missing_svix_headers')
+    return new Response('Missing headers', { status: 400, headers: cors })
   }
 
-  const payload = await req.text()
-  const wh = new Webhook(SIGNING_SECRET)
-
-  let evt: any
+  const body = await req.text()
+  const wh = new Webhook(CLERK_WEBHOOK_SECRET)
+  let event: any
   try {
-    evt = wh.verify(payload, {
-      'svix-id': svix_id,
-      'svix-timestamp': svix_timestamp,
-      'svix-signature': svix_signature,
+    event = wh.verify(body, {
+      'svix-id':        svixId,
+      'svix-timestamp': svixTimestamp,
+      'svix-signature': svixSignature,
     })
-  } catch (err: any) {
-    log.error('Webhook verification failed', { error: err.message })
-    return new Response('Error: Verification error', {
-      status: 400,
+  } catch (err) {
+    log('signature_verify_failed', { error: String(err) })
+    return new Response('Invalid signature', { status: 401, headers: cors })
+  }
+
+  // ---------- 2. Route by event type --------------------------------
+  const type = event?.type as string | undefined
+  const data = event?.data ?? {}
+  const userId = data?.id as string | undefined
+
+  if (type !== 'user.deleted') {
+    // Accept but no-op — Clerk sends multiple event types; unsubscribed
+    // ones return 200 so the endpoint stays green in Clerk dashboard.
+    log('event_ignored', { type })
+    return new Response(JSON.stringify({ received: true, action: 'ignored', type }), {
+      status: 200,
+      headers: { ...cors, 'Content-Type': 'application/json' },
     })
   }
 
-  const { type, data } = evt
-
-  if (type === 'user.deleted') {
-    const userId = data.id
-
-    if (!userId) {
-      log.warn('No user ID found in user.deleted event')
-      return new Response('OK', { status: 200 })
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Call the cascade delete function
-    const { error } = await supabase.rpc('delete_user_cascade', {
-      p_user_id: userId,
-    })
-
-    if (error) {
-      log.error('Failed to cascade delete user data', { userId, error: error.message })
-      return new Response('Error: Database operation failed', { status: 500 })
-    }
-
-    log.info('User data successfully cascaded deleted', { userId })
-  } else {
-    log.info('Ignoring unhandled Clerk webhook event', { type })
+  if (!userId) {
+    log('user_deleted_missing_id', { data })
+    return new Response('Missing user id', { status: 400, headers: cors })
   }
 
-  return new Response('Webhook received', { status: 200 })
+  // ---------- 3. Cascade delete via server-side RPC -----------------
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+
+  const { data: result, error } = await supabase.rpc('delete_user_cascade', {
+    p_user_id: userId,
+  })
+
+  if (error) {
+    log('cascade_delete_failed', { userId, error: error.message })
+    return new Response('Cascade delete failed', { status: 500, headers: cors })
+  }
+
+  log('user_deleted', { userId, result })
+
+  return new Response(JSON.stringify({ received: true, action: 'deleted', userId }), {
+    status: 200,
+    headers: { ...cors, 'Content-Type': 'application/json' },
+  })
 })
