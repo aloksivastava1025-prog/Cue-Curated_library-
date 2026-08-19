@@ -74,14 +74,14 @@ export default function Contact() {
             Get in touch
           </div>
           <h1 style={{
-            fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 300,
-            fontSize: 'clamp(40px, 6vw, 68px)', letterSpacing: '-0.03em',
-            margin: 0, lineHeight: 1,
+            fontFamily: 'var(--font-sans)', fontWeight: 500,
+            fontSize: 'clamp(38px, 5.5vw, 60px)', letterSpacing: '-0.035em',
+            margin: 0, lineHeight: 1.05,
           }}>
-            Ask,<br />and I'll answer.
+            Ask, and I'll answer.
           </h1>
           <p style={{
-            margin: '24px 0 40px', fontSize: 14, lineHeight: 1.7,
+            margin: '20px 0 32px', fontSize: 14, lineHeight: 1.7,
             color: 'var(--text-dim)', maxWidth: 380,
           }}>
             One person builds Cue. Every message hits the same inbox.
@@ -89,20 +89,35 @@ export default function Contact() {
             partnerships, or a quiet hello — all welcome.
           </p>
 
-          <ContactRow label="Email">
-            <a href="mailto:hello@cuedesign.space" style={contactValueLink}>
+          {/* Primary email — highlighted so it's the clear default
+              contact channel even if someone doesn't use the form. */}
+          <div style={{
+            padding: '14px 16px', borderRadius: 10,
+            background: 'rgba(0,0,255,0.06)',
+            border: '1px solid rgba(0,0,255,0.35)',
+            marginBottom: 28,
+          }}>
+            <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--electric)', fontWeight: 700, marginBottom: 6 }}>
+              Email me directly
+            </div>
+            <a href="mailto:hello@cuedesign.space?subject=Cue%20—%20"
+               style={{
+                 fontSize: 18, color: 'var(--text)', fontWeight: 500,
+                 textDecoration: 'none', letterSpacing: '-0.01em',
+                 display: 'inline-flex', alignItems: 'center', gap: 8,
+               }}>
               hello@cuedesign.space
+              <span style={{ color: 'var(--electric)', fontSize: 16 }}>→</span>
             </a>
-          </ContactRow>
+            <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--text-dim)' }}>
+              Fastest way. Replies within 5 business days.
+            </div>
+          </div>
 
           <ContactRow label="Twitter / X">
-            <a href="https://x.com/aloksrivast" target="_blank" rel="noopener noreferrer" style={contactValueLink}>
-              @aloksrivast
+            <a href="https://x.com/Alok619308" target="_blank" rel="noopener noreferrer" style={contactValueLink}>
+              @Alok619308
             </a>
-          </ContactRow>
-
-          <ContactRow label="Response time">
-            <span style={contactValue}>Within 5 business days · founder-signed</span>
           </ContactRow>
 
           <ContactRow label="Based in">
@@ -110,8 +125,8 @@ export default function Contact() {
           </ContactRow>
 
           {/* Social row */}
-          <div style={{ marginTop: 40, display: 'flex', gap: 10 }}>
-            <SocialPill href="https://x.com/aloksrivast" label="X / Twitter" icon={<IconX />} />
+          <div style={{ marginTop: 32, display: 'flex', gap: 10 }}>
+            <SocialPill href="https://x.com/Alok619308" label="X / Twitter" icon={<IconX />} />
             <SocialPill href="mailto:hello@cuedesign.space" label="Email" icon={<IconEmail />} />
           </div>
         </div>

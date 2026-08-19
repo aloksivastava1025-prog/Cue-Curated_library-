@@ -37,7 +37,7 @@ export default function Footer({ onSuggest }) {
           <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--text)' }}>CUE</span>
           <span style={{ fontSize: 11.5, letterSpacing: '0.02em' }}>© {year} · Copy · paste · ship.</span>
           <a
-            href="https://x.com/aloksrivast"
+            href="https://x.com/Alok619308"
             target="_blank" rel="noopener noreferrer"
             aria-label="Cue on X (Twitter)"
             style={socialIconStyle}
