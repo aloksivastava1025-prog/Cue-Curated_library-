@@ -647,26 +647,39 @@ const supabaseAdapter = {
     return data.map(p => p.prompt_id)
   },
   
-  async createCheckoutSession(promptId, customerEmail, customerName) {
+  // Server-side Dodo checkout session for the founding-lifetime plan.
+  // This is the ONLY correct attribution path — metadata.user_id is set
+  // by the edge function so the webhook can bind the payment to the
+  // right Clerk user even when the customer types a different email
+  // into Dodo's hosted checkout.
+  async createFoundingCheckout(clerkUser, { billingCycle = 'lifetime', planType = 'cue_plus' } = {}) {
+    if (!clerkUser?.id) throw new Error('Sign in required')
+    const email = clerkUser?.primaryEmailAddress?.emailAddress
+      || clerkUser?.emailAddresses?.[0]?.emailAddress
+    if (!email) throw new Error('No email on Clerk user')
+    const name = clerkUser?.fullName
+      || [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ')
+      || 'Cue User'
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { prompt_id: promptId, customerEmail, customerName }
+      body: {
+        plan_type: planType,
+        billing_cycle: billingCycle,
+        customerEmail: email,
+        customerName: name,
+        userId: clerkUser.id,
+      },
     })
-    
-    // Attempt to extract the real error message if it exists in the response
     if (error) {
-      console.error("Full Edge Function error:", error);
-      if (error.context && error.context.json) {
-         try {
-           const errData = await error.context.json();
-           throw new Error(errData.error || error.message);
-         } catch(e) {
-           throw new Error(error.message);
-         }
-      }
-      throw new Error(error.message);
+      let msg = error.message || 'Checkout failed'
+      try {
+        if (error.context?.json) {
+          const j = await error.context.json()
+          if (j?.error) msg = j.error
+        }
+      } catch { /* ignore */ }
+      throw new Error(msg)
     }
-    
-    if (!data.url) throw new Error('No checkout URL returned')
+    if (!data?.url) throw new Error('No checkout URL returned')
     return data.url
   },
   
