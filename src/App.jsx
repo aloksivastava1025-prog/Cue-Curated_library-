@@ -371,46 +371,46 @@ function MainApp() {
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '1px', background: 'rgba(255,255,255,0.06)' }}></div>
         <div style={{ position: 'relative', zIndex: 2 }}>
-          {/* Pre-headline unified pill — inner 'Beta' chip on the left,
-              live scarcity counter on the right. One continuous pill
-              with a subtle electric-blue outer glow so it reads as a
-              single 'status stamp' above the hero word. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
-            <a href="#/pricing" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              padding: '5px 16px 5px 5px',
-              background: '#0e0e10',
-              border: '1px solid rgba(255,255,255,0.10)',
+          {/* Pre-headline pill — glassy translucent outer, white inner
+              chip with dark text (reference: 'Early Access · Agentic AI
+              for SMBs'). Fade + slide-in on first render so it feels
+              like a stage-direction landing on the page. */}
+          <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
+            <a href="#/pricing" className="cue-hero-pill" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 12,
+              padding: '6px 14px 6px 6px',
+              background: 'rgba(255,255,255,0.08)',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.14)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
               borderRadius: 999,
               textDecoration: 'none',
-              color: 'var(--text)',
-              boxShadow: foundingFilled
-                ? '0 0 0 1px rgba(255,255,255,0.03)'
-                : '0 0 40px -8px rgba(0,0,255,0.55), 0 0 20px -6px rgba(204,255,0,0.25)',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
-            >
+              transition: 'transform 0.2s ease, background 0.2s ease',
+            }}>
               <span style={{
-                fontSize: 10.5, fontWeight: 700, letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'var(--text)',
-                padding: '5px 12px', borderRadius: 999,
-                background: 'rgba(255,255,255,0.06)',
-                lineHeight: 1,
-              }}>Beta</span>
+                display: 'inline-flex', alignItems: 'center',
+                fontSize: 11, fontWeight: 500,
+                color: '#0A0A0A',
+                background: 'rgba(255,255,255,0.92)',
+                borderRadius: 999,
+                padding: '3px 10px',
+                lineHeight: 1.35,
+                fontFamily: 'var(--font-sans)',
+                letterSpacing: '0.005em',
+              }}>Early Access</span>
               <span style={{
-                fontSize: 13, letterSpacing: '0.01em',
-                color: foundingFilled ? 'var(--text-dim)' : 'var(--text)',
+                fontSize: 13, fontWeight: 500,
+                color: 'rgba(255,255,255,0.92)',
+                fontFamily: 'var(--font-sans)',
+                letterSpacing: '0.005em',
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                fontWeight: 500,
               }}>
                 {!foundingFilled && (
                   <span style={{
                     width: 6, height: 6, borderRadius: 999,
                     background: 'var(--electric)',
-                    boxShadow: '0 0 8px rgba(0,0,255,0.9)',
+                    boxShadow: '0 0 10px rgba(0,0,255,0.85)',
+                    display: 'inline-block',
                   }} />
                 )}
                 {foundingFilled
@@ -419,6 +419,19 @@ function MainApp() {
               </span>
             </a>
           </div>
+          <style>{`
+            @keyframes cue-hero-pill-in {
+              from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+              to   { opacity: 1; transform: translateY(0)    scale(1);    }
+            }
+            .cue-hero-pill {
+              animation: cue-hero-pill-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+            .cue-hero-pill:hover {
+              background: rgba(255,255,255,0.11) !important;
+              transform: translateY(-1px);
+            }
+          `}</style>
           <h1 className="cue-hero-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(56px, 13vw, 200px)', fontStyle: 'italic', letterSpacing: '-0.035em', lineHeight: 0.9, color: 'var(--text)' }}>
             {headline}
           </h1>
