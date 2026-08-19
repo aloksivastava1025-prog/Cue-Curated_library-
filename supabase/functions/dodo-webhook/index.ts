@@ -153,23 +153,44 @@ serve(async (req) => {
         ? new Date(Date.now() + 368 * 24 * 60 * 60 * 1000).toISOString() 
         : null
 
-      if (userId) {
+      // Attribute the payment to a user. Ordered fallbacks:
+      //   1. event.data.metadata.user_id      (best — set by our create-checkout API)
+      //   2. event.data.metadata.reference    (also passed via URL params)
+      //   3. Lookup user_profiles by email    (Dodo hosted checkout — email always present)
+      let resolvedUserId = userId
+        || event.data?.metadata?.reference
+        || event.data?.reference
+        || null
+
+      if (!resolvedUserId && email) {
+        const { data: byEmail } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('email', email.toLowerCase())
+          .maybeSingle()
+        if (byEmail?.user_id) {
+          resolvedUserId = byEmail.user_id
+          log.info('Resolved user_id via email fallback', { email, userId: resolvedUserId })
+        }
+      }
+
+      if (resolvedUserId) {
         // First check if row already exists — we do NOT want to overwrite
         // plan_started_at on a subscription renewal event. Original signup
         // date is analytics/audit gold.
         const { data: existing } = await supabase
           .from('user_profiles')
           .select('plan_started_at')
-          .eq('user_id', userId)
+          .eq('user_id', resolvedUserId)
           .maybeSingle()
 
         const payload: Record<string, unknown> = {
-          user_id: userId,
+          user_id: resolvedUserId,
           email: email || '',
           plan: planType,
           plan_source: 'dodo',
           plan_expires_at: planExpiresAt,
-          team_owner_id: userId,
+          team_owner_id: resolvedUserId,
           team_seats: teamSeats,
         }
         // Only set plan_started_at on FIRST-time insert. Renewals should
