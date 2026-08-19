@@ -108,7 +108,11 @@ function BillingSuccess() {
               </a>
             )}
           </div>
-          <Meta>Invoice also emailed to you.</Meta>
+          <Meta>
+            Dodo emails your invoice within 2–3 minutes. Not there?{' '}
+            {invoice?.paymentId && <>Click <b>Download invoice</b> above, or </>}
+            email <a href={`mailto:hello@usecue.com?subject=${encodeURIComponent('Invoice request — ' + (invoice?.paymentId || ''))}`} style={{ color: 'var(--electric)' }}>hello@usecue.com</a> with your payment ID {invoice?.paymentId ? <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 3 }}>{invoice.paymentId}</code> : ''} and we'll send it manually.
+          </Meta>
         </>
       )}
       {state === 'pending' && (
