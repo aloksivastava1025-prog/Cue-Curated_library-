@@ -197,7 +197,7 @@ serve(async (req) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-5",
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         // Structured output — forces JSON matching the schema exactly.
