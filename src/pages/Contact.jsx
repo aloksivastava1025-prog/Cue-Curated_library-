@@ -97,14 +97,6 @@ export default function Contact() {
               </a>
             </InfoRow>
 
-            <InfoRow label="Address">
-              <div style={infoValueStyle}>
-                Cue Design<br />
-                Delhi, India<br />
-                Working remote
-              </div>
-            </InfoRow>
-
             {/* Colorful social pills */}
             <div style={{ marginTop: 44, display: 'flex', gap: 10 }}>
               <SocialPill

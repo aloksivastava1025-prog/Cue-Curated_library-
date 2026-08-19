@@ -133,8 +133,8 @@ export default function Pricing() {
           Only 50 founding members. $99 lifetime.<br />
           After the 50 fill, $99 is gone forever — everyone after pays $249.
         </p>
-        <p style={{ margin: '10px auto 0', fontSize: 11.5, color: 'var(--text-dimmer)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em' }}>
-          Buying from India? ₹4,999 lifetime (+ 18% GST) — regional pricing auto-applied at checkout.
+        <p style={{ margin: '8px auto 0', fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em' }}>
+          Local currency and applicable taxes are calculated at checkout.
         </p>
 
         {/* Live founding counter */}

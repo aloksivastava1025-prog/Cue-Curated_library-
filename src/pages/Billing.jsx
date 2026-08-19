@@ -137,7 +137,7 @@ function BillingAccount() {
 
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12, flexWrap: 'wrap' }}>
           <a href="#/" style={ctaStyle}>Back to library</a>
-          <a href={`mailto:hello@cuedesign.space?subject=${encodeURIComponent('Billing question')}`} style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
+          <a href="#/contact" style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
             Contact support
           </a>
         </div>
