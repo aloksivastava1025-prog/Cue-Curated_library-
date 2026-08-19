@@ -103,6 +103,22 @@ export default function Modal({ item, onClose, showToast }) {
   // Show paywall only if item is premium AND user is not entitled.
   const isPremium = isPremiumMarker && !isCuePlus;
 
+  // Free tier: 2 AI-prompt copies per 24h. Peeked (non-mutating) so
+  // the counter renders correctly before any click. Refetched when
+  // the modal changes user/item so the number stays honest.
+  const [dailyRemaining, setDailyRemaining] = useState(null); // null = unknown/loading, -1 = unlimited
+  useEffect(() => {
+    let alive = true;
+    if (!isSignedIn || !user?.id || isCuePlus) {
+      setDailyRemaining(isCuePlus ? -1 : null);
+      return;
+    }
+    backend.peekDailyCopy(user.id)
+      .then((r) => { if (alive) setDailyRemaining(r?.remaining ?? null); })
+      .catch(() => { if (alive) setDailyRemaining(null); });
+    return () => { alive = false; };
+  }, [isSignedIn, user?.id, isCuePlus, item?.id]);
+
   // Fetch full prompt content for free items on open; premium stays locked.
   useEffect(() => {
     if (!item) { setContent(null); return; }
@@ -145,13 +161,41 @@ export default function Modal({ item, onClose, showToast }) {
       if (showToast) showToast('Nothing to copy');
       return;
     }
+
+    // Do the clipboard write FIRST (browsers require it inside the
+    // user-gesture stack). Then record + rate-limit server-side.
+    // If the server says we've now exceeded the quota, that's fine —
+    // this copy still succeeded; the NEXT one will be blocked with a
+    // clear upgrade CTA.
     const ok = await copyToClipboard(text);
-    if (ok) {
-      setCopied(which);
-      setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
-      if (showToast) showToast(`Copied ${which.replace('_', ' ')}`);
-    } else if (showToast) {
-      showToast('Copy failed');
+    if (!ok) {
+      if (showToast) showToast('Copy failed');
+      return;
+    }
+
+    // Free-tier gate — only "prompt" copies count against the daily
+    // limit (code + use_case are unrestricted for free users, but
+    // premium items are already paywalled upstream).
+    if (!isCuePlus && which === 'prompt') {
+      try {
+        const r = await backend.recordDailyCopy(user.id);
+        setDailyRemaining(r?.remaining ?? null);
+        if (r && r.allowed === false) {
+          if (showToast) showToast('Free daily limit reached — upgrade to Cue+ for unlimited.');
+          setCopied(which);
+          setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
+          return;
+        }
+      } catch { /* fail open — never block a paid customer if RPC hiccups */ }
+    }
+
+    setCopied(which);
+    setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
+    if (showToast) {
+      const suffix = (!isCuePlus && which === 'prompt' && typeof dailyRemaining === 'number' && dailyRemaining > 0)
+        ? ` · ${dailyRemaining - 1} free left today`
+        : ''
+      showToast(`Copied ${which.replace('_', ' ')}${suffix}`);
     }
   };
 
@@ -334,6 +378,8 @@ export default function Modal({ item, onClose, showToast }) {
               copied={copied}
               onCopy={onCopy}
               isSignedIn={isSignedIn}
+              isCuePlus={isCuePlus}
+              dailyRemaining={dailyRemaining}
             />
           )}
         </div>
@@ -353,7 +399,7 @@ export default function Modal({ item, onClose, showToast }) {
 
 // ---------------------------------------------------------------------------
 // Free item: Code / Prompt / Use Case tabs
-function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn }) {
+function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn, isCuePlus, dailyRemaining }) {
   const TABS = [
     { key: 'code',     label: 'Code',     present: hasCode },
     { key: 'prompt',   label: 'Prompt',   present: hasPrompt },
@@ -463,38 +509,63 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
         )}
       </div>
 
-      {/* Copy button — signed-out users see a sign-in gate first */}
-      <button
-        onClick={() => onCopy(active)}
-        disabled={isEmpty}
-        style={{
-          marginTop: 14, padding: '13px 18px',
-          background: isEmpty ? '#1c1c1e' : 'var(--electric)',
-          color: isEmpty ? 'var(--text-dimmer)' : '#fff',
-          border: 'none', borderRadius: 8,
-          fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em',
-          cursor: isEmpty ? 'not-allowed' : 'pointer',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          boxShadow: isEmpty ? 'none' : '0 6px 24px -8px rgba(0,0,255,0.55)',
-          transition: 'transform 0.15s ease, background 0.2s ease',
-        }}
-      >
-        {copied === active ? (
-          <><CheckIcon /> Copied</>
-        ) : !isSignedIn ? (
+      {/* Copy button. Signed-out users see a sign-in gate; free users
+          who've spent today's 2 prompt-copies see an upgrade CTA. */}
+      {(() => {
+        const isPromptTab = active === 'prompt'
+        const outOfFree = isSignedIn && !isCuePlus && isPromptTab && dailyRemaining === 0
+        const disabled = isEmpty || outOfFree
+        return (
           <>
-            <LockIcon size={14} />
-            Sign in to copy {activeLabel.toLowerCase()}
+            <button
+              onClick={() => {
+                if (outOfFree) { window.location.hash = '#/pricing'; return }
+                onCopy(active)
+              }}
+              disabled={isEmpty}
+              style={{
+                marginTop: 14, padding: '13px 18px',
+                background: disabled ? '#1c1c1e' : 'var(--electric)',
+                color: disabled ? 'var(--text-dimmer)' : '#fff',
+                border: 'none', borderRadius: 8,
+                fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em',
+                cursor: isEmpty ? 'not-allowed' : 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: disabled ? 'none' : '0 6px 24px -8px rgba(0,0,255,0.55)',
+                transition: 'transform 0.15s ease, background 0.2s ease',
+              }}
+            >
+              {copied === active ? (
+                <><CheckIcon /> Copied</>
+              ) : !isSignedIn ? (
+                <>
+                  <LockIcon size={14} />
+                  Sign in to copy {activeLabel.toLowerCase()}
+                </>
+              ) : outOfFree ? (
+                <>Upgrade to Cue+ for unlimited copies →</>
+              ) : (
+                `Copy ${activeLabel.toLowerCase()}`
+              )}
+            </button>
+            {!isSignedIn && !isEmpty && (
+              <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+                Free — sign in takes 10 seconds
+              </div>
+            )}
+            {isSignedIn && !isCuePlus && isPromptTab && typeof dailyRemaining === 'number' && dailyRemaining > 0 && (
+              <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+                {dailyRemaining} of 2 free prompt copies left today
+              </div>
+            )}
+            {outOfFree && (
+              <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+                Daily limit reached — resets at midnight UTC
+              </div>
+            )}
           </>
-        ) : (
-          `Copy ${activeLabel.toLowerCase()}`
-        )}
-      </button>
-      {!isSignedIn && !isEmpty && (
-        <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
-          Free — sign in takes 10 seconds
-        </div>
-      )}
+        )
+      })()}
     </div>
   );
 }

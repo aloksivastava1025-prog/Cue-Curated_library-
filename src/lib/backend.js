@@ -652,6 +652,28 @@ const supabaseAdapter = {
   // by the edge function so the webhook can bind the payment to the
   // right Clerk user even when the customer types a different email
   // into Dodo's hosted checkout.
+  // Free tier: 2 AI prompt copies per rolling 24h window per user.
+  // Cue+ / Cue+ Team: unlimited (returns remaining = -1).
+  async recordDailyCopy(userId) {
+    if (!userId) return { allowed: false, remaining: 0 }
+    const { data, error } = await supabase.rpc('record_daily_copy', { p_user_id: userId })
+    if (error) {
+      console.warn('recordDailyCopy failed', error)
+      return { allowed: true, remaining: 0, error: error.message }
+    }
+    return data || { allowed: true, remaining: 0 }
+  },
+
+  async peekDailyCopy(userId) {
+    if (!userId) return { allowed: false, remaining: 0 }
+    const { data, error } = await supabase.rpc('peek_daily_copy', { p_user_id: userId })
+    if (error) {
+      console.warn('peekDailyCopy failed', error)
+      return { allowed: true, remaining: 0 }
+    }
+    return data || { allowed: true, remaining: 0 }
+  },
+
   async getMyBilling(clerkUser) {
     if (!clerkUser?.id) return null
     const email = clerkUser?.primaryEmailAddress?.emailAddress
