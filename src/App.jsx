@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SignInButton, UserButton, useUser, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
+import { SignInButton, useUser, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
+import CueUserMenu from './components/CueUserMenu.jsx';
 import Lenis from 'lenis';
 import Modal from './components/Modal.jsx';
 import Admin from './pages/Admin.jsx';
@@ -356,20 +357,10 @@ function MainApp() {
                   Cue+
                 </a>
               )}
-              <UserButton showName appearance={{ elements: { userButtonOuterIdentifier: { color: 'var(--text)', fontSize: '12px' } } }}>
-                <UserButton.MenuItems>
-                  <UserButton.Link
-                    label="Billing & invoices"
-                    labelIcon={<BillingIcon />}
-                    href="/#/billing"
-                  />
-                  <UserButton.Link
-                    label="Contact us"
-                    labelIcon={<ContactIcon />}
-                    href="/#/contact"
-                  />
-                </UserButton.MenuItems>
-              </UserButton>
+              <span style={{ fontSize: 12, color: 'var(--text)', letterSpacing: '0.01em' }}>
+                {user?.firstName || (user?.primaryEmailAddress?.emailAddress || '').split('@')[0]}
+              </span>
+              <CueUserMenu />
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { useUser, UserButton } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
+import CueUserMenu from '../components/CueUserMenu.jsx'
 import { backend } from '../lib/backend.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import Footer from '../components/Footer.jsx'
@@ -99,20 +100,7 @@ export default function Pricing() {
               style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500 }}
             >Sign in</button>
           ) : (
-            <UserButton>
-              <UserButton.MenuItems>
-                <UserButton.Link
-                  label="Billing & invoices"
-                  labelIcon={<span style={{ display: 'inline-block', width: 16, height: 16 }}>▤</span>}
-                  href="/#/billing"
-                />
-                <UserButton.Link
-                  label="Contact us"
-                  labelIcon={<span style={{ display: 'inline-block', width: 16, height: 16 }}>✉</span>}
-                  href="/#/contact"
-                />
-              </UserButton.MenuItems>
-            </UserButton>
+            <CueUserMenu />
           )}
         </div>
       </nav>
