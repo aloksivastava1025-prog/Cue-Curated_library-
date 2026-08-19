@@ -16,7 +16,7 @@ export default function Footer({ onSuggest }) {
     { label: 'Terms',    href: '#/legal/terms' },
     { label: 'Refund',   href: '#/legal/refund' },
     { label: 'License',  href: '#/legal/license' },
-    { label: 'Contact',  href: 'mailto:hello@cuedesign.space' },
+    { label: 'Contact',  href: '#/contact' },
     { label: 'Suggest',  onClick: suggestHandler },
   ]
 
@@ -36,6 +36,18 @@ export default function Footer({ onSuggest }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--text)' }}>CUE</span>
           <span style={{ fontSize: 11.5, letterSpacing: '0.02em' }}>© {year} · Copy · paste · ship.</span>
+          <a
+            href="https://x.com/aloksrivast"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="Cue on X (Twitter)"
+            style={socialIconStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-dim)' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/>
+            </svg>
+          </a>
         </div>
 
         <nav style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
@@ -51,6 +63,13 @@ export default function Footer({ onSuggest }) {
       </div>
     </footer>
   )
+}
+const socialIconStyle = {
+  marginLeft: 4,
+  color: 'var(--text-dim)',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  width: 22, height: 22, borderRadius: 999,
+  transition: 'color 0.15s ease',
 }
 
 const linkStyle = {

@@ -8,6 +8,7 @@ import Pricing from './pages/Pricing.jsx';
 import Legal from './pages/Legal.jsx';
 import Saved from './pages/Saved.jsx';
 import Billing from './pages/Billing.jsx';
+import Contact from './pages/Contact.jsx';
 import Footer from './components/Footer.jsx';
 import EditorialCard from './components/EditorialCard.jsx';
 import FeaturedRail from './components/FeaturedRail.jsx';
@@ -235,6 +236,10 @@ function MainApp() {
 
   if (route === '#/billing' || route === '#/account') {
     return <Billing variant="account" />;
+  }
+
+  if (route === '#/contact') {
+    return <Contact />;
   }
 
   if (route.startsWith('#/legal/')) {
