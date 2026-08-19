@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import { dark } from '@clerk/themes'
 import App from './App.jsx'
 import { initSentry } from './lib/sentry.js'
+import { initAnalytics } from './lib/analytics.js'
 import 'lenis/dist/lenis.css'
 import './index.css'
 import './styles/mobile.css'
@@ -11,6 +12,7 @@ import './styles/mobile.css'
 // Initialise error reporting before any component renders so we catch
 // setup-time crashes too. No-op when VITE_SENTRY_DSN isn't set.
 initSentry()
+initAnalytics()
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 

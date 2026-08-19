@@ -182,12 +182,21 @@ export default function Modal({ item, onClose, showToast }) {
         setDailyRemaining(r?.remaining ?? null);
         if (r && r.allowed === false) {
           if (showToast) showToast('Free daily limit reached — upgrade to Cue+ for unlimited.');
+          import('../lib/analytics.js').then(({ events }) => events.dailyLimitHit());
           setCopied(which);
           setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
           return;
         }
       } catch { /* fail open — never block a paid customer if RPC hiccups */ }
     }
+
+    // Successful copy — track for funnel analytics.
+    import('../lib/analytics.js').then(({ events }) => events.promptCopied({
+      id: item?.id,
+      title: item?.title,
+      tab: which,
+      tier: isCuePlus ? 'cue_plus' : 'free',
+    }));
 
     setCopied(which);
     setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);

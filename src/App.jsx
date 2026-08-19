@@ -21,6 +21,7 @@ import NavMenu from './components/NavMenu.jsx';
 import SignInCard from './components/SignInCard.jsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { AppProvider, useApp } from './context/AppContext.jsx';
+import { identify as identifyAnalytics, resetAnalytics } from './lib/analytics.js';
 import { usePageMeta } from './hooks/usePageMeta.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -81,6 +82,16 @@ function MainApp() {
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
+
+  // Bind Clerk user_id to PostHog once signed in so pre-signin
+  // pageviews stitch into the same profile as post-signin events.
+  // Reset on sign-out so a fresh visitor on the same browser isn't
+  // attributed to the previous account.
+  useEffect(() => {
+    if (isSignedIn && user) identifyAnalytics(user);
+    else if (!isSignedIn) resetAnalytics();
+  }, [isSignedIn, user?.id]);
+
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback } = useApp();
   const { openAuth } = useAuth();
   const savedCount = bookmarkedIds?.size || 0;

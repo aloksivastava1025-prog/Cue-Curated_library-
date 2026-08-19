@@ -237,6 +237,9 @@ function BillingSuccess() {
         const plan = profile?.plan
         if (plan && plan !== 'free') {
           if (!cancelled) setState('ready')
+          import('../lib/analytics.js').then(({ events }) =>
+            events.foundingPurchaseCompleted({ payment_id: invoice?.paymentId })
+          )
           return
         }
       } catch { /* keep polling */ }

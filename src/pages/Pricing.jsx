@@ -67,6 +67,9 @@ export default function Pricing() {
     if (checkoutBusy) return
     setCheckoutBusy(true)
     try {
+      // Fire the intent event BEFORE Dodo's redirect — after redirect
+      // the page unloads and any post-hoc event may not flush.
+      import('../lib/analytics.js').then(({ events }) => events.foundingCheckoutClicked())
       const url = await backend.createFoundingCheckout(user)
       window.location.href = url
     } catch (err) {
