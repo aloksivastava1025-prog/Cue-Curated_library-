@@ -52,6 +52,29 @@ export default function Pricing() {
   const [foundingCount, setFoundingCount] = useState(0)
   const [openFaq, setOpenFaq] = useState(null)
 
+  // Display-only currency toggle. Dodo still applies the real
+  // regional price at checkout (via 'By Country' localized pricing),
+  // but this lets a buyer preview what they'll actually see before
+  // clicking through. Default = USD (global default).
+  const [currency, setCurrency] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cue.pricing.currency')
+      if (saved === 'INR' || saved === 'USD') return saved
+    } catch {}
+    // Best-effort geo hint: browser locale contains 'IN' → INR.
+    if (typeof navigator !== 'undefined') {
+      const langs = [navigator.language, ...(navigator.languages || [])].filter(Boolean)
+      if (langs.some((l) => /-IN\b|_IN\b/i.test(l))) return 'INR'
+    }
+    return 'USD'
+  })
+  useEffect(() => {
+    try { localStorage.setItem('cue.pricing.currency', currency) } catch {}
+  }, [currency])
+  const P = currency === 'INR'
+    ? { sym: '₹', founding: '4,999', crossed: '12,499', monthly: '2,499', yearlyCost: '29,988', taxSuffix: ' + GST' }
+    : { sym: '$', founding: '99',    crossed: '249',    monthly: '49',    yearlyCost: '588',    taxSuffix: '' }
+
   useEffect(() => {
     let alive = true
     backend.getFoundingCount()
@@ -130,21 +153,50 @@ export default function Pricing() {
           The founders' library.
         </h1>
         <p style={{ margin: 0, fontSize: 14, color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
-          Only 50 founding members. $99 lifetime.<br />
-          After the 50 fill, $99 is gone forever — everyone after pays $249.
+          Only 50 founding members. {P.sym}{P.founding} lifetime.<br />
+          After the 50 fill, {P.sym}{P.founding} is gone forever — everyone after pays {P.sym}{P.crossed}.
         </p>
         <p style={{ margin: '8px auto 0', fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em' }}>
           Local currency and applicable taxes are calculated at checkout.
         </p>
 
-        {/* Live founding counter */}
-        <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 12, padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 999 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 999, background: foundingFilled ? 'var(--text-dim)' : 'var(--electric)' }} />
-          <span style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text)' }}>
-            {foundingFilled
-              ? 'Founding closed · Launch pricing live'
-              : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
-          </span>
+        {/* Founding counter + currency toggle — same visual weight,
+            sit side-by-side so the buyer notices both signals at once. */}
+        <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 999 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: foundingFilled ? 'var(--text-dim)' : 'var(--electric)' }} />
+            <span style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text)' }}>
+              {foundingFilled
+                ? 'Founding closed · Launch pricing live'
+                : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
+            </span>
+          </div>
+          <div role="tablist" aria-label="Choose currency" style={{
+            display: 'inline-flex', padding: 3,
+            border: '1px solid var(--border)', borderRadius: 999,
+            background: '#0e0e10',
+          }}>
+            {[
+              { code: 'USD', label: '$ USD' },
+              { code: 'INR', label: '₹ INR' },
+            ].map((c) => {
+              const on = currency === c.code
+              return (
+                <button
+                  key={c.code} role="tab" aria-selected={on}
+                  onClick={() => setCurrency(c.code)}
+                  style={{
+                    padding: '5px 14px', borderRadius: 999,
+                    background: on ? 'var(--electric)' : 'transparent',
+                    color: on ? '#fff' : 'var(--text-dim)',
+                    border: 'none', cursor: 'pointer',
+                    fontSize: 11.5, fontWeight: 600, letterSpacing: '0.04em',
+                    fontFamily: INTER, transition: 'background 0.15s ease, color 0.15s ease',
+                  }}
+                >{c.label}</button>
+              )
+            })}
+          </div>
         </div>
       </section>
 
@@ -179,7 +231,7 @@ export default function Pricing() {
               <Col
                 title="Free"
                 description="Browse the library. Get a taste of Cue without committing."
-                price="$0"
+                price={`${P.sym}0`}
                 subLine="No credit card required"
                 cta={<a href="#/" style={btnGhost}>Start browsing</a>}
                 features={[
@@ -196,13 +248,13 @@ export default function Pricing() {
               <Col
                 title="Cue+ Founding"
                 description="Everything unlocked. Locked at the founding price for life."
-                crossedPrice="$249"
-                price="$99"
-                priceSub="lifetime"
+                crossedPrice={`${P.sym}${P.crossed}`}
+                price={`${P.sym}${P.founding}`}
+                priceSub={`lifetime${P.taxSuffix}`}
                 badge={foundingFilled ? 'Founding closed' : 'Founding pick'}
                 subLine={foundingFilled
-                  ? '$249 lifetime for everyone now'
-                  : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, $99 is gone forever`}
+                  ? `${P.sym}${P.crossed} lifetime for everyone now`
+                  : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`}
                 highlight
                 cta={
                   foundingFilled ? (
@@ -230,9 +282,9 @@ export default function Pricing() {
               <Col
                 title="Monthly"
                 description="Try Cue without commitment. Cancel anytime — access ends on cancel."
-                price="$49"
+                price={`${P.sym}${P.monthly}`}
                 priceSub="/month"
-                subLine="$588 over a year · launching after beta"
+                subLine={`${P.sym}${P.yearlyCost} over a year · launching after beta`}
                 muted
                 cta={<button onClick={() => setMonthlyOpen(true)} style={btnGhost}>Notify me</button>}
                 features={[
@@ -360,7 +412,7 @@ export default function Pricing() {
               <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px', opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
             )}
             <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-dim)' }}>
-              14-day refund on payment errors · Founders lock $99 forever
+              14-day refund on payment errors · Founders lock {P.sym}{P.founding} forever
             </div>
           </>
         )}
