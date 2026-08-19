@@ -306,6 +306,39 @@ export default function Pricing() {
         </div>
       </section>
 
+      {/* Beta note — founder-signed, sits above FAQ where a
+          serious buyer is scanning for objections. Says "this is v1,
+          talk to me". */}
+      <section style={{ padding: '8px 24px 0', maxWidth: 720, margin: '0 auto' }}>
+        <div style={{
+          display: 'flex', gap: 14, alignItems: 'flex-start',
+          padding: '16px 18px',
+          background: 'rgba(204,255,0,0.04)',
+          border: '1px solid rgba(204,255,0,0.28)',
+          borderRadius: 10,
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: 999, background: '#ccff00',
+            marginTop: 7, flexShrink: 0,
+            boxShadow: '0 0 12px rgba(204,255,0,0.6)',
+          }} />
+          <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text)' }}>
+            <strong style={{ color: '#ccff00', letterSpacing: '0.06em', fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>
+              Beta note
+            </strong>
+            <div style={{ marginTop: 6 }}>
+              Cue is a beta — one person building, shipping weekly. If something
+              feels off, a component is missing, a prompt could be better, or
+              you have a genuine question — email me at{' '}
+              <a href="mailto:hello@cuedesign.space?subject=Cue%20feedback" style={{ color: 'var(--electric)', textDecoration: 'none' }}>
+                hello@cuedesign.space
+              </a>{' '}
+              and I'll answer personally. Every genuine query gets a reply.
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section style={{ padding: '32px 24px 80px', maxWidth: 720, margin: '0 auto' }}>
         <div style={{ fontSize: 10.5, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 500, marginBottom: 20 }}>
