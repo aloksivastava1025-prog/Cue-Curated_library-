@@ -384,15 +384,30 @@ const supabaseAdapter = {
     return data
   },
 
-  async getMyProfile(clerkUserId) {
+  async getMyProfile(clerkUserId, clerkUserObject = null) {
     if (!clerkUserId) return null
+    // First: try direct user_id match (fast path — post-merge state)
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('user_id', clerkUserId)
       .maybeSingle()
-    if (error) return null
-    return data
+    if (!error && data) return data
+
+    // Fallback: try email match. This covers the pre-merge state where
+    // a self-healed row exists with user_id='dodo:...' but the Clerk user
+    // just signed in and ensureUserProfile hasn't finished merging yet.
+    // Requires the caller to pass the Clerk user object.
+    const email = clerkUserObject?.primaryEmailAddress?.emailAddress
+    if (email) {
+      const { data: byEmail } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .maybeSingle()
+      if (byEmail) return byEmail
+    }
+    return null
   },
 
   async updateMyProfile(clerkUserId, patch) {

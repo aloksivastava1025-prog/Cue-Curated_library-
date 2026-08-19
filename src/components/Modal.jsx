@@ -94,7 +94,7 @@ export default function Modal({ item, onClose, showToast }) {
   useEffect(() => {
     let alive = true;
     if (!isSignedIn || !user?.id) { setUserPlan('free'); return; }
-    backend.getMyProfile(user.id)
+    backend.getMyProfile(user.id, user)
       .then((p) => { if (alive) setUserPlan(p?.plan || 'free'); })
       .catch(() => { if (alive) setUserPlan('free'); });
     return () => { alive = false; };
