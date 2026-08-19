@@ -106,6 +106,11 @@ export default function Pricing() {
                   labelIcon={<span style={{ display: 'inline-block', width: 16, height: 16 }}>▤</span>}
                   href="/#/billing"
                 />
+                <UserButton.Link
+                  label="Contact us"
+                  labelIcon={<span style={{ display: 'inline-block', width: 16, height: 16 }}>✉</span>}
+                  href="/#/contact"
+                />
               </UserButton.MenuItems>
             </UserButton>
           )}

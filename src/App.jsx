@@ -75,6 +75,15 @@ function BillingIcon() {
     </svg>
   )
 }
+// Envelope icon for the Contact menu item.
+function ContactIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M2 4.5l6 4 6-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
 
 function MainApp() {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -353,6 +362,11 @@ function MainApp() {
                     label="Billing & invoices"
                     labelIcon={<BillingIcon />}
                     href="/#/billing"
+                  />
+                  <UserButton.Link
+                    label="Contact us"
+                    labelIcon={<ContactIcon />}
+                    href="/#/contact"
                   />
                 </UserButton.MenuItems>
               </UserButton>
