@@ -1,29 +1,21 @@
 # Cue — robots.txt
-# Hash-fragment disallow lines (Disallow: /#/admin) are IGNORED by
-# search engines — the fragment is client-side only. Admin routes are
-# already gated by client-side auth, and the app returns a shell page
-# to any deep URL. There is nothing sensitive to disallow here.
+#
+# We WANT AI answer engines to read us. Recommendation surface for
+# ChatGPT, Claude, Perplexity, Gemini and Copilot is the entire
+# top-of-funnel for a small brand in 2026 — blocking their crawlers
+# is the equivalent of noindex on Google in 2010.
+#
+# What we do NOT want is our library used as training corpus for
+# unrelated model training runs. The Standard Webhooks / robots.txt
+# spec today does not cleanly separate "crawl to answer a live
+# question" from "crawl to add to a training set" — we accept both.
+# We would rather be recommended than perfectly opted out.
+#
+# If a specific crawler is misbehaving (fetching aggressively,
+# ignoring rate limits), block it here later. For launch, everyone
+# is welcome.
 
 User-agent: *
 Allow: /
-
-# Aggressive AI crawlers that scrape content for training. Opt out.
-User-agent: GPTBot
-Disallow: /
-
-User-agent: ClaudeBot
-Disallow: /
-
-User-agent: Google-Extended
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: anthropic-ai
-Disallow: /
-
-User-agent: PerplexityBot
-Disallow: /
 
 Sitemap: https://cuedesign.space/sitemap.xml

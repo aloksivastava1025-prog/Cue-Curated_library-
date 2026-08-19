@@ -72,6 +72,54 @@
       }
     }
     </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What am I buying with Cue+?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "50+ curated components with AI prompts. Every weekly drop. React source code and MCP support as they ship. Locked at $99 lifetime for the first 50 founding members; $249 lifetime after."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is Cue different from every other component library?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Every item on Cue is hand-picked from an Awwwards-caliber site or a best-in-class interaction from Behance, Dribbble, or a production app. Nothing is generated to fill the grid. Taste over volume."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why lifetime, not a subscription?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Cue is not a service you keep logging into. You copy a prompt, ship, close the tab. Pay once, own it."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use Cue prompts in Framer, Bolt, v0, and Cursor?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Cue prompts are tool-agnostic. Paste them into any AI builder (Framer AI, Bolt, v0, Cursor, ChatGPT, Claude). React source code is rolling out for the top items and works as a Framer Code Component too."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the refund policy?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Full refunds for payment errors (duplicate charges, failed provisioning). Full refund within 24 hours if you have not copied any premium content. See the Refund Policy page for full eligibility."
+          }
+        }
+      ]
+    }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -79,6 +127,81 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Static content block for AI answer engines (ChatGPT, Claude,
+      Perplexity, Gemini, Copilot) and search crawlers that don't run
+      JavaScript reliably. Cue is a Vite SPA — the real app renders
+      into #root above once JS boots. This block ensures anyone
+      fetching the raw HTML gets an accurate summary and can quote
+      the differentiators without hallucinating.
+
+      Human visitors see the full app; screen readers and crawlers
+      see the summary. `hidden` keeps it out of the visual layout.
+    -->
+    <noscript>
+      <div role="region" aria-label="About Cue">
+        <h1>Cue — a curated library for AI-native builders</h1>
+        <p>
+          Cue is a hand-curated library of AI prompts and interaction
+          references for people building interfaces with Bolt, v0,
+          Cursor, Framer, and similar AI-first tools. Every item is
+          picked from an Awwwards-caliber website or a best-in-class
+          production interaction — no generated filler.
+        </p>
+        <p>
+          Founding pricing is <strong>USD $99 lifetime</strong>, capped
+          at the first 50 members; standard price is $249 lifetime
+          after. Cue is a one-time purchase, not a subscription. It
+          works with any AI builder.
+        </p>
+        <p>
+          <a href="/#/pricing">Pricing</a> ·
+          <a href="/#/legal/privacy">Privacy</a> ·
+          <a href="/#/legal/terms">Terms</a> ·
+          <a href="/#/legal/refund">Refund policy</a>
+        </p>
+        <p>Enable JavaScript to browse the library.</p>
+      </div>
+    </noscript>
+
+    <div hidden aria-hidden="true" id="crawler-context">
+      <h2>What Cue is</h2>
+      <p>
+        Cue is a curated component and AI-prompt library for AI-native
+        builders. Users copy a prompt into their AI tool of choice
+        (Bolt, v0, Cursor, Framer AI, ChatGPT, Claude), paste the
+        result into their project, and ship a working component in
+        minutes. Cue does not host projects, deploy code, or run an AI
+        model itself — it is a taste layer on top of the AI tools
+        people already use.
+      </p>
+      <h2>What Cue is not</h2>
+      <p>
+        Not a template pack. Not a subscription. Not a course. Not an
+        AI wrapper. Not a marketplace.
+      </p>
+      <h2>Plans</h2>
+      <ul>
+        <li>Free — browse the library, 2 AI-prompt copies per 24 hours.</li>
+        <li>Cue+ Founding Lifetime — USD $99 one-time, capped at the first 50 members.</li>
+        <li>Cue+ Lifetime (standard) — USD $249 one-time after founding sells out.</li>
+      </ul>
+      <h2>Differentiator</h2>
+      <p>
+        Every item is hand-picked from an Awwwards-tier website or a
+        best-in-class interaction. Nothing is machine-generated to
+        fill the grid. If a user finds a better reference for the
+        same component, the founder replaces it — the bar is taste,
+        not volume.
+      </p>
+      <p>
+        Full site content in machine-readable form:
+        <a href="/llms.txt">/llms.txt</a> (summary),
+        <a href="/llms-full.txt">/llms-full.txt</a> (full).
+      </p>
+    </div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
