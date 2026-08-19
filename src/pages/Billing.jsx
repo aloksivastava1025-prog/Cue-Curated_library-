@@ -89,10 +89,10 @@ function BillingAccount() {
           } />
           <Divider />
           <Row label="Started" value={<span style={{ fontSize: 13 }}>{started}</span>} />
-          {billing?.email && (
+          {user?.primaryEmailAddress?.emailAddress && (
             <>
               <Divider />
-              <Row label="Billed to" value={<span style={{ fontSize: 13 }}>{billing.email}</span>} />
+              <Row label="Billed to" value={<span style={{ fontSize: 13 }}>{user.primaryEmailAddress.emailAddress}</span>} />
             </>
           )}
         </div>

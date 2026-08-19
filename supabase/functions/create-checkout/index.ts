@@ -128,6 +128,39 @@ serve(async (req) => {
       })
     }
 
+    // ---- Rate limit: 5 checkout attempts per user per 60s ----
+    // Uses the existing rate_limit_windows table (upsert-then-increment
+    // pattern). Cheap and race-tolerant enough for a $99 one-time
+    // product; prevents rapid-click / abuse and Dodo-side lockouts.
+    try {
+      const rlKey = `checkout:${userId}`
+      const nowMs = Date.now()
+      const { data: window } = await supabase
+        .from('rate_limit_windows')
+        .select('count, reset_at')
+        .eq('key', rlKey)
+        .maybeSingle()
+      if (window && new Date(window.reset_at).getTime() > nowMs && window.count >= 5) {
+        return new Response(JSON.stringify({ error: 'Too many checkout attempts. Please wait a minute.' }), {
+          status: 429,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        })
+      }
+      const nextReset = window && new Date(window.reset_at).getTime() > nowMs
+        ? window.reset_at
+        : new Date(nowMs + 60_000).toISOString()
+      const nextCount = window && new Date(window.reset_at).getTime() > nowMs
+        ? window.count + 1
+        : 1
+      await supabase
+        .from('rate_limit_windows')
+        .upsert({ key: rlKey, count: nextCount, reset_at: nextReset }, { onConflict: 'key' })
+    } catch (rlErr: any) {
+      // Rate-limit table absent or unwritable — log and continue rather
+      // than block legitimate checkout.
+      log.warn('Rate limit check failed', { error: rlErr?.message })
+    }
+
     // ---- Create Dodo checkout session ----
     const dodoApiKey = (Deno.env.get('DODO_PAYMENTS_API_KEY') || '').trim()
     

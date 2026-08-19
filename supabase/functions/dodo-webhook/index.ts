@@ -267,31 +267,73 @@ serve(async (req) => {
       }
     }
 
-    // Handle refunds / cancellations / failed payments
+    // Handle refunds / cancellations / failed payments.
+    // Use the same 4-step attribution chain as payment.succeeded so a
+    // refund revokes access whether the original row was matched by
+    // metadata.user_id, email, or dodo_customer_id (self-heal).
     if (
-      event.type === 'refund.succeeded' || 
-      event.type === 'subscription.canceled' || 
-      event.type === 'subscription.cancelled' || 
-      event.type === 'subscription.failed' || 
+      event.type === 'refund.succeeded' ||
+      event.type === 'subscription.canceled' ||
+      event.type === 'subscription.cancelled' ||
+      event.type === 'subscription.failed' ||
       event.type === 'subscription.on_hold'
     ) {
-      if (userId) {
+      const revokeEmail = event.data?.customer?.email
+        || event.data?.metadata?.email
+        || null
+      const revokeCustomerId = event.data?.customer?.customer_id
+        || event.data?.customer_id
+        || null
+      let revokeUserId = event.data?.metadata?.user_id
+        || event.data?.metadata?.reference
+        || event.data?.reference
+        || null
+
+      if (!revokeUserId && revokeEmail) {
+        const { data: byEmail } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .ilike('email', revokeEmail)
+          .maybeSingle()
+        if (byEmail?.user_id) revokeUserId = byEmail.user_id
+      }
+      if (!revokeUserId && revokeCustomerId) {
+        const { data: byCustomer } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('dodo_customer_id', revokeCustomerId)
+          .maybeSingle()
+        if (byCustomer?.user_id) revokeUserId = byCustomer.user_id
+      }
+
+      if (revokeUserId) {
         const { error: downgradeError } = await supabase
           .from('user_profiles')
           .update({
             plan: 'free',
             plan_source: 'dodo_refund',
+            plan_expires_at: null,
           })
-          .eq('user_id', userId)
+          .eq('user_id', revokeUserId)
 
         if (downgradeError) {
           log.error('Failed to downgrade user on refund', {
-            userId,
+            userId: revokeUserId,
+            eventType: event.type,
             error: downgradeError.message,
           })
         } else {
-          log.info('User downgraded on refund', { userId })
+          log.info('User downgraded on refund', {
+            userId: revokeUserId,
+            eventType: event.type,
+          })
         }
+      } else {
+        log.warn('Refund event with no attributable user', {
+          eventType: event.type,
+          revokeEmail,
+          revokeCustomerId,
+        })
       }
     }
   } catch (err: any) {

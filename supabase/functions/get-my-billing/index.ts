@@ -107,12 +107,14 @@ serve(async (req) => {
       }
     }).filter((r) => r.payment_id)
 
+    // Return only fields the caller could already know or derive from
+    // Clerk. We intentionally drop `email` and `full_name` — the
+    // client already has them from useUser(); echoing them from the
+    // server would be an extra PII surface for a spoofed userId.
     return new Response(JSON.stringify({
       plan:              profile?.plan || 'free',
       plan_source:       profile?.plan_source || null,
       plan_started_at:   profile?.plan_started_at || null,
-      email:             profile?.email || email || null,
-      full_name:         profile?.full_name || null,
       dodo_customer_id:  profile?.dodo_customer_id || null,
       last_payment_id:   history[0]?.payment_id || null,
       history,
