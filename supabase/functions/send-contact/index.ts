@@ -6,8 +6,8 @@ import { createClient } from "npm:@supabase/supabase-js";
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:5230',
-  'https://usecue.com',
-  'https://www.usecue.com',
+  'https://cuedesign.space',
+  'https://www.cuedesign.space',
 ];
 
 function getCorsHeaders(req: Request) {

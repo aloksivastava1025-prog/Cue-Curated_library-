@@ -16,13 +16,13 @@ Legend
 ## Section 1 — Domain (unblocks everything)
 
 - [ ] 👤 💰 ~₹1,000 ⏱️ 10 min
-  **Buy `usecue.dev`** on **[Cloudflare Registrar](https://dash.cloudflare.com/sign-up)**.
+  **Buy `cuedesign.space`** on **[Cloudflare Registrar](https://dash.cloudflare.com/sign-up)**.
   1. Sign up / log in
-  2. Domain Registration → search `usecue.dev`
+  2. Domain Registration → search `cuedesign.space`
   3. Add card in Billing → Purchase (1 year, auto-renew ON)
   4. Send me the confirmation screenshot when done.
 
-  If `usecue.dev` isn't available or costs > $30/year, fallback to
+  If `cuedesign.space` isn't available or costs > $30/year, fallback to
   `cueui.com` (~$10 on Cloudflare). Tell me the actual domain — I'll
   do a global find-replace across the code.
 
@@ -39,7 +39,7 @@ Legend
 - [ ] 👤 ⏱️ 10 min · Free
   **Clerk production instance** — [dashboard.clerk.com](https://dashboard.clerk.com).
   1. Top-left dropdown → **Create production instance**
-  2. Domain = your new domain (`usecue.dev` or fallback)
+  2. Domain = your new domain (`cuedesign.space` or fallback)
   3. Under **Google OAuth** → copy the redirect URI Clerk gives you
   4. Google Cloud Console → OAuth 2.0 → add that redirect URI to the production credentials
   5. Note the new **publishable key** (`pk_live_...`) — I'll need it for Vercel env vars
@@ -55,7 +55,7 @@ Legend
 ## Section 3 — Once domain is bought (hand me the domain string)
 
 - [ ] 🤖 ⏱️ 5 min
-  **Global find-replace** — I'll replace every `usecue.dev` in:
+  **Global find-replace** — I'll replace every `cuedesign.space` in:
   - `index.html` (og:url, canonical, JSON-LD)
   - `public/sitemap.xml`
   - `public/robots.txt`
@@ -63,7 +63,7 @@ Legend
 
 - [ ] 👤 ⏱️ 5 min · Free
   **Resend — add domain**
-  1. Resend → Domains → **Add Domain** → paste `usecue.dev`
+  1. Resend → Domains → **Add Domain** → paste `cuedesign.space`
   2. Resend gives 3 DNS records (MX + SPF + DKIM)
   3. Cloudflare dashboard → your domain → **DNS** tab → **Add record** for each of the 3 (copy exact name + value)
   4. Wait 5–30 min → Resend → **Verify** → green checkmark
@@ -76,7 +76,7 @@ Legend
 
 - [ ] 🤖 ⏱️ 30 min
   **Wire Resend into edge functions**
-  1. `send-contact` — forward customer messages to `hello@usecue.dev`
+  1. `send-contact` — forward customer messages to `hello@cuedesign.space`
   2. `dodo-webhook` — welcome email on payment.succeeded (uncomment the TODO block)
   3. Optional: waitlist confirmation email
 
@@ -110,11 +110,11 @@ Legend
 
 - [ ] 👤 ⏱️ 5 min
   **Add custom domain**
-  1. Vercel → Project → Settings → Domains → **Add** → paste `usecue.dev`
+  1. Vercel → Project → Settings → Domains → **Add** → paste `cuedesign.space`
   2. Vercel gives DNS records
   3. Cloudflare DNS → add those records
   4. Wait for SSL to provision (~2 min)
-  5. Open `https://usecue.dev` — site should load
+  5. Open `https://cuedesign.space` — site should load
 
 ---
 
@@ -125,8 +125,8 @@ Legend
   1. Dodo Dashboard → toggle **Live mode** (top of dashboard)
   2. **Products** → Create → `Cue+ Founding Lifetime` — $99 one-time — note the new `pdt_...` id
   3. On the product → **Return URLs**:
-     - Success = `https://usecue.dev/#/billing/success`
-     - Cancel = `https://usecue.dev/#/billing/cancel`
+     - Success = `https://cuedesign.space/#/billing/success`
+     - Cancel = `https://cuedesign.space/#/billing/cancel`
   4. **Webhooks** → Add endpoint → `https://rkinvrdjbmoozjzmqshn.supabase.co/functions/v1/dodo-webhook`
   5. Copy the new webhook signing secret (`whsec_...`)
   6. Send me all 3 (new product id, new API key, new webhook secret)
@@ -160,7 +160,7 @@ Legend
 
 - [ ] 👤 ⏱️ 5 min · 💰 $99 (refundable to yourself)
   Buy your own founding spot with a real card.
-  1. Open `https://usecue.dev` in an incognito window (fresh state)
+  1. Open `https://cuedesign.space` in an incognito window (fresh state)
   2. Sign in with a spare email
   3. `#/pricing` → **Claim founding spot**
   4. Dodo checkout → real card → complete payment
@@ -181,7 +181,7 @@ Legend
 ## Section 8 — Announce
 
 - [ ] 👤
-  **Twitter / X thread** — the founding-50 pitch. Link `https://usecue.dev`.
+  **Twitter / X thread** — the founding-50 pitch. Link `https://cuedesign.space`.
 - [ ] 👤
   **Product Hunt** launch (optional — set date + prep hunter).
 - [ ] 👤
@@ -213,6 +213,6 @@ Not needed for launch. Do these in the first month:
 (Resend, Vercel custom domain, Clerk production, Dodo return URLs)
 or already done (code, DB, edge functions, tests).
 
-Ping me the moment `usecue.dev` (or fallback) is in your Cloudflare
+Ping me the moment `cuedesign.space` (or fallback) is in your Cloudflare
 dashboard — I'll do the global find-replace and walk you through
 Section 4 onward.

@@ -40,7 +40,7 @@ Legend:
 
 ### Infrastructure (👤 required)
 
-- [ ] 👤 **Buy domain** — options: `usecue.com`, `getcue.co`, `cue.build`, `trycue.com`. ~$15/yr
+- [ ] 👤 **Buy domain** — options: `cuedesign.space`, `getcue.co`, `cue.build`, `trycue.com`. ~$15/yr
 - [ ] 👤 **Vercel deployment**
   - Import GitHub repo → `main` branch
   - Env vars: `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`, `VITE_USE_CLERK_SUPABASE_JWT=true`
@@ -50,10 +50,10 @@ Legend:
   - Add production URLs to allow-list
   - Generate `pk_live_...` key → replace in Vercel env
 - [ ] 💻 **Swap hardcoded strings** after domain confirmed
-  - `hello@usecue.com` → real support email
-  - `usecue.com` in sitemap.xml + robots.txt + Legal.jsx `CONTACT_EMAIL`
+  - `hello@cuedesign.space` → real support email
+  - `cuedesign.space` in sitemap.xml + robots.txt + Legal.jsx `CONTACT_EMAIL`
   - Social profile URLs in Footer.jsx
-  - CORS origins in all edge functions (currently `https://usecue.com`)
+  - CORS origins in all edge functions (currently `https://cuedesign.space`)
 
 ### Security (👤 + 💻)
 

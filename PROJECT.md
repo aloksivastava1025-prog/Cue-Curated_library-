@@ -49,7 +49,7 @@
 | **Error tracking** | Sentry (free tier) | Errors + performance, PII-scrubbed |
 | **Analytics** | Plausible / PostHog (planned) | Privacy-first, GDPR-compliant |
 | **Deployment** | Vercel (planned) | Free tier + edge network + Git-native |
-| **Domain** | TBD (`usecue.com` / similar) | Placeholder in code as `hello@usecue.com` |
+| **Domain** | TBD (`cuedesign.space` / similar) | Placeholder in code as `hello@cuedesign.space` |
 
 ---
 
@@ -652,7 +652,7 @@ Other security measures already in place:
 ## 14. Contact + ownership
 
 - **Founder:** Alok Srivastava
-- **Support email:** `hello@usecue.com` (placeholder until domain final)
+- **Support email:** `hello@cuedesign.space` (placeholder until domain final)
 - **Admin allow-list:** `akashkumar7653099@gmail.com`, `aloksivastava1025@gmail.com`
 - **Repo:** github.com/aloksivastava1025-prog/Cue-Curated_library-
 - **Active branch:** `Alok_working`

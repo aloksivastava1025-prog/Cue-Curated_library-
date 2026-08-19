@@ -16,7 +16,7 @@ export default function Footer({ onSuggest }) {
     { label: 'Terms',    href: '#/legal/terms' },
     { label: 'Refund',   href: '#/legal/refund' },
     { label: 'License',  href: '#/legal/license' },
-    { label: 'Contact',  href: 'mailto:hello@usecue.com' },
+    { label: 'Contact',  href: 'mailto:hello@cuedesign.space' },
     { label: 'Suggest',  onClick: suggestHandler },
   ]
 

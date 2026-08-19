@@ -42,7 +42,7 @@ export default class ErrorBoundary extends React.Component {
             Well, that's embarrassing.
           </h1>
           <p style={{ margin: '0 auto 28px', fontSize: 14, lineHeight: 1.55, color: '#a5a5a5', maxWidth: 440 }}>
-            The library hit a bump. It's been logged. Try refreshing — if it keeps happening, drop us a note at hello@cue.design.
+            The library hit a bump. It's been logged. Try refreshing — if it keeps happening, drop us a note at hello@cuedesign.space.
           </p>
           <button onClick={this.reset} style={{
             padding: '12px 22px', background: '#0000ff', color: '#fff',

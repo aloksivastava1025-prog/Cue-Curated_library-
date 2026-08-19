@@ -16,8 +16,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:5230',
-  'https://usecue.com',
-  'https://www.usecue.com',
+  'https://cuedesign.space',
+  'https://www.cuedesign.space',
 ]
 
 function corsHeaders(req: Request) {

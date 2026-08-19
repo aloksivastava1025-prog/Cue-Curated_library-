@@ -9,32 +9,32 @@
     browser routing.
   -->
   <url>
-    <loc>https://usecue.dev/</loc>
+    <loc>https://cuedesign.space/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://usecue.dev/#/pricing</loc>
+    <loc>https://cuedesign.space/#/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://usecue.dev/#/legal/privacy</loc>
+    <loc>https://cuedesign.space/#/legal/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://usecue.dev/#/legal/terms</loc>
+    <loc>https://cuedesign.space/#/legal/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://usecue.dev/#/legal/refund</loc>
+    <loc>https://cuedesign.space/#/legal/refund</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://usecue.dev/#/legal/license</loc>
+    <loc>https://cuedesign.space/#/legal/license</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

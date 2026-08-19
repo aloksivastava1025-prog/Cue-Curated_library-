@@ -26,7 +26,7 @@ const CONFIG = {
   DODO_WEBHOOK_SECRET: 'whsec_p9fSlPJd44R4rLyvZZ0kN6SXDr90fb10',
   WEBHOOK_URL: 'https://rkinvrdjbmoozjzmqshn.supabase.co/functions/v1/dodo-webhook',
   TEST_USER_ID: 'test_user_cue_suite_001',
-  TEST_USER_EMAIL: 'test@usecue.com',
+  TEST_USER_EMAIL: 'test@cuedesign.space',
 }
 // ============================================================
 

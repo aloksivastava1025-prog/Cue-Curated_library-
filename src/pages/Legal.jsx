@@ -12,7 +12,7 @@ const slugify = (s) => String(s)
 // with active plans should be notified by email when this moves.
 const EFFECTIVE = 'Effective from public launch'
 
-const CONTACT_EMAIL = 'hello@usecue.dev'
+const CONTACT_EMAIL = 'hello@cuedesign.space'
 const OPERATOR      = 'CUE (operated by an independent creator based in India)'
 
 const PAGES = {
@@ -23,7 +23,7 @@ const PAGES = {
     updated: EFFECTIVE,
     body: [
       ['Who this covers',
-        `This policy applies to everyone who visits usecue.dev, signs into CUE, subscribes to Cue+, or submits feedback. ${OPERATOR}. There are no offices, staff, or subsidiaries elsewhere.`],
+        `This policy applies to everyone who visits cuedesign.space, signs into CUE, subscribes to Cue+, or submits feedback. ${OPERATOR}. There are no offices, staff, or subsidiaries elsewhere.`],
       ['Data you give us',
         `When you sign in through Clerk we receive your email address and, if you set one, a display name. When you upgrade to Cue+, our payment partner Dodo Payments collects your billing details directly — CUE only ever sees which plan you bought and the payment identifier, never your card number, CVV, or full billing address. If you submit feedback, we store the message, your email if you provided one, and the page you sent it from.`],
       ['Data collected automatically',
@@ -128,7 +128,7 @@ const PAGES = {
       ['You cannot',
         `Resell CUE prompts or code as a standalone product. Redistribute the CUE library (whole or in part) as a template pack, zip dump, or competing library. Train an AI model on CUE content. Publish CUE prompts to a public prompt marketplace under your name. Share your Cue+ login with anyone else.`],
       ['Attribution',
-        `Not required. If you do credit us, "Interactions curated by CUE — usecue.dev" is enough. We appreciate but never require it.`],
+        `Not required. If you do credit us, "Interactions curated by CUE — cuedesign.space" is enough. We appreciate but never require it.`],
       ['Ownership',
         `The prompts, code, curation, and library structure remain the intellectual property of CUE. This license does not transfer ownership. It gives you the right to use the material, not the right to claim authorship of CUE-original work.`],
       ['Termination',

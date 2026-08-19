@@ -137,7 +137,7 @@ function BillingAccount() {
 
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12, flexWrap: 'wrap' }}>
           <a href="#/" style={ctaStyle}>Back to library</a>
-          <a href={`mailto:hello@usecue.com?subject=${encodeURIComponent('Billing question')}`} style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
+          <a href={`mailto:hello@cuedesign.space?subject=${encodeURIComponent('Billing question')}`} style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
             Contact support
           </a>
         </div>
@@ -297,7 +297,7 @@ function BillingSuccess() {
           <Meta>
             Dodo emails your invoice within 2–3 minutes. Not there?{' '}
             {invoice?.paymentId && <>Click <b>Download invoice</b> above, or </>}
-            email <a href={`mailto:hello@usecue.com?subject=${encodeURIComponent('Invoice request — ' + (invoice?.paymentId || ''))}`} style={{ color: 'var(--electric)' }}>hello@usecue.com</a> with your payment ID {invoice?.paymentId ? <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 3 }}>{invoice.paymentId}</code> : ''} and we'll send it manually.
+            email <a href={`mailto:hello@cuedesign.space?subject=${encodeURIComponent('Invoice request — ' + (invoice?.paymentId || ''))}`} style={{ color: 'var(--electric)' }}>hello@cuedesign.space</a> with your payment ID {invoice?.paymentId ? <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 3 }}>{invoice.paymentId}</code> : ''} and we'll send it manually.
           </Meta>
         </>
       )}
@@ -309,7 +309,7 @@ function BillingSuccess() {
             yet. This happens rarely; access typically activates within a
             few minutes.
             <br /><br />
-            If it takes more than 10 minutes, email <a href="mailto:hello@usecue.com" style={{ color: 'var(--electric)' }}>hello@usecue.com</a> with your Dodo receipt — we'll fix it manually within an hour.
+            If it takes more than 10 minutes, email <a href="mailto:hello@cuedesign.space" style={{ color: 'var(--electric)' }}>hello@cuedesign.space</a> with your Dodo receipt — we'll fix it manually within an hour.
           </Body>
           <a href="#/" style={ctaStyle}>Back to library</a>
         </>

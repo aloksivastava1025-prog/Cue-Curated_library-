@@ -26,4 +26,4 @@ Disallow: /
 User-agent: PerplexityBot
 Disallow: /
 
-Sitemap: https://usecue.dev/sitemap.xml
+Sitemap: https://cuedesign.space/sitemap.xml

@@ -62,7 +62,7 @@ fixes applied in this audit.
 | F.1 | Success page does not unlock alone | ✅ | Polls only. If poll times out → "access pending" copy, not a fake unlock. |
 | F.2 | Cancel page handled | ✅ | `/billing/cancel` — clear "no charge made" copy, CTA back to pricing. |
 | F.3 | Refund policy consistent | ✅ | Refund revokes (`plan_source='dodo_refund'`, `plan='free'`). |
-| F.4 | Payment-processing delay copy | ✅ | 60s poll → "access pending — email hello@usecue.com if it takes >10 min" fallback. |
+| F.4 | Payment-processing delay copy | ✅ | 60s poll → "access pending — email hello@cuedesign.space if it takes >10 min" fallback. |
 | F.5 | Invoice download & email fallback | ✅ | Dodo emails invoice automatically (in live mode). App also shows Download button (proxied via `get-invoice`) + a `mailto:` with payment_id prefilled if the customer prefers a human. |
 
 ---

@@ -21,7 +21,7 @@ task.
 | **CSP allowlist** | Clerk, Supabase, Plausible, Cloudflare Turnstile, Sentry — all correctly whitelisted for `script-src` / `connect-src` / `frame-src`. |
 | **Observability** | Sentry wired (`src/lib/sentry.js`) with DPDP-compliant PII scrubbing (emails + Clerk user_ids stripped in `beforeSend`). `DSN` in env. |
 | **Edge fn logging** | Structured JSON with `requestId` correlation. No secrets logged. |
-| **CORS on edge fns** | All 9 functions allow-list `usecue.com` + `www.usecue.com` + localhost dev ports. |
+| **CORS on edge fns** | All 9 functions allow-list `cuedesign.space` + `www.cuedesign.space` + localhost dev ports. |
 | **Admin protection** | Route + button visibility gated on email allow-list (`aloksivastava1025@gmail.com`, `akashkumar7653099@gmail.com`). Admin write paths use SERVICE_ROLE via edge fns. |
 | **Robots + sitemap** | `public/robots.txt` + `public/sitemap.xml` present. Disallows admin routes. |
 | **Static assets** | `favicon.svg` present. `dist/assets/*` cache-immutable for 1 year via `vercel.json`. |
@@ -40,16 +40,16 @@ task.
 The codebase points to **two different domains** with roughly equal
 weight:
 
-- `usecue.com` — Footer, Billing.jsx (3×), Legal.jsx (2×)
-- `cue.design` — ErrorBoundary, robots.txt, sitemap.xml (6×)
+- `cuedesign.space` — Footer, Billing.jsx (3×), Legal.jsx (2×)
+- `cuedesign.space` — ErrorBoundary, robots.txt, sitemap.xml (6×)
 
-**Impact:** Users clicking "Contact" go to `hello@usecue.com`; users
-looking at ErrorBoundary see `hello@cue.design`; Google's sitemap
-crawl fetches `cue.design/sitemap.xml`. Emails to the wrong address
+**Impact:** Users clicking "Contact" go to `hello@cuedesign.space`; users
+looking at ErrorBoundary see `hello@cuedesign.space`; Google's sitemap
+crawl fetches `cuedesign.space/sitemap.xml`. Emails to the wrong address
 bounce. Analytics/search-console signals get split.
 
 **Fix (2 minutes):** decide which domain, then a single
-`grep -rl 'cue.design'` → sed replace across `src/` + `public/`. I
+`grep -rl 'cuedesign.space'` → sed replace across `src/` + `public/`. I
 can do this in one commit — need you to pick.
 
 ### R2 · No `og:image` meta tag
@@ -136,7 +136,7 @@ From `GO_NO_GO.md`:
 Currently everything runs on the **development instance** (visible
 "Development mode" banner in the UserButton popover). Before DNS:
 
-1. Clerk dashboard → **Create production instance** for `usecue.com`.
+1. Clerk dashboard → **Create production instance** for `cuedesign.space`.
 2. Copy the production publishable key into Vercel env.
 3. Update Google OAuth in Clerk production settings with the
    production redirect URI.
@@ -147,7 +147,7 @@ Currently everything runs on the **development instance** (visible
 
 ## My recommendation as CTO
 
-1. Do **R1** (choose domain, replace `cue.design` → `usecue.com` or
+1. Do **R1** (choose domain, replace `cuedesign.space` → `cuedesign.space` or
    vice-versa) and **R2** (og:image) — total 20 minutes of work.
 2. Push to `main`. Deploy to Vercel with the env vars above.
    Test-mode Dodo works fine on the deployed URL.

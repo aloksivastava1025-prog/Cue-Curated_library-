@@ -15,8 +15,8 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5175',
   'http://localhost:5180',
   'http://localhost:5230',
-  'https://usecue.com',
-  'https://www.usecue.com',
+  'https://cuedesign.space',
+  'https://www.cuedesign.space',
 ]
 
 function corsHeaders(req: Request) {

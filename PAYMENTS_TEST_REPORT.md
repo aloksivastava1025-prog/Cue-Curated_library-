@@ -128,7 +128,7 @@ event types.
 
 ## End-to-end flow — TEST MODE
 
-1. Sign in to CUE as a fresh Clerk user (`test-alok+auditN@usecue.com`).
+1. Sign in to CUE as a fresh Clerk user (`test-alok+auditN@cuedesign.space`).
 2. `/#/pricing` → **Claim founding spot** →
    `create-checkout` returns Dodo hosted URL.
 3. Complete Dodo checkout with card `4242 4242 4242 4242`. Intentionally
