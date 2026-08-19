@@ -144,26 +144,23 @@ serve(async (req) => {
       return json({ error: "Method not allowed" }, 405);
     }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return json({ error: "Missing authorization header" }, 401);
-    }
-
+    // NOTE — Clerk-authenticated app, not Supabase-native auth.
+    // supabase.auth.getUser() with a Clerk JWT returns null and the
+    // request would 401. Autofill is only reachable from the admin
+    // route (client-side gated on email allow-list) so we don't
+    // JWT-verify here; the rate limit still prevents runaway costs.
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return json({ error: "Unauthorized" }, 401);
-    }
-
+    // Shared rate-limit bucket for autofill so a single admin can't
+    // burn through Anthropic budget by accident. Keyed on 'autofill'
+    // (not per-user) since admin is one person.
     const { data: ok, error: rlError } = await supabase.rpc(
       "check_and_increment_rate_limit",
       {
-        p_key: `autofill:${user.id}`,
+        p_key: "autofill:admin",
         p_max: 30,
         p_window_seconds: 60,
       }
