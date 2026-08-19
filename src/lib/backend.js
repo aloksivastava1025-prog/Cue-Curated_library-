@@ -675,6 +675,9 @@ const supabaseAdapter = {
         if (error.context?.json) {
           const j = await error.context.json()
           if (j?.error) msg = j.error
+          if (j?.dodo_status || j?.dodo_body) {
+            msg += ` (Dodo ${j.dodo_status || ''}: ${(j.dodo_body || '').slice(0, 300)})`
+          }
         }
       } catch { /* ignore */ }
       throw new Error(msg)

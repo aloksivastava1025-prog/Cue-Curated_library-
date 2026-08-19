@@ -129,19 +129,21 @@ serve(async (req) => {
     }
 
     // ---- Create Dodo checkout session ----
-    const dodoApiKey = Deno.env.get('DODO_PAYMENTS_API_KEY')
+    const dodoApiKey = (Deno.env.get('DODO_PAYMENTS_API_KEY') || '').trim()
     
     // Select product ID based on plan_type and billing_cycle
     let productId;
     if (plan_type === 'cue_plus_team') {
-      productId = billing_cycle === 'annual' 
-        ? Deno.env.get('DODO_PRODUCT_ID_TEAM_ANNUAL') 
+      productId = billing_cycle === 'annual'
+        ? Deno.env.get('DODO_PRODUCT_ID_TEAM_ANNUAL')
         : Deno.env.get('DODO_PRODUCT_ID_TEAM_LIFETIME');
     } else {
-      productId = billing_cycle === 'annual' 
-        ? Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_ANNUAL') 
+      productId = billing_cycle === 'annual'
+        ? Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_ANNUAL')
         : Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_LIFETIME');
     }
+    // Env vars often pick up stray whitespace from dashboard paste.
+    productId = productId ? productId.trim() : productId;
 
     if (!dodoApiKey || !productId) {
       log.error('Dodo Payments secrets not configured for this plan/cycle combination', { plan_type, billing_cycle })
@@ -153,7 +155,14 @@ serve(async (req) => {
 
     const origin = req.headers.get('origin') || 'https://usecue.com'
 
+    // Dodo's /payments endpoint requires a `billing` object. On a hosted
+    // checkout flow the user fills these fields on Dodo's page — we
+    // just seed defaults so the API accepts the create call. Fragment
+    // (#) in return_url is stripped by some providers, so we point at
+    // the root and rely on hash routing to hop to /billing/success via
+    // a small handler in App.jsx.
     const requestBody = {
+      payment_link: true,
       customer: {
         email: String(customerEmail).trim(),
         name: String(customerName || 'Cue User').trim().slice(0, 100),
@@ -164,6 +173,13 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
+      billing: {
+        country: 'IN',
+        state:   'NA',
+        city:    'NA',
+        street:  'NA',
+        zipcode: '000000',
+      },
       return_url: `${origin}/#/billing/success`,
       metadata: {
         user_id: userId,
@@ -188,7 +204,11 @@ serve(async (req) => {
     if (!response.ok) {
       const errText = await response.text()
       log.error('Dodo API error', { status: response.status, body: errText.slice(0, 500) })
-      return new Response(JSON.stringify({ error: 'Payment provider error' }), {
+      return new Response(JSON.stringify({
+        error: 'Payment provider error',
+        dodo_status: response.status,
+        dodo_body: errText.slice(0, 500),
+      }), {
         status: 502,
         headers: { ...headers, 'Content-Type': 'application/json' },
       })

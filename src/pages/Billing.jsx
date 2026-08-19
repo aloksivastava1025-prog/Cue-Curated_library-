@@ -100,7 +100,7 @@ function BillingSuccess() {
             <a href="#/" style={ctaStyle}>Start exploring →</a>
             {invoice?.paymentId && (
               <a
-                href={`https://app.dodopayments.com/payments/${invoice.paymentId}/invoice`}
+                href={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-invoice?payment_id=${encodeURIComponent(invoice.paymentId)}`}
                 target="_blank" rel="noopener noreferrer"
                 style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}
               >
