@@ -31,6 +31,21 @@ export default function EditorialCard({ item, setSelectedItem }) {
     return () => observer.disconnect();
   }, []);
 
+  // Touch devices: no hover → treat "card centered in viewport" as
+  // hover. Second observer with a strict threshold so only the card
+  // the user is actually looking at plays its video.
+  useEffect(() => {
+    if (!ref.current) return;
+    const noHover = typeof window !== 'undefined'
+      && window.matchMedia && window.matchMedia('(hover: none)').matches;
+    if (!noHover) return;
+    const io = new IntersectionObserver(([entry]) => {
+      setIsHovered(entry.isIntersecting && entry.intersectionRatio >= 0.55);
+    }, { threshold: [0, 0.55, 1] });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
