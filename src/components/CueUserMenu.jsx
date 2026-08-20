@@ -174,7 +174,7 @@ export default function CueUserMenu() {
           position: absolute;
           top: calc(100% + 12px);
           right: 0;
-          width: 268px;
+          width: min(268px, calc(100vw - 16px));
           background: #0e0e10;
           border: 1px solid rgba(255,255,255,0.08);
           border-radius: 14px;
@@ -332,7 +332,7 @@ export default function CueUserMenu() {
 
         /* On very narrow screens, pin the dropdown a bit further from the edge. */
         @media (max-width: 480px) {
-          .cue-um-dropdown { width: 260px; right: -4px; }
+          .cue-um-dropdown { width: min(260px, calc(100vw - 16px)); right: 0; }
         }
       `}</style>
     </div>

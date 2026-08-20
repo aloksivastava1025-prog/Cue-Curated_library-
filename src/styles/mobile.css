@@ -159,6 +159,14 @@
   .cue-nav-count {
     display: none !important;
   }
+  /* Beta chip crowds the wordmark at <=360px — drop it too */
+  .cue-nav-beta {
+    display: none !important;
+  }
+  /* Shrink hero pill right label so it fits on one line */
+  .cue-hero-pill > span:last-child {
+    font-size: 12px !important;
+  }
 
   /* Even tighter hero */
   .cue-hero {
@@ -227,6 +235,16 @@
 
 /* ---- Modal (detail view) already handles its own @media at 820px in
    the component itself. No overrides needed here. --------------------- */
+
+/* ---- Toast — tighter offsets on mobile so it doesn't hug the corner */
+@media (max-width: 640px) {
+  .toast {
+    right: 16px !important;
+    bottom: 16px !important;
+    left: 16px !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+}
 
 /* ---- Reduce animations for users who ask (accessibility) ------------ */
 @media (prefers-reduced-motion: reduce) {

@@ -274,7 +274,7 @@ function MainApp() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '24px', color: 'var(--text)' }}>CUE</div>
-            <span style={{
+            <span className="cue-nav-beta" style={{
               fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
               padding: '3px 8px', borderRadius: '999px',
               background: 'rgba(204,255,0,0.14)', color: '#ccff00',
@@ -403,6 +403,8 @@ function MainApp() {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
+              flexWrap: 'wrap', justifyContent: 'center',
+              maxWidth: 'calc(100vw - 24px)',
               padding: '8px 10px',                                          /* py-2 px-2.5 */
               background: 'rgba(255,255,255,0.10)',                         /* bg-white/10 */
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',          /* ring-1 ring-white/15 */

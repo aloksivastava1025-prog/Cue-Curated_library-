@@ -94,7 +94,7 @@ export default function TagFilter({ items = [], selected = [], onChange }) {
           data-lenis-prevent
           style={{
             position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-            width: 320, maxHeight: 420,
+            width: 'min(320px, calc(100vw - 24px))', maxHeight: 'min(420px, 70vh)',
             background: '#0d0d10', border: '1px solid var(--border)', borderRadius: 12,
             boxShadow: '0 24px 60px rgba(0,0,0,0.7)', zIndex: 60,
             display: 'flex', flexDirection: 'column',

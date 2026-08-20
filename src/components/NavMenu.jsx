@@ -66,7 +66,7 @@ export default function NavMenu({ items = [], label = 'Menu' }) {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-          minWidth: 200,
+          minWidth: 200, maxWidth: 'calc(100vw - 16px)',
           background: '#0d0d10', border: '1px solid var(--border)', borderRadius: 10,
           boxShadow: '0 24px 60px rgba(0,0,0,0.7)', zIndex: 200,
           padding: 6,

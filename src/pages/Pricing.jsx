@@ -87,18 +87,34 @@ export default function Pricing() {
   const foundingFilled = spotsLeft === 0
 
   const [checkoutBusy, setCheckoutBusy] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
   async function startFoundingCheckout() {
     if (checkoutBusy) return
+    setCheckoutError('')
     setCheckoutBusy(true)
-    try {
-      // Fire the intent event BEFORE Dodo's redirect — after redirect
-      // the page unloads and any post-hoc event may not flush.
+    // Auto-retry once on network hiccup — mobile carriers drop
+    // connections often enough that a single retry recovers most
+    // real transient failures.
+    const attempt = async () => {
       import('../lib/analytics.js').then(({ events }) => events.foundingCheckoutClicked())
       const url = await backend.createFoundingCheckout(user)
       window.location.href = url
-    } catch (err) {
-      alert(err?.message || 'Could not start checkout. Please try again.')
-      setCheckoutBusy(false)
+    }
+    try {
+      await attempt()
+    } catch (err1) {
+      // Wait 800ms + retry once. Network hiccup usually resolves.
+      await new Promise((r) => setTimeout(r, 800))
+      try {
+        await attempt()
+      } catch (err2) {
+        const msg = err2?.message || err1?.message || ''
+        const friendly = /fetch|network|edge function/i.test(msg)
+          ? "Network hiccup — check your connection and tap again."
+          : (msg || 'Could not open checkout. Please try again.')
+        setCheckoutError(friendly)
+        setCheckoutBusy(false)
+      }
     }
   }
 
@@ -168,7 +184,9 @@ export default function Pricing() {
             <span style={{ fontSize: 12, letterSpacing: '0.04em', color: 'var(--text)' }}>
               {foundingFilled
                 ? 'Founding closed · Launch pricing live'
-                : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
+                : foundingCount === 0
+                  ? `Founding launch · ${FOUNDING_CAP} lifetime seats open`
+                  : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
             </span>
           </div>
           <div role="tablist" aria-label="Choose currency" style={{
@@ -414,7 +432,9 @@ export default function Pricing() {
         {!foundingFilled && (
           <>
             <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 14, letterSpacing: '0.04em' }}>
-              {foundingCount} of {FOUNDING_CAP} founding spots claimed
+              {foundingCount === 0
+                ? `Founding launch — be founder #1 of ${FOUNDING_CAP}`
+                : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
             </div>
             {!isSignedIn ? (
               <button onClick={() => openAuth('sign-up')} style={{ ...btnPrimary, width: 'auto', display: 'inline-block', fontSize: 14, padding: '14px 32px' }}>Claim founding spot</button>
@@ -424,6 +444,17 @@ export default function Pricing() {
             <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-dim)' }}>
               14-day refund on payment errors · Founders lock {P.sym}{P.founding} forever
             </div>
+            {checkoutError && (
+              <div style={{
+                marginTop: 14, display: 'inline-block',
+                padding: '9px 14px', borderRadius: 8,
+                background: 'rgba(255,107,107,0.08)',
+                border: '1px solid rgba(255,107,107,0.35)',
+                color: '#ff6b6b',
+                fontSize: 12.5, letterSpacing: '0.01em',
+                maxWidth: 420,
+              }}>{checkoutError}</div>
+            )}
           </>
         )}
       </section>

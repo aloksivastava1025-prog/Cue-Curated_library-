@@ -248,14 +248,32 @@ const supabaseAdapter = {
 
   // Founding counter — how many paying Cue+ users so far.
   // Reads from user_profiles.plan; returns 0 if table doesn't exist yet.
+  // Founding count for the scarcity counter. Excludes:
+  //   - admin/team internal accounts (self-test purchases)
+  //   - reconciliation-source rows (self-heal artifacts from
+  //     manual DB fixes rather than real buyers)
+  // Result matches the pricing card + hero pill on both surfaces.
   async getFoundingCount() {
     try {
-      const { count, error } = await supabase
+      const ADMIN_EMAILS = [
+        'aloksivastava1025@gmail.com',
+        'aloks.int@teachforindia.org',
+        'akashkumar7653099@gmail.com',
+        'srivastavaalok2214@gmail.com',
+      ]
+      const { data, error } = await supabase
         .from('user_profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('email, plan_source')
         .eq('plan', 'cue_plus')
-      if (error) return 0
-      return count || 0
+      if (error || !data) return 0
+      const real = data.filter((r) => {
+        const em = (r.email || '').toLowerCase()
+        if (ADMIN_EMAILS.includes(em)) return false
+        if (r.plan_source === 'reconciliation') return false
+        if (r.plan_source === 'manual_link_dodo_email_mismatch') return false
+        return true
+      })
+      return real.length
     } catch { return 0 }
   },
 
@@ -454,14 +472,32 @@ const supabaseAdapter = {
 
   // Founding counter — how many paying Cue+ users so far.
   // Reads from user_profiles.plan; returns 0 if table doesn't exist yet.
+  // Founding count for the scarcity counter. Excludes:
+  //   - admin/team internal accounts (self-test purchases)
+  //   - reconciliation-source rows (self-heal artifacts from
+  //     manual DB fixes rather than real buyers)
+  // Result matches the pricing card + hero pill on both surfaces.
   async getFoundingCount() {
     try {
-      const { count, error } = await supabase
+      const ADMIN_EMAILS = [
+        'aloksivastava1025@gmail.com',
+        'aloks.int@teachforindia.org',
+        'akashkumar7653099@gmail.com',
+        'srivastavaalok2214@gmail.com',
+      ]
+      const { data, error } = await supabase
         .from('user_profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('email, plan_source')
         .eq('plan', 'cue_plus')
-      if (error) return 0
-      return count || 0
+      if (error || !data) return 0
+      const real = data.filter((r) => {
+        const em = (r.email || '').toLowerCase()
+        if (ADMIN_EMAILS.includes(em)) return false
+        if (r.plan_source === 'reconciliation') return false
+        if (r.plan_source === 'manual_link_dodo_email_mismatch') return false
+        return true
+      })
+      return real.length
     } catch { return 0 }
   },
 

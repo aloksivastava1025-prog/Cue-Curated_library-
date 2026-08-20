@@ -138,7 +138,8 @@ export default function UserInbox() {
 
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 380,
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          width: 'min(92vw, 380px)', maxWidth: 'calc(100vw - 16px)',
           maxHeight: '70vh', overflowY: 'auto',
           background: '#0d0d10', border: '1px solid var(--border)', borderRadius: 12,
           boxShadow: '0 30px 80px rgba(0,0,0,0.75)', zIndex: 200, padding: 14,

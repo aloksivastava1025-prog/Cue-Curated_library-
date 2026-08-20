@@ -79,6 +79,7 @@ export default function WaitlistCTA({ source = 'newsletter-hero' }) {
           disabled={state === 'submitting'}
           style={{
             flex: 1,
+            minWidth: 0,
             padding: '10px 16px',
             background: 'transparent',
             border: 'none',
