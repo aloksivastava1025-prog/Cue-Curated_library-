@@ -255,8 +255,10 @@ const supabaseAdapter = {
   // Result matches the pricing card + hero pill on both surfaces.
   async getFoundingCount() {
     try {
+      // NOTE: aloksivastava1025@gmail.com intentionally NOT here —
+      // it's the founder's own row and counts as founding member #1
+      // so the pricing counter never shows a hollow "0 of 50".
       const ADMIN_EMAILS = [
-        'aloksivastava1025@gmail.com',
         'aloks.int@teachforindia.org',
         'akashkumar7653099@gmail.com',
         'srivastavaalok2214@gmail.com',
@@ -286,6 +288,20 @@ const supabaseAdapter = {
       .from('feedback')
       .select('*')
       .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return data || []
+  },
+
+  // All active Cue+ / Cue+ Team subscriptions. Admin view only —
+  // gated by RLS + the isAdmin check on the page. Returns rows in
+  // reverse-chronological order (newest paid first).
+  async listActiveSubscriptions(limit = 500) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('user_id, email, plan, plan_source, plan_started_at, plan_expires_at, dodo_customer_id, team_seats')
+      .in('plan', ['cue_plus', 'cue_plus_team'])
+      .order('plan_started_at', { ascending: false })
       .limit(limit)
     if (error) throw error
     return data || []
@@ -479,8 +495,10 @@ const supabaseAdapter = {
   // Result matches the pricing card + hero pill on both surfaces.
   async getFoundingCount() {
     try {
+      // NOTE: aloksivastava1025@gmail.com intentionally NOT here —
+      // it's the founder's own row and counts as founding member #1
+      // so the pricing counter never shows a hollow "0 of 50".
       const ADMIN_EMAILS = [
-        'aloksivastava1025@gmail.com',
         'aloks.int@teachforindia.org',
         'akashkumar7653099@gmail.com',
         'srivastavaalok2214@gmail.com',

@@ -136,8 +136,9 @@ serve(async (req) => {
     // product (individual lifetime). Team + annual plans have no cap.
     if (plan_type === 'cue_plus' && billing_cycle === 'lifetime') {
       const FOUNDING_CAP = 50
+      // aloksivastava1025@gmail.com intentionally excluded — see
+      // getFoundingCount in src/lib/backend.js for the rationale.
       const ADMIN_EMAILS = new Set([
-        'aloksivastava1025@gmail.com',
         'aloks.int@teachforindia.org',
         'akashkumar7653099@gmail.com',
         'srivastavaalok2214@gmail.com',

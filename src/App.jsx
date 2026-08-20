@@ -5,6 +5,7 @@ import Lenis from 'lenis';
 import Modal from './components/Modal.jsx';
 import Admin from './pages/Admin.jsx';
 import AdminInbox from './pages/AdminInbox.jsx';
+import AdminSubscriptions from './pages/AdminSubscriptions.jsx';
 import Pricing from './pages/Pricing.jsx';
 import Legal from './pages/Legal.jsx';
 import Saved from './pages/Saved.jsx';
@@ -242,6 +243,10 @@ function MainApp() {
     return <AdminInbox />;
   }
 
+  if (route === '#/admin/subscriptions' && isAdmin) {
+    return <AdminSubscriptions />;
+  }
+
   if (route === '#/admin' && isAdmin) {
     return <Admin />;
   }
@@ -295,9 +300,12 @@ function MainApp() {
         WebkitBackdropFilter: 'blur(14px) saturate(140%)',
         borderBottom: '1px solid var(--border)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
-        transform: scrolledPastHero ? 'translate3d(0,-100%,0)' : 'translate3d(0,0,0)',
-        transition: 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)',
-        willChange: 'transform',
+        // Fade the top nav out when the floating pill takes over —
+        // no slide-up, no visual artifact. Content just breathes as
+        // the pill lands at the bottom.
+        opacity: scrolledPastHero ? 0 : 1,
+        pointerEvents: scrolledPastHero ? 'none' : 'auto',
+        transition: 'opacity 260ms ease',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>

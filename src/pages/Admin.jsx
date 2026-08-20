@@ -588,6 +588,12 @@ export default function Admin() {
           <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <a href="#/admin/subscriptions" style={{
+            padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
+            color: 'var(--text)', textDecoration: 'none',
+            fontSize: 11.5, letterSpacing: '0.02em',
+            fontFamily: 'var(--font-sans)',
+          }}>Subscriptions</a>
           <InboxNavLink />
           <div style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>
             {allPrompts.length} resources
