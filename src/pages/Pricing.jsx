@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import CueUserMenu from '../components/CueUserMenu.jsx'
 import { backend } from '../lib/backend.js'
+import { friendlyError } from '../lib/friendlyError.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import Footer from '../components/Footer.jsx'
 import MonthlyWaitlistModal from '../components/MonthlyWaitlistModal.jsx'
@@ -108,11 +109,9 @@ export default function Pricing() {
       try {
         await attempt()
       } catch (err2) {
-        const msg = err2?.message || err1?.message || ''
-        const friendly = /fetch|network|edge function/i.test(msg)
-          ? "Network hiccup — check your connection and tap again."
-          : (msg || 'Could not open checkout. Please try again.')
-        setCheckoutError(friendly)
+        setCheckoutError(
+          friendlyError(err2 || err1, "Couldn't open checkout. Give it another tap in a moment.")
+        )
         setCheckoutBusy(false)
       }
     }

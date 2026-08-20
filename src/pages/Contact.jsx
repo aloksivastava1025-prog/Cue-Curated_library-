@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import Footer from '../components/Footer.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
 import { supabase } from '../lib/supabase.js'
+import { friendlyError } from '../lib/friendlyError.js'
 
 /**
  * Contact page — sits at #/contact. Reachable from the footer + the
@@ -48,7 +49,8 @@ export default function Contact() {
       setState('ok')
       setName(''); setEmail(''); setMessage('')
     } catch (e) {
-      setState('err'); setErr(e?.message || 'Could not send. Try emailing hello@cuedesign.space directly.')
+      setState('err')
+      setErr(friendlyError(e, "Couldn't send your message. Try again — or email hello@cuedesign.space directly."))
     } finally {
       setSending(false)
     }

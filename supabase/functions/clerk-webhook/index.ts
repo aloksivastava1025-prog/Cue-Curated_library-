@@ -79,6 +79,41 @@ serve(async (req: Request) => {
   const data = event?.data ?? {}
   const userId = data?.id as string | undefined
 
+  // ---- user.created → send welcome email (non-blocking) --------------
+  if (type === 'user.created') {
+    const emailAddr = (data?.email_addresses || [])
+      .find((e: any) => e?.id === data?.primary_email_address_id)?.email_address
+      || (data?.email_addresses?.[0]?.email_address)
+      || ''
+    const firstName = data?.first_name || ''
+    if (emailAddr) {
+      // Fire-and-forget — invoke the send-signup-welcome edge function.
+      // We swallow errors so a mail hiccup never fails the webhook
+      // (which would cause Clerk to retry and possibly double-send).
+      try {
+        const url = `${SUPABASE_URL}/functions/v1/send-signup-welcome`
+        // deno-lint-ignore no-explicit-any
+        (globalThis as any).EdgeRuntime?.waitUntil?.(
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({ email: emailAddr, firstName }),
+          }).catch(() => {})
+        )
+      } catch (_) { /* swallow */ }
+      log('signup_welcome_dispatched', { userId, emailAddr })
+    } else {
+      log('user_created_no_email', { userId })
+    }
+    return new Response(JSON.stringify({ received: true, action: 'welcomed', userId }), {
+      status: 200,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    })
+  }
+
   if (type !== 'user.deleted') {
     // Accept but no-op — Clerk sends multiple event types; unsubscribed
     // ones return 200 so the endpoint stays green in Clerk dashboard.

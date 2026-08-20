@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { backend } from '../lib/backend.js'
+import { friendlyError } from '../lib/friendlyError.js'
 
 /**
  * Newsletter opt-in inline form ("Get new drops in your inbox").
@@ -32,7 +33,7 @@ export default function WaitlistCTA({ source = 'newsletter-hero' }) {
         : "Subscribed. We'll email you when the next components ship.")
     } catch (err) {
       setState('error')
-      setMsg(err?.message || 'Something went wrong. Try again.')
+      setMsg(friendlyError(err, "Couldn't subscribe just now. Tap again in a moment."))
     }
   }
 

@@ -276,7 +276,10 @@ export default function Modal({ item, onClose, showToast }) {
       const url = await backend.createCheckoutSession(item.id, email, name);
       window.location.href = url;
     } catch (err) {
-      if (showToast) showToast('Checkout failed: ' + err.message);
+      if (showToast) {
+        const { friendlyError } = await import('../lib/friendlyError.js');
+        showToast(friendlyError(err, "Couldn't open checkout. Tap Buy again in a moment."));
+      }
     }
   };
 

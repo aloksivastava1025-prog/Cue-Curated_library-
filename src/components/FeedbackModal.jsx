@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { backend } from '../lib/backend.js'
+import { friendlyError } from '../lib/friendlyError.js'
 
 /**
  * Feedback modal — dual-purpose text box:
@@ -52,7 +53,7 @@ export default function FeedbackModal({ open, onClose, source }) {
       setState('success')
     } catch (err) {
       setState('error')
-      setErrorMsg(err?.message || 'Something went wrong. Try again.')
+      setErrorMsg(friendlyError(err, "Couldn't send your note. Tap again in a moment."))
     }
   }
 
