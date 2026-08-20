@@ -72,7 +72,7 @@ export default function Pricing() {
     try { localStorage.setItem('cue.pricing.currency', currency) } catch {}
   }, [currency])
   const P = currency === 'INR'
-    ? { sym: '₹', founding: '4,999', crossed: '12,499', monthly: '2,499', yearlyCost: '29,988', taxSuffix: ' + GST' }
+    ? { sym: '₹', founding: '4,999', crossed: '12,499', monthly: '2,499', yearlyCost: '29,988', taxSuffix: '' }
     : { sym: '$', founding: '99',    crossed: '249',    monthly: '49',    yearlyCost: '588',    taxSuffix: '' }
 
   useEffect(() => {
