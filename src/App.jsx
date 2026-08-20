@@ -203,7 +203,15 @@ function MainApp() {
   const anyFilterOn = typeFilter !== 'all' || tierFilter !== 'all' || tagsFilter.length > 0;
 
   useEffect(() => {
-    const handleHash = () => setRoute(window.location.hash);
+    const handleHash = () => {
+      setRoute(window.location.hash);
+      // Reset scroll to top on every route change — otherwise the
+      // browser preserves the previous page's y-position and the
+      // new route lands mid-content (also strands the floating nav
+      // in scrolled-past-hero mode until the user manually scrolls up).
+      window.scrollTo(0, 0);
+      setScrolledPastHero(false);
+    };
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
