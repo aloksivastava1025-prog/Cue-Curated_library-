@@ -100,7 +100,7 @@ function MainApp() {
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
   // Hide nav on scroll-down, show on scroll-up. Framer/Linear pattern —
   // gives content room to breathe without losing quick access.
-  const navHidden = useScrollDirection({ topZone: 80, threshold: 8 });
+  const navHidden = useScrollDirection(80, 8);
 
   // Bind Clerk user_id to PostHog once signed in so pre-signin
   // pageviews stitch into the same profile as post-signin events.
