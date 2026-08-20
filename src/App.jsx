@@ -101,19 +101,28 @@ function MainApp() {
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
   // Two-stage nav: normal top nav on the hero, floating bottom pill
-  // once the user scrolls past ~400px. Threshold flip via IntersectionObserver
-  // on a sentinel div — decoupled from Lenis and reliable across devices.
+  // once the user scrolls past a threshold. Uses rAF polling of
+  // window.scrollY so it stays correct across route changes (a
+  // sentinel-DOM approach broke when the home markup unmounts, the
+  // ref goes stale, and the observer keeps watching a detached node)
+  // AND across Lenis smooth scroll (which swallows the native scroll
+  // event stream).
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
-  const scrollSentinelRef = useRef(null);
   useEffect(() => {
-    if (!scrollSentinelRef.current) return;
-    const io = new IntersectionObserver(([entry]) => {
-      // Sentinel is out of view once the user has scrolled past it →
-      // that's when we swap the top nav out for the floating pill.
-      setScrolledPastHero(!entry.isIntersecting);
-    }, { rootMargin: '0px' });
-    io.observe(scrollSentinelRef.current);
-    return () => io.disconnect();
+    const THRESHOLD = 400;
+    let rafId = 0;
+    let current = false;
+    const tick = () => {
+      const y = window.scrollY;
+      const next = y > THRESHOLD;
+      if (next !== current) {
+        current = next;
+        setScrolledPastHero(next);
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   // Bind Clerk user_id to PostHog once signed in so pre-signin

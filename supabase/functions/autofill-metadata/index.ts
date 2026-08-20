@@ -147,8 +147,16 @@ Hard rules:
 - Match the JSON schema exactly. No extra fields.`;
 
 serve(async (req) => {
+  // Compute CORS once per request and close over it in the json
+  // helper below so response paths never reference req directly.
+  const cors = corsFor(req);
+  const json = (payload: unknown, status: number) => new Response(
+    JSON.stringify(payload),
+    { status, headers: { ...cors, "content-type": "application/json" } },
+  );
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsFor(req) });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -281,9 +289,6 @@ serve(async (req) => {
   }
 });
 
-function json(payload: unknown, status: number) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsFor(req), "content-type": "application/json" },
-  });
-}
+// json() is defined as a closure inside serve() above so it captures
+// the per-request CORS headers safely. This top-level stub is kept
+// removed intentionally.
