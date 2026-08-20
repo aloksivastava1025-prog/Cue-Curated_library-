@@ -129,10 +129,17 @@ serve(async (req) => {
         ${email ? `<p style="margin-top: 24px; font-size: 12.5px; color: #666;">Reply directly to this email or from AdminInbox — both routes reach ${esc(displayName)}.</p>` : ''}
       </div>
     `;
+    // Founder notification — sent directly to admin Gmail rather
+    // than hello@cuedesign.space (which is same as From — some
+    // ESPs treat that as a loop and silently drop). Configurable
+    // via FOUNDER_EMAIL secret; falls back to a known-good admin
+    // Gmail if unset so the founder is never fully blind.
+    const founderInbox = (Deno.env.get('FOUNDER_EMAIL')
+      || 'aloksivastava1025@gmail.com').trim();
     try {
       await sendViaResend({
         from: "Cue Contact <hello@cuedesign.space>",
-        to: "hello@cuedesign.space",
+        to: founderInbox,
         reply_to: email || undefined,
         subject: `Cue contact: ${displayName}`,
         html: founderNotification,
