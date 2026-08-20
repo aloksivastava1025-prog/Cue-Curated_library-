@@ -143,6 +143,7 @@ export default function FeaturedRail({ items, onOpen }) {
 function FeaturedCard({ item, onOpen }) {
   const [hover, setHover] = useState(false)
   const videoRef = useRef(null)
+  const cardRef = useRef(null)
 
   useEffect(() => {
     const v = videoRef.current
@@ -151,6 +152,20 @@ function FeaturedCard({ item, onOpen }) {
     else { v.pause(); v.currentTime = 0 }
   }, [hover])
 
+  // Touch devices: no hover → auto-play whichever card is centered in
+  // the viewport. Uses IntersectionObserver against the article itself.
+  useEffect(() => {
+    if (!cardRef.current || !item?.hoverSrc) return
+    const noHover = typeof window !== 'undefined'
+      && window.matchMedia && window.matchMedia('(hover: none)').matches
+    if (!noHover) return
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => setHover(e.isIntersecting && e.intersectionRatio > 0.6))
+    }, { threshold: [0, 0.6, 1] })
+    io.observe(cardRef.current)
+    return () => io.disconnect()
+  }, [item?.hoverSrc])
+
   const isPaid = isPremiumItem(item)
   const primaryCategory = String(item.category || '').split(',')[0].trim()
   const media = item.hoverSrc
@@ -158,6 +173,7 @@ function FeaturedCard({ item, onOpen }) {
 
   return (
     <article
+      ref={cardRef}
       onClick={() => onOpen(item)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

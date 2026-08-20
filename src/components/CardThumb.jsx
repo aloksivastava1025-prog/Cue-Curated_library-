@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc }) {
   const [hover, setHover] = useState(false)
   const videoRef = useRef(null)
+  const wrapRef = useRef(null)
 
   const hasMedia = Boolean(thumbSrc || hoverSrc)
 
@@ -10,7 +11,7 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
     setHover(true)
     if (hoverSrc && videoRef.current) {
       videoRef.current.currentTime = 0
-      videoRef.current.play().catch(() => { /* ignore autoplay reject */ })
+      videoRef.current.play().catch(() => {})
     }
   }
   const onLeave = () => {
@@ -18,9 +19,35 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
     if (hoverSrc && videoRef.current) videoRef.current.pause()
   }
 
+  // On touch devices (no hover) autoplay the video when the card
+  // scrolls into view — otherwise mobile users just see a thumbnail
+  // and never know the card has motion. Desktop keeps hover behavior.
+  useEffect(() => {
+    if (!hoverSrc || !wrapRef.current) return
+    const noHover = typeof window !== 'undefined'
+      && window.matchMedia && window.matchMedia('(hover: none)').matches
+    if (!noHover) return
+    const el = wrapRef.current
+    const v = videoRef.current
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!v) return
+        if (e.isIntersecting && e.intersectionRatio > 0.5) {
+          setHover(true)
+          v.play().catch(() => {})
+        } else {
+          setHover(false)
+          v.pause()
+        }
+      })
+    }, { threshold: [0, 0.5, 1] })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [hoverSrc])
+
   if (hasMedia) {
     return (
-      <div className="thumb thumb-media" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+      <div ref={wrapRef} className="thumb thumb-media" onMouseEnter={onEnter} onMouseLeave={onLeave}>
         {thumbSrc && (
           <img
             className="thumb-img"
