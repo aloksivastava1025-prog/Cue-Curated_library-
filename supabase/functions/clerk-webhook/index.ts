@@ -79,17 +79,40 @@ serve(async (req: Request) => {
   const data = event?.data ?? {}
   const userId = data?.id as string | undefined
 
-  // ---- user.created → send welcome email (non-blocking) --------------
+  // ---- user.created → insert user_profiles row + send welcome email --
   if (type === 'user.created') {
     const emailAddr = (data?.email_addresses || [])
       .find((e: any) => e?.id === data?.primary_email_address_id)?.email_address
       || (data?.email_addresses?.[0]?.email_address)
       || ''
     const firstName = data?.first_name || ''
+
+    // Pre-create the user_profiles row keyed on Clerk userId so any
+    // subsequent Dodo purchase attribution finds this row directly
+    // (avoids the self-heal `dodo:...` / `email:...` orphan path).
+    if (userId && emailAddr) {
+      try {
+        const supabaseEarly = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        })
+        await supabaseEarly
+          .from('user_profiles')
+          .upsert({
+            user_id: userId,
+            email: emailAddr.toLowerCase(),
+            plan: 'free',
+            plan_source: 'clerk_signup',
+          }, { onConflict: 'user_id' })
+        log('profile_row_created', { userId, emailAddr })
+      } catch (err) {
+        // Non-fatal — ensureUserProfile client-side will retry on first
+        // app visit. We still want the welcome email to go out.
+        log('profile_row_create_failed', { userId, error: String(err) })
+      }
+    }
+
     if (emailAddr) {
       // Fire-and-forget — invoke the send-signup-welcome edge function.
-      // We swallow errors so a mail hiccup never fails the webhook
-      // (which would cause Clerk to retry and possibly double-send).
       try {
         const url = `${SUPABASE_URL}/functions/v1/send-signup-welcome`
         // deno-lint-ignore no-explicit-any

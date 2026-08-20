@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { backend } from '../lib/backend.js'
+import { friendlyError } from '../lib/friendlyError.js'
 
 /**
  * First-time onboarding card. Shown once after Clerk sign-in, before the
@@ -43,7 +44,7 @@ export default function OnboardingCard({ open, onClose, onComplete }) {
       const url = await backend.uploadAvatar(user.id, file)
       setAvatarUrl(url)
     } catch (err) {
-      setError(err.message || 'Upload failed')
+      setError(friendlyError(err, "Couldn't upload the photo. Tap again in a moment."))
     } finally {
       setUploading(false)
     }
@@ -65,7 +66,7 @@ export default function OnboardingCard({ open, onClose, onComplete }) {
       })
       onComplete?.()
     } catch (err) {
-      setError(err.message || 'Could not save. Try again.')
+      setError(friendlyError(err, "Couldn't save just now. Tap Continue again."))
       setSaving(false)
     }
   }

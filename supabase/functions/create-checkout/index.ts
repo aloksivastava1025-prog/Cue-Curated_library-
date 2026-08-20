@@ -39,6 +39,8 @@ function createLogger(requestId: string) {
   return {
     info: (msg: string, data?: Record<string, unknown>) =>
       console.log(JSON.stringify({ ...base, level: 'info', msg, ...data })),
+    warn: (msg: string, data?: Record<string, unknown>) =>
+      console.warn(JSON.stringify({ ...base, level: 'warn', msg, ...data })),
     error: (msg: string, data?: Record<string, unknown>) =>
       console.error(JSON.stringify({ ...base, level: 'error', msg, ...data })),
   }
@@ -126,6 +128,40 @@ serve(async (req) => {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' },
       })
+    }
+
+    // ---- Founding-cap enforcement (server-side source of truth) ----
+    // Client display shows "N of 50" but a stale tab or scripted client
+    // could sneak a 51st through. Only enforce for the founding lifetime
+    // product (individual lifetime). Team + annual plans have no cap.
+    if (plan_type === 'cue_plus' && billing_cycle === 'lifetime') {
+      const FOUNDING_CAP = 50
+      const ADMIN_EMAILS = new Set([
+        'aloksivastava1025@gmail.com',
+        'aloks.int@teachforindia.org',
+        'akashkumar7653099@gmail.com',
+        'srivastavaalok2214@gmail.com',
+      ])
+      const { data: paidRows } = await supabase
+        .from('user_profiles')
+        .select('email, plan_source')
+        .eq('plan', 'cue_plus')
+      const realCount = (paidRows || []).filter((r) => {
+        const em = (r.email || '').toLowerCase()
+        if (ADMIN_EMAILS.has(em)) return false
+        if (r.plan_source === 'reconciliation') return false
+        if (r.plan_source === 'manual_link_dodo_email_mismatch') return false
+        return true
+      }).length
+      if (realCount >= FOUNDING_CAP) {
+        log.warn('Founding cap reached — blocking checkout', { realCount, userId })
+        return new Response(JSON.stringify({
+          error: 'Founding 50 spots are all claimed — launch pricing is live now. Refresh the page for the current price.',
+        }), {
+          status: 409,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
     // ---- Rate limit: 5 checkout attempts per user per 60s ----

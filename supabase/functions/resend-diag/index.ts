@@ -5,9 +5,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 serve(async (req) => {
+  // Diagnostic endpoint — locked to production origin only. Do not
+  // widen; if it stops being needed, undeploy entirely.
+  const origin = req.headers.get('origin') || ''
+  const allowed = ['https://cuedesign.space', 'https://www.cuedesign.space'].includes(origin)
+    ? origin : 'https://cuedesign.space'
   const cors = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
   }
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 

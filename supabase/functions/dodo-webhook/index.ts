@@ -391,6 +391,11 @@ serve(async (req) => {
             plan: 'free',
             plan_source: 'dodo_refund',
             plan_expires_at: null,
+            // Clear team fields so a returning buyer starts fresh.
+            // dodo_customer_id + plan_started_at are preserved for
+            // audit / re-purchase-attribution paths.
+            team_owner_id: null,
+            team_seats: 1,
           })
           .eq('user_id', revokeUserId)
 

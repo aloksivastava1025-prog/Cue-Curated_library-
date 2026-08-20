@@ -18,11 +18,23 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.44.2';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5175',
+  'http://localhost:5180',
+  'http://localhost:5230',
+  'https://cuedesign.space',
+  'https://www.cuedesign.space',
+];
+function corsFor(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
+}
 
 // Existing categories in CUE — passed to the model as a HINT, not a hard
 // constraint. If the prompt describes something these don't cover, the model
@@ -136,7 +148,7 @@ Hard rules:
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsFor(req) });
   }
 
   try {
@@ -272,6 +284,6 @@ serve(async (req) => {
 function json(payload: unknown, status: number) {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { ...corsFor(req), "content-type": "application/json" },
   });
 }

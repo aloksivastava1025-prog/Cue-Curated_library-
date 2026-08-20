@@ -81,6 +81,9 @@ serve(async (req) => {
         <p style="margin: 0; font-size: 11.5px; color: #999;">
           <a href="https://www.cuedesign.space" style="color: #999; text-decoration: none;">cuedesign.space</a> · You signed up from <span style="font-family: Menlo, monospace;">${esc(source || 'homepage')}</span>
         </p>
+        <p style="margin: 14px 0 0; font-size: 11px; color: #999;">
+          Don't want these? <a href="https://www.cuedesign.space/#/unsubscribe?email=${encodeURIComponent(email)}" style="color: #999; text-decoration: underline;">Unsubscribe here</a> — one click, no follow-up.
+        </p>
       </div>
     `
 
@@ -96,6 +99,13 @@ serve(async (req) => {
         reply_to: 'hello@cuedesign.space',
         subject: "You're in — Cue waitlist",
         html,
+        // Gmail/Yahoo bulk-sender rules (Feb 2024) + DPDP one-click
+        // opt-out. Points at the same landing page users can hit
+        // from the footer link inside the email body.
+        headers: {
+          'List-Unsubscribe': `<https://www.cuedesign.space/#/unsubscribe?email=${encodeURIComponent(email)}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
       }),
     })
 
