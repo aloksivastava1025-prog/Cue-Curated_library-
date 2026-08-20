@@ -449,11 +449,6 @@ function MainApp() {
         </div>
       </nav>
 
-      {/* Scroll sentinel — when this leaves the viewport, we swap the
-          top nav for the floating bottom pill. ~400px below the nav so
-          the transition happens once the hero is out of the way. */}
-      <div ref={scrollSentinelRef} aria-hidden="true" style={{ position: 'absolute', top: 400, left: 0, width: 1, height: 1, pointerEvents: 'none' }} />
-
       {/* Hero Section */}
       <section className="cue-hero" style={{ padding: '100px 32px 60px', position: 'relative', textAlign: 'center' }}>
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(255,255,255,0.06)' }}></div>

@@ -181,7 +181,7 @@ serve(async (req) => {
       "check_and_increment_rate_limit",
       {
         p_key: "autofill:admin",
-        p_max: 30,
+        p_max: 120,
         p_window_seconds: 60,
       }
     );
@@ -262,15 +262,31 @@ serve(async (req) => {
     );
     const raw = textBlock?.text ?? "";
 
+    // Model sometimes wraps JSON in ```json fences or preambles when
+    // output_config isn't honored. Defensively extract the JSON blob
+    // before failing.
     let metadata: Record<string, unknown>;
-    try {
-      metadata = JSON.parse(raw);
-    } catch {
+    const tryParse = (s: string) => {
+      try { return JSON.parse(s); } catch { return null; }
+    };
+    let parsed = tryParse(raw);
+    if (!parsed) {
+      // Strip ```json ... ``` fences
+      const fenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+      parsed = tryParse(fenced);
+    }
+    if (!parsed) {
+      // Fall back: pull the first {...} object out of the response
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) parsed = tryParse(match[0]);
+    }
+    if (!parsed || typeof parsed !== "object") {
       return json(
         { error: "Model returned non-JSON output", raw: raw.slice(0, 500) },
         502,
       );
     }
+    metadata = parsed as Record<string, unknown>;
 
     // Defensive: strip any field not in our allowlist (extra safety even
     // though the schema already enforces this).
