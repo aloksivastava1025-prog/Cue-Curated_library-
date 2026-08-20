@@ -258,10 +258,88 @@ serve(async (req) => {
 
         log.info('User plan upgraded', { userId, planType, teamSeats })
 
-        // TODO: Trigger welcome/receipt email via Resend here.
-        // This is where the Resend integration plugs in. The
-        // idempotency table ensures we never send duplicate emails
-        // on webhook retries.
+        // Welcome email — fire-and-forget via Resend. Idempotency
+        // is guaranteed by the payment_events PK check above, so
+        // this branch only runs once per webhook-id. On failure we
+        // log but never fail the webhook (email is a nice-to-have,
+        // access is already granted).
+        if (email && event.type === 'payment.succeeded') {
+          try {
+            const resendKey = Deno.env.get('RESEND_API_KEY')
+            if (resendKey) {
+              const displayName = event.data?.customer?.name
+                || (email ? email.split('@')[0] : 'there')
+              const currency = String(event.data?.currency || 'USD').toUpperCase()
+              const totalMinor = event.data?.total_amount ?? event.data?.amount ?? null
+              const totalFmt = totalMinor != null
+                ? `${(totalMinor / 100).toFixed(2)} ${currency}`
+                : ''
+              const invoiceLink = paymentId
+                ? `https://rkinvrdjbmoozjzmqshn.supabase.co/functions/v1/get-invoice?payment_id=${paymentId}`
+                : null
+              const esc = (s: string = '') => String(s).replace(/[&<>"']/g, (c) => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+              ))
+              const html = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0A0A0A;">
+                  <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #0000FF; font-weight: 700; margin-bottom: 12px;">Cue+ · Founding</div>
+                  <h2 style="margin: 0 0 12px; font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: 32px; color: #0A0A0A; line-height: 1.15;">
+                    Welcome to Cue+, ${esc(displayName)}.
+                  </h2>
+                  <p style="font-size: 15px; line-height: 1.7; color: #333; margin: 0 0 20px;">
+                    Your founding spot is locked ${totalFmt ? `at <strong>${esc(totalFmt)}</strong>` : ''}, forever. Full library unlocked, every future drop included, no renewals.
+                  </p>
+                  <div style="margin: 24px 0;">
+                    <a href="https://www.cuedesign.space" style="display: inline-block; padding: 12px 24px; background: #0000FF; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Start exploring →</a>
+                  </div>
+                  ${invoiceLink ? `<p style="font-size: 13px; color: #666; margin: 20px 0 6px;">Your invoice: <a href="${invoiceLink}" style="color: #0000FF;">Download PDF</a></p>` : ''}
+                  <div style="margin: 32px 0 0; padding-top: 20px; border-top: 1px solid #e5e5e5;">
+                    <p style="font-size: 13.5px; line-height: 1.7; color: #333; margin: 0 0 10px;">
+                      One-person shop here — replies from <a href="mailto:hello@cuedesign.space" style="color: #0000FF;">hello@cuedesign.space</a> come from me personally.
+                    </p>
+                    <p style="font-size: 13.5px; line-height: 1.7; color: #333; margin: 0;">
+                      Founding members shape what gets built next. If a specific component's code would unblock you, email me — I ship it personally.
+                    </p>
+                    <p style="margin: 20px 0 4px; font-size: 13px; color: #333;">— Alok, Cue</p>
+                    <p style="margin: 0; font-size: 11.5px; color: #999;">
+                      <a href="https://www.cuedesign.space" style="color: #999; text-decoration: none;">cuedesign.space</a> · <a href="https://www.cuedesign.space/#/billing" style="color: #999; text-decoration: none;">Billing & invoices</a>
+                    </p>
+                  </div>
+                </div>
+              `
+              const resp = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resendKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'Alok — Cue <hello@cuedesign.space>',
+                  to: email,
+                  reply_to: 'hello@cuedesign.space',
+                  subject: `Welcome to Cue+ · your founding spot is locked`,
+                  html,
+                }),
+              })
+              if (resp.ok) {
+                log.info('Welcome email sent', { email, paymentId })
+              } else {
+                const errText = await resp.text()
+                log.warn('Welcome email failed', {
+                  email, paymentId,
+                  status: resp.status,
+                  body: errText.slice(0, 300),
+                })
+              }
+            } else {
+              log.warn('RESEND_API_KEY not set — skipping welcome email')
+            }
+          } catch (e: any) {
+            // Never fail the webhook because of email issues — plan
+            // is already upgraded, welcome mail is a nice-to-have.
+            log.warn('Welcome email threw', { error: e?.message })
+          }
+        }
       } else {
         log.warn('payment.succeeded but no user_id in metadata', { webhookId })
       }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Footer from '../components/Footer.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
-import { backend } from '../lib/backend.js'
+import { supabase } from '../lib/supabase.js'
 
 /**
  * Contact page — sits at #/contact. Reachable from the footer + the
@@ -30,12 +30,21 @@ export default function Contact() {
     if (!message.trim()) { setErr('Write a message first'); return }
     setSending(true)
     try {
-      await backend.submitFeedback({
-        kind: 'other',
-        message: `From: ${name.trim() || 'Anonymous'}\n\n${message.trim()}`,
-        email: email.trim().toLowerCase() || null,
-        source: 'contact-page',
+      // send-contact edge fn handles three things at once:
+      //   1. Inserts feedback row (source='contact-page')
+      //   2. Emails founder at hello@cuedesign.space via Resend
+      //   3. Sends an auto-acknowledgement to the customer's email
+      // We invoke it instead of calling submitFeedback directly so
+      // one code path covers the whole delivery flow.
+      const { error } = await supabase.functions.invoke('send-contact', {
+        body: {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          message: message.trim(),
+          source: 'contact-page',
+        },
       })
+      if (error) throw new Error(error.message || 'Send failed')
       setState('ok')
       setName(''); setEmail(''); setMessage('')
     } catch (e) {
