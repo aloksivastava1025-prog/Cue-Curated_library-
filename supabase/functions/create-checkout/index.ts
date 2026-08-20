@@ -225,18 +225,22 @@ serve(async (req) => {
 
     const origin = req.headers.get('origin') || 'https://cuedesign.space'
 
-    // Detect the buyer's country from Cloudflare / Vercel edge headers
-    // so Dodo's Localized Pricing By Country picks the right currency.
-    // Previously we hardcoded 'IN', which forced INR on every buyer
-    // regardless of location (or VPN). Falls back to 'IN' when the
-    // header is missing (rare — mostly local dev).
-    const detectedCountry =
-      (req.headers.get('cf-ipcountry') ||
-       req.headers.get('x-vercel-ip-country') ||
-       req.headers.get('x-country') ||
-       'IN').toUpperCase()
-    // Dodo expects a 2-letter ISO code. Reject junk fallbacks.
-    const buyerCountry = /^[A-Z]{2}$/.test(detectedCountry) ? detectedCountry : 'IN'
+    // Determine the buyer's country so Dodo's Localized Pricing By
+    // Country picks the right currency. Priority:
+    //   1. body.buyerCountry — detected on the client via Cloudflare
+    //      trace (the reliable path, since Supabase edge functions
+    //      run on Deno Deploy — no cf-ipcountry header here)
+    //   2. cf-ipcountry / vercel headers (in case the fn is fronted
+    //      by Cloudflare in future)
+    //   3. Fall back to 'IN' (safe default for India-heavy launch)
+    const rawCountry = String(
+      body?.buyerCountry ||
+      req.headers.get('cf-ipcountry') ||
+      req.headers.get('x-vercel-ip-country') ||
+      req.headers.get('x-country') ||
+      'IN'
+    ).toUpperCase()
+    const buyerCountry = /^[A-Z]{2}$/.test(rawCountry) ? rawCountry : 'IN'
 
     // Dodo's /payments endpoint requires a `billing` object. On a hosted
     // checkout flow the user fills these fields on Dodo's page — we

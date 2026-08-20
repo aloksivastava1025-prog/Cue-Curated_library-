@@ -826,6 +826,20 @@ const supabaseAdapter = {
     const name = clerkUser?.fullName
       || [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ')
       || 'Cue User'
+
+    // Detect buyer's country client-side. Supabase edge functions run
+    // on Deno Deploy (no cf-ipcountry header), so we have to look it
+    // up from the browser and pass it explicitly. Cloudflare's trace
+    // endpoint is CORS-open, tiny, and returns accurate geo. Non-fatal:
+    // if it fails, edge function will just fall back to 'IN'.
+    let buyerCountry = ''
+    try {
+      const resp = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { cache: 'no-store' })
+      const text = await resp.text()
+      const m = text.match(/^loc=([A-Z]{2})$/m)
+      if (m) buyerCountry = m[1]
+    } catch { /* fall through to server default */ }
+
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: {
         plan_type: planType,
@@ -833,6 +847,7 @@ const supabaseAdapter = {
         customerEmail: email,
         customerName: name,
         userId: clerkUser.id,
+        buyerCountry,
       },
     })
     if (error) {
