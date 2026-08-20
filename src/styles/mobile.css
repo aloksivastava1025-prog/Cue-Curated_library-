@@ -71,15 +71,35 @@
 
   /* Featured rail: tighter padding, narrower cards, hide chevrons on touch */
   .cue-featured-scroller {
-    grid-auto-columns: min(88vw, 420px) !important;
+    grid-auto-columns: min(85vw, 380px) !important; /* 15% peek = clearer horizontal-scroll signal */
     gap: 14px !important;
+    scroll-snap-type: x mandatory !important;       /* firm snap on touch for confident swipes */
+    /* Right-edge fade — cuts a mask on the container so the next
+       card literally trails off, telling the eye 'more to the right'. */
+    mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - 32px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - 32px),
+      transparent 100%
+    );
   }
   .cue-featured-scroller > article {
     border-radius: 14px !important;
+    scroll-snap-align: start;
   }
   /* Chevrons — hard to click on touch; hide on narrow viewports. */
   .cue-featured-controls {
     display: none !important;
+  }
+  /* Swipe hint — visible only where chevrons aren't. */
+  .cue-featured-swipe-hint {
+    display: inline-flex !important;
   }
 
   /* Type toggle — smaller text, tight padding */

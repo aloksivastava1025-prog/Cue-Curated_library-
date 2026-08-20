@@ -49,6 +49,25 @@ export default function FeaturedRail({ items, onOpen }) {
           </h2>
         </div>
 
+        {/* Mobile-only swipe hint — visible below tablet since the
+            chevron controls are hidden there. Touch users otherwise
+            have no signal that the row scrolls sideways. */}
+        <div className="cue-featured-swipe-hint" style={{
+          display: 'none',
+          alignItems: 'center', gap: 6,
+          fontSize: 11, letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'var(--text-dim)',
+          fontFamily: 'var(--font-sans)',
+        }}>
+          Swipe
+          <span aria-hidden="true" style={{ display: 'inline-block' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+
         {/* Chevron controls */}
         <div className="cue-featured-controls" style={{ display: 'flex', gap: '10px' }}>
           <button
