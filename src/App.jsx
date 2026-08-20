@@ -29,6 +29,7 @@ import { backend } from './lib/backend.js';
 
 const FOUNDING_CAP = 50;
 import { usePageMeta } from './hooks/usePageMeta.js';
+import { useScrollDirection } from './hooks/useScrollDirection.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import NotFound from './pages/NotFound.jsx';
 import './styles/overhaul.css';
@@ -97,6 +98,9 @@ function MainApp() {
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
+  // Hide nav on scroll-down, show on scroll-up. Framer/Linear pattern —
+  // gives content room to breathe without losing quick access.
+  const navHidden = useScrollDirection({ topZone: 80, threshold: 8 });
 
   // Bind Clerk user_id to PostHog once signed in so pre-signin
   // pageviews stitch into the same profile as post-signin events.
@@ -270,7 +274,18 @@ function MainApp() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', fontFamily: 'var(--font-sans)', color: 'var(--text)' }}>
       {/* Sticky Nav */}
-      <nav className="cue-nav" style={{ position: 'sticky', top: 0, zIndex: 100, padding: '16px 24px', background: '#060606', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', transform: 'translateZ(0)', willChange: 'transform' }}>
+      <nav className="cue-nav" style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        padding: '16px 24px',
+        background: 'rgba(6,6,6,0.82)',
+        backdropFilter: 'blur(14px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+        transform: navHidden ? 'translate3d(0,-100%,0)' : 'translate3d(0,0,0)',
+        transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+        willChange: 'transform',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '24px', color: 'var(--text)' }}>CUE</div>
