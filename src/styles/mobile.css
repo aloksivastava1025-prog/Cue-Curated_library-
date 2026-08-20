@@ -236,6 +236,22 @@
 /* ---- Modal (detail view) already handles its own @media at 820px in
    the component itself. No overrides needed here. --------------------- */
 
+/* ---- UserInbox notification panel — the bell sits mid-right in the
+   nav row (Menu + Avatar come after it), so anchoring the panel with
+   `right: 0` on its own wrapper pushed the panel's left edge past the
+   viewport on phones. On mobile, break out of the bell's stacking
+   context and pin the panel to the viewport itself. */
+@media (max-width: 640px) {
+  .cue-inbox-panel {
+    position: fixed !important;
+    top: 60px !important;
+    right: 8px !important;
+    left: auto !important;
+    width: calc(100vw - 16px) !important;
+    max-width: 380px !important;
+  }
+}
+
 /* ---- Toast — tighter offsets on mobile so it doesn't hug the corner */
 @media (max-width: 640px) {
   .toast {
