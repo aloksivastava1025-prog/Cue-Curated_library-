@@ -13,7 +13,7 @@
 
   /* Sticky nav: allow items to wrap, tighter padding */
   .cue-nav {
-    padding: 12px 16px !important;
+    padding: 12px 14px !important;
     gap: 8px !important;
   }
   .cue-nav-count {
@@ -31,6 +31,28 @@
   }
   .cue-nav-feedback-label {
     display: none;
+  }
+
+  /* Below tablet — drop the standalone Pricing link and the
+     Suggest button from the nav. Both are already available inside
+     the Menu dropdown, so keeping them here just eats horizontal
+     space and pushes the profile avatar off-screen. */
+  .cue-nav-pricing {
+    display: none !important;
+  }
+  .cue-nav-suggest {
+    display: none !important;
+  }
+  /* Cue+ chip is also inside the dropdown on the Billing row —
+     no need to double it in the nav on mobile. */
+  .cue-nav-plus-chip {
+    display: none !important;
+  }
+  /* Hide the "Alok" first-name label on narrow screens — dropdown
+     header already shows the full name once opened. Avatar is
+     enough identity here. */
+  .cue-nav-firstname {
+    display: none !important;
   }
 
   /* Hero: much less top padding, keep serif big but tamed */

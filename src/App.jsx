@@ -342,6 +342,7 @@ function MainApp() {
                 <a
                   href="#/billing"
                   aria-label="Cue+ member — view billing"
+                  className="cue-nav-plus-chip"
                   style={{
                     fontSize: 9.5, fontWeight: 700, letterSpacing: '0.16em',
                     textTransform: 'uppercase',
@@ -357,7 +358,7 @@ function MainApp() {
                   Cue+
                 </a>
               )}
-              <span style={{ fontSize: 12, color: 'var(--text)', letterSpacing: '0.01em' }}>
+              <span className="cue-nav-firstname" style={{ fontSize: 12, color: 'var(--text)', letterSpacing: '0.01em' }}>
                 {user?.firstName || (user?.primaryEmailAddress?.emailAddress || '').split('@')[0]}
               </span>
               <CueUserMenu />
