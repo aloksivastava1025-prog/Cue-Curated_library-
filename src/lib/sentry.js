@@ -15,6 +15,32 @@ export function initSentry() {
     tracesSampleRate: 0.1,
     sendDefaultPii: false,
     // Session Replay intentionally OFF — records DOM, escalating privacy surface.
+
+    // Ignore transient network / user-side errors that don't indicate
+    // a real bug. These fire constantly on flaky mobile carriers and
+    // just create Sentry noise. Real backend outages still surface via
+    // status-code checks in individual call sites.
+    ignoreErrors: [
+      // Standard browser network errors during connectivity blips
+      'TypeError: Failed to fetch',
+      'TypeError: NetworkError when attempting to fetch resource',
+      'TypeError: The Internet connection appears to be offline',
+      'TypeError: Load failed',                       // Safari's fetch equivalent
+      'AbortError: The user aborted a request',
+      'AbortError: The operation was aborted',
+      'The user aborted a request',
+      'signal is aborted without reason',
+      'ChunkLoadError',                                // Vite chunk load during deploy
+      'ResizeObserver loop limit exceeded',            // Browser noise, not a bug
+      'ResizeObserver loop completed with undelivered notifications',
+      'Non-Error promise rejection captured',          // Third-party garbage
+    ],
+    denyUrls: [
+      /extensions\//i,       // Browser extension noise
+      /chrome-extension:\/\//i,
+      /^moz-extension:\/\//i,
+    ],
+
     beforeSend(event) {
       // Scrub emails + Clerk user_ids from any strings we send. India's DPDP
       // Act treats these as personal data — Sentry becomes a processor if we
