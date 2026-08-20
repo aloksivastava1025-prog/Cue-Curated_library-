@@ -171,6 +171,9 @@ export default function Pricing() {
           Only 50 founding members. {P.sym}{P.founding} lifetime.<br />
           After the 50 fill, {P.sym}{P.founding} is gone forever — everyone after pays {P.sym}{P.crossed}.
         </p>
+        <p style={{ margin: '10px auto 0', fontSize: 12.5, color: 'var(--electric)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em', fontWeight: 500 }}>
+          New hand-picked components dropping every week — one purchase, every drop, forever.
+        </p>
         <p style={{ margin: '8px auto 0', fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em' }}>
           Prices shown are inclusive of applicable taxes · local currency auto-selected at checkout.
         </p>
@@ -264,7 +267,7 @@ export default function Pricing() {
               {/* CUE+ FOUNDING (highlighted, center) */}
               <Col
                 title="Cue+ Founding"
-                description="Everything unlocked. Locked at the founding price for life."
+                description="Everything unlocked. New drops every week. Locked at the founding price for life."
                 crossedPrice={`${P.sym}${P.crossed}`}
                 price={`${P.sym}${P.founding}`}
                 priceSub={`lifetime${P.taxSuffix}`}
@@ -285,7 +288,7 @@ export default function Pricing() {
                 features={[
                   'Full library, unlocked',
                   'Works with Framer, Bolt, v0, Cursor',
-                  'All future drops',
+                  'New drops every week — forever',
                   { text: 'React source code', soon: true },
                   'Request any component\'s code — I ship it personally',
                   { text: 'MCP support', soon: true },
@@ -307,7 +310,7 @@ export default function Pricing() {
                 features={[
                   'Full library unlocked',
                   'Works with Framer, Bolt, v0, Cursor',
-                  'All future drops',
+                  'New drops every week — while active',
                   'Cancel anytime',
                   'Personal use only',
                   'Access ends on cancel',
