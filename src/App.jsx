@@ -31,7 +31,6 @@ import { backend } from './lib/backend.js';
 
 const FOUNDING_CAP = 50;
 import { usePageMeta } from './hooks/usePageMeta.js';
-import { useScrollDirection } from './hooks/useScrollDirection.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import NotFound from './pages/NotFound.jsx';
 import './styles/overhaul.css';
