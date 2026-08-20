@@ -207,6 +207,13 @@ const supabaseAdapter = {
       }
       throw error
     }
+
+    // Fire-and-forget welcome email. Never await — if Resend is
+    // slow or misconfigured the signup UX shouldn't wait for it.
+    // The edge fn itself is a no-op when RESEND_API_KEY is unset.
+    supabase.functions.invoke('send-waitlist-welcome', {
+      body: { email: clean, source },
+    }).catch((e) => console.warn('waitlist welcome email failed', e?.message))
     return { alreadyOnList: false }
   },
 
