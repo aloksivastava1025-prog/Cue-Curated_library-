@@ -518,6 +518,13 @@ const supabaseAdapter = {
       .select()
       .single()
     if (msgErr) throw msgErr
+
+    // Fire-and-forget email so the customer gets a real note in
+    // their inbox, not just a bell in UserInbox. Never blocks.
+    supabase.functions.invoke('send-admin-message', {
+      body: { toEmail: emailLower, body: clean, isNewThread: true },
+    }).catch((e) => console.warn('admin-message email failed', e?.message))
+
     return { feedback: fb, message: msg }
   },
 
@@ -537,6 +544,28 @@ const supabaseAdapter = {
       .select()
       .single()
     if (error) throw error
+
+    // If this is an admin reply, email the customer so they
+    // don't have to come back to the site to see the reply.
+    // Look up the parent feedback row to find the recipient
+    // email — the same row the reply is attached to.
+    if (author === 'admin') {
+      supabase
+        .from('feedback')
+        .select('email')
+        .eq('id', feedbackId)
+        .maybeSingle()
+        .then(({ data: fb }) => {
+          const to = fb?.email
+          if (to) {
+            supabase.functions.invoke('send-admin-message', {
+              body: { toEmail: to, body: clean, isNewThread: false },
+            }).catch((e) => console.warn('admin-reply email failed', e?.message))
+          }
+        })
+        .catch(() => { /* ignore — bell notification still fires */ })
+    }
+
     return data
   },
 

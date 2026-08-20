@@ -405,6 +405,72 @@ serve(async (req) => {
             userId: revokeUserId,
             eventType: event.type,
           })
+
+          // Refund confirmation email — only for actual refund events,
+          // not subscription cancellations (those are user-initiated
+          // and don't need an "we've refunded you" note).
+          if (revokeEmail && event.type === 'refund.succeeded') {
+            try {
+              const resendKey = Deno.env.get('RESEND_API_KEY')
+              if (resendKey) {
+                const refundAmountMinor = event.data?.total_amount ?? event.data?.amount ?? null
+                const refundCurrency = String(event.data?.currency || 'USD').toUpperCase()
+                const refundFmt = refundAmountMinor != null
+                  ? `${(refundAmountMinor / 100).toFixed(2)} ${refundCurrency}`
+                  : ''
+                const escR = (s: string = '') => String(s).replace(/[&<>"']/g, (c) => (
+                  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+                ))
+                const refundHtml = `
+                  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0A0A0A;">
+                    <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #666; font-weight: 700; margin-bottom: 12px;">Cue · Refund confirmation</div>
+                    <h2 style="margin: 0 0 14px; font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: 28px; color: #0A0A0A; line-height: 1.15;">
+                      Your refund is on its way.
+                    </h2>
+                    <p style="font-size: 14.5px; line-height: 1.7; color: #333; margin: 0 0 16px;">
+                      We've issued a refund${refundFmt ? ` of <strong>${escR(refundFmt)}</strong>` : ''} back to your original payment method. Depending on your bank, it typically lands within 5–10 business days.
+                    </p>
+                    <p style="font-size: 14.5px; line-height: 1.7; color: #333; margin: 0 0 20px;">
+                      Your Cue+ access has been revoked as of now. If this was a mistake or you'd like to be re-enabled, just reply to this email — I read every message.
+                    </p>
+                    <div style="padding: 12px 16px; background: #f5f5f5; border-radius: 6px; font-size: 12.5px; color: #666; margin: 20px 0;">
+                      No questions asked, no hard feelings. Cue's a small operation and refunds happen — sometimes the fit isn't right, sometimes timing's off. Feedback on why is appreciated but not required.
+                    </div>
+                    <p style="margin: 20px 0 4px; font-size: 14px; color: #333;">— Alok, Cue</p>
+                    <p style="margin: 0; font-size: 11.5px; color: #999;">
+                      <a href="https://www.cuedesign.space" style="color: #999; text-decoration: none;">cuedesign.space</a> · <a href="mailto:hello@cuedesign.space" style="color: #999;">hello@cuedesign.space</a>
+                    </p>
+                  </div>
+                `
+                const resp = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${resendKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    from: 'Alok — Cue <hello@cuedesign.space>',
+                    to: revokeEmail,
+                    reply_to: 'hello@cuedesign.space',
+                    subject: 'Refund confirmed — Cue',
+                    html: refundHtml,
+                  }),
+                })
+                if (resp.ok) {
+                  log.info('Refund confirmation email sent', { email: revokeEmail })
+                } else {
+                  const t = await resp.text()
+                  log.warn('Refund confirmation email failed', {
+                    email: revokeEmail,
+                    status: resp.status,
+                    body: t.slice(0, 300),
+                  })
+                }
+              }
+            } catch (e: any) {
+              log.warn('Refund confirmation email threw', { error: e?.message })
+            }
+          }
         }
       } else {
         log.warn('Refund event with no attributable user', {
