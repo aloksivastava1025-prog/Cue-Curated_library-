@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SignInButton, useUser, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import CueUserMenu from './components/CueUserMenu.jsx';
 import Lenis from 'lenis';
@@ -20,6 +20,7 @@ import WaitlistCTA from './components/WaitlistCTA.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
+import FloatingNav from './components/FloatingNav.jsx';
 import SignInCard from './components/SignInCard.jsx';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
@@ -98,33 +99,20 @@ function MainApp() {
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
-  // Hide nav on scroll-down, show on scroll-up. Framer/Linear pattern —
-  // gives content room to breathe without losing quick access.
-  // Inlined here (rather than via a hook) to eliminate any HMR/closure
-  // ambiguity around Lenis-driven scroll on this page specifically.
-  const [navHidden, setNavHidden] = useState(false);
+  // Two-stage nav: normal top nav on the hero, floating bottom pill
+  // once the user scrolls past ~400px. Threshold flip via IntersectionObserver
+  // on a sentinel div — decoupled from Lenis and reliable across devices.
+  const [scrolledPastHero, setScrolledPastHero] = useState(false);
+  const scrollSentinelRef = useRef(null);
   useEffect(() => {
-    let rafId = 0;
-    let lastY = window.scrollY;
-    let currentHidden = false;
-    const TOP_ZONE = 80;
-    const THRESHOLD = 8;
-    const tick = () => {
-      const y = window.scrollY;
-      if (y < TOP_ZONE) {
-        if (currentHidden) { currentHidden = false; setNavHidden(false); }
-        lastY = y;
-      } else if (y > lastY + THRESHOLD) {
-        if (!currentHidden) { currentHidden = true; setNavHidden(true); }
-        lastY = y;
-      } else if (y < lastY - THRESHOLD) {
-        if (currentHidden) { currentHidden = false; setNavHidden(false); }
-        lastY = y;
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
+    if (!scrollSentinelRef.current) return;
+    const io = new IntersectionObserver(([entry]) => {
+      // Sentinel is out of view once the user has scrolled past it →
+      // that's when we swap the top nav out for the floating pill.
+      setScrolledPastHero(!entry.isIntersecting);
+    }, { rootMargin: '0px' });
+    io.observe(scrollSentinelRef.current);
+    return () => io.disconnect();
   }, []);
 
   // Bind Clerk user_id to PostHog once signed in so pre-signin
@@ -307,8 +295,8 @@ function MainApp() {
         WebkitBackdropFilter: 'blur(14px) saturate(140%)',
         borderBottom: '1px solid var(--border)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
-        transform: navHidden ? 'translate3d(0,-100%,0)' : 'translate3d(0,0,0)',
-        transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+        transform: scrolledPastHero ? 'translate3d(0,-100%,0)' : 'translate3d(0,0,0)',
+        transition: 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)',
         willChange: 'transform',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -429,6 +417,11 @@ function MainApp() {
           )}
         </div>
       </nav>
+
+      {/* Scroll sentinel — when this leaves the viewport, we swap the
+          top nav for the floating bottom pill. ~400px below the nav so
+          the transition happens once the hero is out of the way. */}
+      <div ref={scrollSentinelRef} aria-hidden="true" style={{ position: 'absolute', top: 400, left: 0, width: 1, height: 1, pointerEvents: 'none' }} />
 
       {/* Hero Section */}
       <section className="cue-hero" style={{ padding: '100px 32px 60px', position: 'relative', textAlign: 'center' }}>
@@ -648,6 +641,17 @@ function MainApp() {
       </section>
 
       <Footer onSuggest={() => openFeedback('homepage-footer')} />
+
+      {/* Floating bottom pill — takes over once the top nav has slid up */}
+      <FloatingNav
+        visible={scrolledPastHero}
+        onOpenFeedback={openFeedback}
+        onOpenAuth={openAuth}
+        spotsLeft={spotsLeft}
+        foundingFilled={foundingFilled}
+        savedCount={savedCount}
+        isAdmin={isAdmin}
+      />
 
       {selectedItem && (
         <Modal item={selectedItem} onClose={() => setSelectedItem(null)} />
