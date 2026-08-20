@@ -21,6 +21,7 @@ import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
 import SignInCard from './components/SignInCard.jsx';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import { identify as identifyAnalytics, resetAnalytics } from './lib/analytics.js';
@@ -599,6 +600,10 @@ function AppShell() {
       <MainApp />
       <FeedbackModal open={feedbackOpen} onClose={closeFeedback} source={feedbackSource} />
       <SignInCard open={authOpen} mode={authMode} onClose={closeAuth} />
+      {/* Vercel Web Analytics — Vercel dashboard mein 'Enable' toggle
+          on karna hai then data flow shuru. Zero-config beyond that,
+          no cookies, no consent banner needed. */}
+      <VercelAnalytics />
     </>
   );
 }
