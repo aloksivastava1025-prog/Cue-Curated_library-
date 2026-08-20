@@ -5,43 +5,48 @@ import { useEffect, useState, useRef } from 'react'
  * hide when scrolling down (give content room) and re-appear when
  * scrolling up (available on demand).
  *
+ * Uses rAF polling instead of the `scroll` event because Lenis smooth
+ * scroll swallows/re-dispatches scroll events unpredictably. Reading
+ * window.scrollY on every frame is cheap and always in sync with the
+ * paint the user is actually seeing.
+ *
  * - `topZone` — while scrollY is below this the nav is always shown.
- * - `threshold` — minimum delta before we flip direction. Prevents
- *   jitter when the user pauses mid-scroll (Chrome fires tiny deltas).
+ * - `threshold` — minimum accumulated delta before we flip direction.
+ *   Prevents jitter when the user pauses mid-scroll.
  */
 export function useScrollDirection({ topZone = 80, threshold = 8 } = {}) {
   const [hidden, setHidden] = useState(false)
-  const lastY = useRef(typeof window !== 'undefined' ? window.scrollY : 0)
-  const ticking = useRef(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const update = () => {
+    let rafId
+    let lastY = window.scrollY
+    let lastDirY = lastY // reference point for direction changes
+    let currentHidden = false
+
+    const tick = () => {
       const y = window.scrollY
-      const delta = y - lastY.current
 
       if (y < topZone) {
-        // Near the top — always show. Prevents an awkward "half-hidden
-        // at scrollY=5" flicker when the page loads and lenis snaps.
-        setHidden(false)
-      } else if (Math.abs(delta) > threshold) {
-        setHidden(delta > 0)
+        if (currentHidden) { currentHidden = false; setHidden(false) }
+        lastDirY = y
+      } else if (y > lastDirY + threshold) {
+        // Scrolling DOWN past threshold — hide.
+        if (!currentHidden) { currentHidden = true; setHidden(true) }
+        lastDirY = y
+      } else if (y < lastDirY - threshold) {
+        // Scrolling UP past threshold — show.
+        if (currentHidden) { currentHidden = false; setHidden(false) }
+        lastDirY = y
       }
 
-      lastY.current = y
-      ticking.current = false
+      lastY = y
+      rafId = requestAnimationFrame(tick)
     }
 
-    const onScroll = () => {
-      if (!ticking.current) {
-        window.requestAnimationFrame(update)
-        ticking.current = true
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
   }, [topZone, threshold])
 
   return hidden
