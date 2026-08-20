@@ -191,14 +191,23 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const prompt: string = (body?.prompt ?? "").toString();
+    const rawPrompt: string = (body?.prompt ?? "").toString();
 
-    if (!prompt.trim()) {
+    if (!rawPrompt.trim()) {
       return json({ error: "prompt is required" }, 400);
     }
-    if (prompt.length > 20000) {
-      return json({ error: "prompt too long (max 20000 chars)" }, 413);
+    // Hard ceiling only to prevent abuse. Metadata (title, category,
+    // tags, description) is derivable from the first few thousand
+    // chars — so we silently truncate long prompts to keep token cost
+    // predictable. The full prompt still ships to the DB unchanged;
+    // this only affects what the model sees.
+    if (rawPrompt.length > 200000) {
+      return json({ error: "prompt too long (max 200k chars)" }, 413);
     }
+    const AUTOFILL_MAX_CHARS = 12000;
+    const prompt = rawPrompt.length > AUTOFILL_MAX_CHARS
+      ? rawPrompt.slice(0, AUTOFILL_MAX_CHARS) + "\n\n[…truncated for metadata extraction]"
+      : rawPrompt;
 
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
