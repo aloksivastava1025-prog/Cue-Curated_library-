@@ -313,6 +313,18 @@ function MainApp() {
           <UserInbox />
           <NavMenu
             items={[
+              // Pricing lives in the top nav on desktop and gets hidden
+              // via .cue-nav-pricing display:none on mobile — surface it
+              // here so touch users still have one tap to reach it.
+              {
+                label: foundingFilled
+                  ? 'Pricing'
+                  : `Pricing · ${spotsLeft} left`,
+                href: '#/pricing',
+                icon: (
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v8H4v-8M12 4v12M6 8l6-4 6 4" /></svg>
+                ),
+              },
               {
                 label: 'Saved',
                 href: '#/saved',
@@ -320,6 +332,16 @@ function MainApp() {
                 hidden: !isSignedIn,
                 icon: (
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                ),
+              },
+              // Suggest is a nav button on desktop, hidden on mobile —
+              // give it a home in the dropdown so a touch user can still
+              // reach the feedback modal.
+              {
+                label: 'Suggest',
+                onClick: () => openFeedback('nav-menu'),
+                icon: (
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 8h6M9 12h6m-6 4h4M4 4h16v13H8l-4 4V4z" /></svg>
                 ),
               },
               {
