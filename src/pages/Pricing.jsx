@@ -157,7 +157,7 @@ export default function Pricing() {
           After the 50 fill, {P.sym}{P.founding} is gone forever — everyone after pays {P.sym}{P.crossed}.
         </p>
         <p style={{ margin: '8px auto 0', fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em' }}>
-          Local currency and applicable taxes are calculated at checkout.
+          Prices shown are inclusive of applicable taxes · local currency auto-selected at checkout.
         </p>
 
         {/* Founding counter + currency toggle — same visual weight,

@@ -2,7 +2,7 @@
 
 > Cue is a hand-curated library of ~50 AI prompts and interaction references for people building interfaces with Bolt, v0, Cursor, Framer, and similar AI-first tools. Every item is picked from an Awwwards-caliber website or a best-in-class production interaction — no generated filler.
 
-Cue is operated by an independent creator based in India. It is a one-time-purchase product, not a subscription. Founding pricing is USD $99 lifetime, capped at the first 50 members; the standard price after that is USD $249 lifetime. Local currency and applicable taxes are calculated at checkout based on the buyer's region.
+Cue is operated by an independent creator based in India. It is a one-time-purchase product, not a subscription. Founding pricing is USD $99 lifetime, capped at the first 50 members; the standard price after that is USD $249 lifetime. Prices are inclusive of applicable taxes (Indian GST is included in the INR price shown at checkout for buyers in India). Local currency is auto-selected at checkout.
 
 ## Product
 
