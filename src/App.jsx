@@ -217,13 +217,19 @@ function MainApp() {
     if (route === '#/admin') return;
 
     const lenis = new Lenis({
-      // Lighter defaults — feels immediate on wheel, still smooth on trackpad/touch.
-      duration: 0.9,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      // Awwwards-tier scroll feel — a bit more travel + smoother lerp so
+      // wheel and trackpad both glide instead of ticking. Touch feels
+      // punchier so mobile users don't fight momentum.
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // exp-out
       smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 1.5,
-      lerp: 0.14,
+      wheelMultiplier: 0.95,
+      touchMultiplier: 2.2,
+      // Lower lerp = smoother, more velvety motion (less snap-to-frame).
+      lerp: 0.085,
+      syncTouch: true,
+      // Gestures pass through nav / dropdowns cleanly.
+      gestureOrientation: 'vertical',
     });
 
     let rafId;
