@@ -100,7 +100,32 @@ function MainApp() {
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
   // Hide nav on scroll-down, show on scroll-up. Framer/Linear pattern —
   // gives content room to breathe without losing quick access.
-  const navHidden = useScrollDirection(80, 8);
+  // Inlined here (rather than via a hook) to eliminate any HMR/closure
+  // ambiguity around Lenis-driven scroll on this page specifically.
+  const [navHidden, setNavHidden] = useState(false);
+  useEffect(() => {
+    let rafId = 0;
+    let lastY = window.scrollY;
+    let currentHidden = false;
+    const TOP_ZONE = 80;
+    const THRESHOLD = 8;
+    const tick = () => {
+      const y = window.scrollY;
+      if (y < TOP_ZONE) {
+        if (currentHidden) { currentHidden = false; setNavHidden(false); }
+        lastY = y;
+      } else if (y > lastY + THRESHOLD) {
+        if (!currentHidden) { currentHidden = true; setNavHidden(true); }
+        lastY = y;
+      } else if (y < lastY - THRESHOLD) {
+        if (currentHidden) { currentHidden = false; setNavHidden(false); }
+        lastY = y;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
 
   // Bind Clerk user_id to PostHog once signed in so pre-signin
   // pageviews stitch into the same profile as post-signin events.
