@@ -442,8 +442,20 @@ export default function Admin() {
       // which is buggy on Node 16 and randomly returns 'fetch failed'
       // against api.anthropic.com. Dev usage bills Anthropic the same
       // as prod either way, so the single path is simpler.
+      // Server-side gate requires this header. Alok sets it once via
+      // browser DevTools: localStorage.setItem('cue_admin_key', '<value>')
+      // matching Supabase env ADMIN_AUTOFILL_KEY.
+      const adminKey = localStorage.getItem('cue_admin_key') || '';
+      if (!adminKey) {
+        setAutofillError(
+          "Admin key not set locally — run in DevTools: localStorage.setItem('cue_admin_key', '<value from Supabase>')"
+        );
+        setAutofilling(false);
+        return;
+      }
       const { data, error } = await supabase.functions.invoke('autofill-metadata', {
         body: { prompt: form.prompt },
+        headers: { 'x-cue-admin-key': adminKey },
       });
       if (error) {
         // Supabase JS wraps non-2xx with a generic "Edge Function returned

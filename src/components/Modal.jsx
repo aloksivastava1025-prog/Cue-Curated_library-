@@ -263,26 +263,6 @@ export default function Modal({ item, onClose, showToast }) {
     }
   };
 
-  const onBuyIndividual = async () => {
-    if (!isSignedIn) {
-      if (showToast) showToast('Sign in to purchase');
-      openAuth('sign-in');
-      return;
-    }
-    if (showToast) showToast('Opening secure checkout…');
-    try {
-      const email = user?.primaryEmailAddress?.emailAddress || '';
-      const name = user?.fullName || user?.firstName || '';
-      const url = await backend.createCheckoutSession(item.id, email, name);
-      window.location.href = url;
-    } catch (err) {
-      if (showToast) {
-        const { friendlyError } = await import('../lib/friendlyError.js');
-        showToast(friendlyError(err, "Couldn't open checkout. Tap Buy again in a moment."));
-      }
-    }
-  };
-
   const onSubscribe = () => {
     // Route to the site's pricing surface; tests + edge-fn subscription flow live there.
     window.location.hash = '#/pricing';

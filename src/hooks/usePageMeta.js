@@ -8,7 +8,7 @@ import { useEffect } from 'react'
 const DEFAULTS = {
   title: 'CUE — copy · paste · ship',
   description: 'Battle-tested prompts for landing pages. Copy, paste, ship — built for Bolt, v0, Cursor, and Framer.',
-  ogImage: '/og-cover.png', // TODO: design proper 1200x630 image before launch
+  ogImage: 'https://cuedesign.space/og-image.png',
 }
 
 function upsertMeta(selector, attrs) {
@@ -57,6 +57,12 @@ export function usePageMeta({ title, description, ogImage, canonical } = {}) {
 
     return () => {
       document.title = prev.title || DEFAULTS.title
+      // Restore prior meta values so quick back-nav doesn't leave a
+      // Contact page's title/description hanging on a Pricing view.
+      if (prev.desc)    upsertMeta('meta[name="description"]',    { content: prev.desc,    tag: { name: 'description' } })
+      if (prev.ogTitle) upsertMeta('meta[property="og:title"]',   { content: prev.ogTitle, tag: { property: 'og:title' } })
+      if (prev.ogDesc)  upsertMeta('meta[property="og:description"]', { content: prev.ogDesc, tag: { property: 'og:description' } })
+      if (prev.ogImage) upsertMeta('meta[property="og:image"]',   { content: prev.ogImage, tag: { property: 'og:image' } })
     }
   }, [title, description, ogImage, canonical])
 }

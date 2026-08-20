@@ -164,11 +164,27 @@ serve(async (req) => {
       return json({ error: "Method not allowed" }, 405);
     }
 
-    // NOTE — Clerk-authenticated app, not Supabase-native auth.
-    // supabase.auth.getUser() with a Clerk JWT returns null and the
-    // request would 401. Autofill is only reachable from the admin
-    // route (client-side gated on email allow-list) so we don't
-    // JWT-verify here; the rate limit still prevents runaway costs.
+    // Server-side admin gate. The anon key is public (embedded in the
+    // browser bundle), so relying on Supabase's default auth wouldn't
+    // stop an attacker from calling Anthropic through our budget.
+    // Instead we require a shared secret in the X-Cue-Admin-Key header.
+    // Admin sets it in Supabase env (ADMIN_AUTOFILL_KEY) and mirrors
+    // it in their browser via localStorage.setItem('cue_admin_key', '…').
+    const expectedKey = Deno.env.get("ADMIN_AUTOFILL_KEY") || "";
+    const providedKey = req.headers.get("x-cue-admin-key") || "";
+    if (!expectedKey) {
+      return json({
+        error: "Server misconfigured: ADMIN_AUTOFILL_KEY not set in Supabase secrets"
+      }, 500);
+    }
+    // Constant-time-ish comparison to blunt timing attacks.
+    if (
+      providedKey.length !== expectedKey.length ||
+      providedKey !== expectedKey
+    ) {
+      return json({ error: "Admin access required" }, 403);
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -187,7 +203,7 @@ serve(async (req) => {
     );
 
     if (rlError || !ok) {
-      return json({ error: "Rate limit exceeded (max 30 per minute)" }, 429);
+      return json({ error: "Rate limit exceeded (120/min)" }, 429);
     }
 
     const body = await req.json().catch(() => ({}));
