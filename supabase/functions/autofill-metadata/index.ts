@@ -164,46 +164,33 @@ serve(async (req) => {
       return json({ error: "Method not allowed" }, 405);
     }
 
-    // Server-side admin gate. The anon key is public (embedded in the
-    // browser bundle), so relying on Supabase's default auth wouldn't
-    // stop an attacker from calling Anthropic through our budget.
-    // Instead we require a shared secret in the X-Cue-Admin-Key header.
-    // Admin sets it in Supabase env (ADMIN_AUTOFILL_KEY) and mirrors
-    // it in their browser via localStorage.setItem('cue_admin_key', '…').
-    const expectedKey = Deno.env.get("ADMIN_AUTOFILL_KEY") || "";
-    const providedKey = req.headers.get("x-cue-admin-key") || "";
-    if (!expectedKey) {
-      return json({
-        error: "Server misconfigured: ADMIN_AUTOFILL_KEY not set in Supabase secrets"
-      }, 500);
-    }
-    // Constant-time-ish comparison to blunt timing attacks.
-    if (
-      providedKey.length !== expectedKey.length ||
-      providedKey !== expectedKey
-    ) {
-      return json({ error: "Admin access required" }, 403);
-    }
+    // No shared-secret gate — client-side isAdmin (email allow-list on
+    // the /admin page) handles UX gating. Server-side protection is
+    // rate-limit-based: minute + daily buckets cap worst-case cost if
+    // the anon key ever leaked. ~$4/day max even if hammered.
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // Shared rate-limit bucket for autofill so a single admin can't
-    // burn through Anthropic budget by accident. Keyed on 'autofill'
-    // (not per-user) since admin is one person.
-    const { data: ok, error: rlError } = await supabase.rpc(
+    // Two-tier rate limit: burst cap prevents runaway loops in a
+    // browser tab; daily cap bounds worst-case cost if the anon key
+    // is exfiltrated. 20 req/min is more than plenty for one admin
+    // cataloguing prompts; 200/day caps damage at ~$4.
+    const { data: burstOk, error: burstErr } = await supabase.rpc(
       "check_and_increment_rate_limit",
-      {
-        p_key: "autofill:admin",
-        p_max: 120,
-        p_window_seconds: 60,
-      }
+      { p_key: "autofill:burst", p_max: 20, p_window_seconds: 60 }
     );
-
-    if (rlError || !ok) {
-      return json({ error: "Rate limit exceeded (120/min)" }, 429);
+    if (burstErr || !burstOk) {
+      return json({ error: "Rate limit exceeded — pause a minute" }, 429);
+    }
+    const { data: dailyOk, error: dailyErr } = await supabase.rpc(
+      "check_and_increment_rate_limit",
+      { p_key: "autofill:daily", p_max: 200, p_window_seconds: 86400 }
+    );
+    if (dailyErr || !dailyOk) {
+      return json({ error: "Daily autofill quota reached" }, 429);
     }
 
     const body = await req.json().catch(() => ({}));
