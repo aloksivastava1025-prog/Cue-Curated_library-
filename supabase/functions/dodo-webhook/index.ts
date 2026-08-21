@@ -340,6 +340,90 @@ serve(async (req) => {
             log.warn('Welcome email threw', { error: e?.message })
           }
         }
+
+        // ---- Founder alert email — every real Cue+ purchase pings Alok ----
+        // Separate try/catch so a founder-notification hiccup never blocks
+        // the customer's welcome path or the webhook 200.
+        if (email && event.type === 'payment.succeeded') {
+          try {
+            const resendKey = Deno.env.get('RESEND_API_KEY')
+            const founderInbox = (Deno.env.get('FOUNDER_EMAIL') || 'aloksivastava1025@gmail.com').trim()
+            if (resendKey) {
+              // Live founding count for context — same filter as the UI.
+              const ADMIN_EMAILS = new Set([
+                'aloks.int@teachforindia.org',
+                'akashkumar7653099@gmail.com',
+                'srivastavaalok2214@gmail.com',
+              ])
+              const { data: paidRows } = await supabase
+                .from('user_profiles')
+                .select('email, plan_source')
+                .eq('plan', 'cue_plus')
+              const foundingCount = (paidRows || []).filter((r: any) => {
+                const em = (r.email || '').toLowerCase()
+                if (ADMIN_EMAILS.has(em)) return false
+                if (r.plan_source === 'reconciliation') return false
+                if (r.plan_source === 'manual_link_dodo_email_mismatch') return false
+                return true
+              }).length
+
+              const displayName = event.data?.customer?.name || (email ? email.split('@')[0] : 'Someone')
+              const currency = String(event.data?.currency || 'USD').toUpperCase()
+              const totalMinor = event.data?.total_amount ?? event.data?.amount ?? null
+              const totalFmt = totalMinor != null ? `${(totalMinor / 100).toFixed(2)} ${currency}` : ''
+              const buyerCountry = event.data?.billing?.country || event.data?.customer?.country || 'IN'
+              const escF = (s: string = '') => String(s).replace(/[&<>"']/g, (c) => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+              ))
+              const founderHtml = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0A0A0A;">
+                  <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #0000FF; font-weight: 700; margin-bottom: 12px;">Cue · New sale 🎉</div>
+                  <h2 style="margin: 0 0 14px; font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: 28px; color: #0A0A0A; line-height: 1.15;">
+                    Founding #${foundingCount} — ${escF(displayName)}
+                  </h2>
+                  <table style="border-collapse: collapse; font-size: 14px; margin-bottom: 16px; width: 100%;">
+                    <tr><td style="padding: 4px 12px 4px 0; color: #666; width: 100px;">Email</td><td style="padding: 4px 0;"><a href="mailto:${escF(email)}" style="color: #0000FF;">${escF(email)}</a></td></tr>
+                    <tr><td style="padding: 4px 12px 4px 0; color: #666;">Amount</td><td style="padding: 4px 0; font-weight: 600;">${escF(totalFmt)}</td></tr>
+                    <tr><td style="padding: 4px 12px 4px 0; color: #666;">Plan</td><td style="padding: 4px 0;">${escF(planType)} · ${escF(billingCycle)}</td></tr>
+                    <tr><td style="padding: 4px 12px 4px 0; color: #666;">Country</td><td style="padding: 4px 0;">${escF(buyerCountry)}</td></tr>
+                    <tr><td style="padding: 4px 12px 4px 0; color: #666;">Seats left</td><td style="padding: 4px 0;">${Math.max(50 - foundingCount, 0)} of 50 remaining</td></tr>
+                    ${paymentId ? `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Payment ID</td><td style="padding: 4px 0; font-family: Menlo, monospace; font-size: 12px;">${escF(paymentId)}</td></tr>` : ''}
+                  </table>
+                  <div style="margin: 20px 0;">
+                    <a href="https://www.cuedesign.space/#/admin/subscriptions" style="display: inline-block; padding: 10px 20px; background: #0000FF; color: #fff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600;">Open Subscriptions →</a>
+                  </div>
+                  <p style="margin: 20px 0 4px; font-size: 12px; color: #999;">Auto-generated from dodo-webhook · reply not monitored</p>
+                </div>
+              `
+              const alertResp = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resendKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'Cue Sales <hello@cuedesign.space>',
+                  to: founderInbox,
+                  reply_to: email,
+                  subject: `🎉 New Cue+ sale — ${displayName} (#${foundingCount}/50)`,
+                  html: founderHtml,
+                }),
+              })
+              if (alertResp.ok) {
+                log.info('Founder alert sent', { founderInbox, foundingCount })
+              } else {
+                const errText = await alertResp.text()
+                log.warn('Founder alert failed', {
+                  founderInbox,
+                  status: alertResp.status,
+                  body: errText.slice(0, 300),
+                })
+              }
+            }
+          } catch (e: any) {
+            log.warn('Founder alert threw', { error: e?.message })
+          }
+        }
       } else {
         log.warn('payment.succeeded but no user_id in metadata', { webhookId })
       }
@@ -474,6 +558,63 @@ serve(async (req) => {
               }
             } catch (e: any) {
               log.warn('Refund confirmation email threw', { error: e?.message })
+            }
+
+            // ---- Founder alert email — every refund pings Alok too ----
+            try {
+              const resendKey = Deno.env.get('RESEND_API_KEY')
+              const founderInbox = (Deno.env.get('FOUNDER_EMAIL') || 'aloksivastava1025@gmail.com').trim()
+              if (resendKey) {
+                const refundAmountMinor = event.data?.total_amount ?? event.data?.amount ?? null
+                const refundCurrency = String(event.data?.currency || 'USD').toUpperCase()
+                const refundFmt = refundAmountMinor != null
+                  ? `${(refundAmountMinor / 100).toFixed(2)} ${refundCurrency}`
+                  : ''
+                const paymentIdR = event.data?.payment_id || event.data?.id || null
+                const escR2 = (s: string = '') => String(s).replace(/[&<>"']/g, (c) => (
+                  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+                ))
+                const founderRefundHtml = `
+                  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0A0A0A;">
+                    <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #cc4400; font-weight: 700; margin-bottom: 12px;">Cue · Refund issued</div>
+                    <h2 style="margin: 0 0 14px; font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: 26px; color: #0A0A0A; line-height: 1.15;">
+                      ${escR2(revokeEmail || 'A customer')} was refunded
+                    </h2>
+                    <table style="border-collapse: collapse; font-size: 14px; margin-bottom: 16px; width: 100%;">
+                      <tr><td style="padding: 4px 12px 4px 0; color: #666; width: 100px;">Customer</td><td style="padding: 4px 0;"><a href="mailto:${escR2(revokeEmail || '')}" style="color: #0000FF;">${escR2(revokeEmail || '(unknown)')}</a></td></tr>
+                      <tr><td style="padding: 4px 12px 4px 0; color: #666;">Amount</td><td style="padding: 4px 0; font-weight: 600;">${escR2(refundFmt)}</td></tr>
+                      ${paymentIdR ? `<tr><td style="padding: 4px 12px 4px 0; color: #666;">Payment ID</td><td style="padding: 4px 0; font-family: Menlo, monospace; font-size: 12px;">${escR2(paymentIdR)}</td></tr>` : ''}
+                      <tr><td style="padding: 4px 12px 4px 0; color: #666;">Access</td><td style="padding: 4px 0;">Revoked — user downgraded to free</td></tr>
+                    </table>
+                    <p style="margin: 20px 0 4px; font-size: 12px; color: #999;">Auto-generated from dodo-webhook · reply lands in your inbox</p>
+                  </div>
+                `
+                const alertResp = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${resendKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    from: 'Cue Sales <hello@cuedesign.space>',
+                    to: founderInbox,
+                    reply_to: revokeEmail || undefined,
+                    subject: `Refund issued — ${revokeEmail || 'customer'}`,
+                    html: founderRefundHtml,
+                  }),
+                })
+                if (alertResp.ok) {
+                  log.info('Founder refund alert sent', { founderInbox })
+                } else {
+                  const t = await alertResp.text()
+                  log.warn('Founder refund alert failed', {
+                    status: alertResp.status,
+                    body: t.slice(0, 300),
+                  })
+                }
+              }
+            } catch (e: any) {
+              log.warn('Founder refund alert threw', { error: e?.message })
             }
           }
         }
