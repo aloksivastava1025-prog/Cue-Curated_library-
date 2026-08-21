@@ -100,7 +100,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
     setError(''); setBusy(true)
     try {
       const target = isSignIn ? signIn : signUp
-      if (!target) throw new Error('Auth is not ready yet')
+      if (!target) throw new Error('Getting ready — try again in a couple of seconds.')
       await target.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: window.location.origin + '/sso-callback',
@@ -124,13 +124,13 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
 
     try {
       if (isSignIn) {
-        if (!signInLoaded) throw new Error('Sign-in not ready')
+        if (!signInLoaded) throw new Error('Getting ready — try again in a couple of seconds.')
         await signIn.create({ identifier: clean })
         const emailFactor = signIn.supportedFirstFactors?.find((f) => f.strategy === 'email_code')
-        if (!emailFactor) throw new Error('Email code not enabled on this Clerk instance')
+        if (!emailFactor) throw new Error('Email sign-in is warming up — try again in a moment.')
         await signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: emailFactor.emailAddressId })
       } else {
-        if (!signUpLoaded) throw new Error('Sign-up not ready')
+        if (!signUpLoaded) throw new Error('Getting ready — try again in a couple of seconds.')
         await signUp.create({ emailAddress: clean })
         await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
       }
@@ -435,5 +435,45 @@ function ErrorRow({ msg }) {
 
 function clerkErr(err) {
   const first = err?.errors?.[0]
-  return first?.longMessage || first?.message || err?.message || 'Something went wrong. Try again.'
+  const raw = first?.longMessage || first?.message || err?.message || ''
+  const lower = raw.toLowerCase()
+
+  // User-friendly translations for known Clerk / network / SDK errors —
+  // avoids leaking "Clerk", "Edge Function", stack traces, or codes.
+  if (!raw) return "Something went wrong — try again."
+  if (/failed_to_load_clerk|failed to load clerk|not ready|not yet loaded|initializ/i.test(raw)) {
+    return "Getting ready — try again in a couple of seconds."
+  }
+  if (/timeout|timed out/i.test(lower)) {
+    return "Network's slow — try again in a moment."
+  }
+  if (/network|offline|failed to fetch|internet/i.test(lower)) {
+    return "Connection hiccup — check your internet and try again."
+  }
+  if (/rate limit|too many|429/i.test(lower)) {
+    return "Too many attempts — please wait a minute and try again."
+  }
+  if (/invalid.*code|incorrect.*code|verification.*failed/i.test(lower)) {
+    return "That code doesn't match. Check your email and try again."
+  }
+  if (/invalid.*email|malformed/i.test(lower)) {
+    return "That doesn't look like a valid email — please check it."
+  }
+  if (/already.*exist|already.*used|taken/i.test(lower)) {
+    return "This email is already registered — try signing in instead."
+  }
+  if (/not.*found|no.*account/i.test(lower)) {
+    return "No account found with that email — try signing up."
+  }
+  if (/password.*incorrect|invalid.*credential/i.test(lower)) {
+    return "That password doesn't match. Try again."
+  }
+  if (/oauth|social|google|apple/i.test(lower) && /error|fail|denied/i.test(lower)) {
+    return "Sign-in with Google didn't complete — try again or use email."
+  }
+  // Final safety: never surface anything with "clerk" or a stack trace.
+  if (/clerk|error:|at .*\(/i.test(raw)) {
+    return "Something didn't work — try again in a moment."
+  }
+  return raw
 }

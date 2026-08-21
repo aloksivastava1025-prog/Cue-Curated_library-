@@ -257,7 +257,7 @@ export default function Modal({ item, onClose, showToast }) {
     setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
     if (showToast) {
       const suffix = (!isCuePlus && which === 'prompt' && typeof dailyRemaining === 'number' && dailyRemaining > 0)
-        ? ` · ${dailyRemaining - 1} free left today`
+        ? ` · ${2 - (dailyRemaining - 1)} of 2 used today`
         : ''
       showToast(`Copied ${which.replace('_', ' ')}${suffix}`);
     }
@@ -659,7 +659,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             )}
             {isSignedIn && !isCuePlus && isPromptTab && typeof dailyRemaining === 'number' && dailyRemaining > 0 && (
               <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
-                {dailyRemaining} of 2 free prompt copies left today
+                {2 - dailyRemaining} of 2 free prompt copies used today
               </div>
             )}
             {outOfFree && (
