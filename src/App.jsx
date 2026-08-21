@@ -233,18 +233,18 @@ function MainApp() {
     if (route === '#/admin') return;
 
     const lenis = new Lenis({
-      // Awwwards-tier scroll feel — a bit more travel + smoother lerp so
-      // wheel and trackpad both glide instead of ticking. Touch feels
-      // punchier so mobile users don't fight momentum.
-      duration: 1.15,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // exp-out
+      // Gentle wheel/trackpad smoothing on desktop; native touch on
+      // mobile. Earlier syncTouch + 2.2x touchMultiplier + 0.085 lerp
+      // combo made mobile swipes fly and blocked horizontal scrollers
+      // (Signature picks). This config keeps desktop glide but leaves
+      // touch handling to the browser, which is what users expect.
+      duration: 0.9,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      wheelMultiplier: 0.95,
-      touchMultiplier: 2.2,
-      // Lower lerp = smoother, more velvety motion (less snap-to-frame).
-      lerp: 0.085,
-      syncTouch: true,
-      // Gestures pass through nav / dropdowns cleanly.
+      smoothTouch: false,
+      wheelMultiplier: 1,
+      touchMultiplier: 1,
+      lerp: 0.14,
       gestureOrientation: 'vertical',
     });
 
