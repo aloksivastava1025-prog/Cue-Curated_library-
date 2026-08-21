@@ -703,16 +703,48 @@ function AppShell() {
 
 export default function App() {
   // Clerk's OAuth flow redirects the browser to /sso-callback (a real
-  // pathname, not a hash route). This app otherwise uses hash routing,
-  // so without a handler here the page just sits blank at that URL.
-  // AuthenticateWithRedirectCallback finalises the OAuth handshake and
-  // then sends the user to `redirectUrl`.
+  // pathname, not a hash route). Clerk's handshake takes several seconds
+  // on slow networks — without a visible loading UI the user sees a
+  // black screen and thinks the site froze. Render Cue-branded skeleton
+  // over the callback component so the transition feels intentional.
   if (typeof window !== 'undefined' && window.location.pathname === '/sso-callback') {
     return (
-      <AuthenticateWithRedirectCallback
-        signInFallbackRedirectUrl="/"
-        signUpFallbackRedirectUrl="/"
-      />
+      <>
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1,
+          background: '#060606',
+          color: '#f2f2ef',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif',
+          padding: 20,
+        }}>
+          <div style={{
+            fontFamily: 'Fraunces, Georgia, serif',
+            fontStyle: 'italic', fontSize: 34, fontWeight: 300,
+            letterSpacing: '-0.02em',
+            marginBottom: 24, color: '#f2f2ef',
+          }}>Signing you in…</div>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            border: '2px solid rgba(255,255,255,0.12)',
+            borderTopColor: '#0000FF',
+            animation: 'cue-spin 900ms linear infinite',
+          }} />
+          <div style={{
+            marginTop: 22, fontSize: 12.5,
+            color: 'rgba(255,255,255,0.5)',
+            letterSpacing: '0.02em', textAlign: 'center',
+          }}>Almost there — one moment while we finish setting up your account.</div>
+          <style>{`
+            @keyframes cue-spin { to { transform: rotate(360deg); } }
+          `}</style>
+        </div>
+        <AuthenticateWithRedirectCallback
+          signInFallbackRedirectUrl="/"
+          signUpFallbackRedirectUrl="/"
+        />
+      </>
     );
   }
   return (
