@@ -112,22 +112,36 @@ serve(async (req: Request) => {
     }
 
     if (emailAddr) {
-      // Fire-and-forget — invoke the send-signup-welcome edge function.
+      // Invoke send-signup-welcome inline and log the outcome. Previously
+      // used EdgeRuntime.waitUntil() with a .catch that swallowed errors,
+      // and the fetch itself was silently dropping — 0 downstream
+      // invocations despite this branch running. Inline await adds a
+      // few hundred ms to webhook completion, well within Clerk's
+      // 15-second webhook timeout, in exchange for real reliability.
+      const url = `${SUPABASE_URL}/functions/v1/send-signup-welcome`
       try {
-        const url = `${SUPABASE_URL}/functions/v1/send-signup-welcome`
-        // deno-lint-ignore no-explicit-any
-        (globalThis as any).EdgeRuntime?.waitUntil?.(
-          fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({ email: emailAddr, firstName }),
-          }).catch(() => {})
-        )
-      } catch (_) { /* swallow */ }
-      log('signup_welcome_dispatched', { userId, emailAddr })
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+            'apikey': SERVICE_ROLE_KEY,
+          },
+          body: JSON.stringify({ email: emailAddr, firstName }),
+        })
+        const bodyText = await resp.text().catch(() => '')
+        if (resp.ok) {
+          log('signup_welcome_dispatched', { userId, emailAddr, status: resp.status })
+        } else {
+          log('signup_welcome_failed', {
+            userId, emailAddr,
+            status: resp.status,
+            body: bodyText.slice(0, 300),
+          })
+        }
+      } catch (err) {
+        log('signup_welcome_threw', { userId, emailAddr, error: String(err).slice(0, 300) })
+      }
     } else {
       log('user_created_no_email', { userId })
     }
