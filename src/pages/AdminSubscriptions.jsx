@@ -8,9 +8,20 @@ import { backend } from '../lib/backend.js'
 // customers (counted).
 // Classification filter for the founding-cap count. Keep in sync
 // with src/lib/backend.js and supabase/functions/create-checkout.
-// aloksivastava1025@gmail.com intentionally excluded so the founder's
-// own row shows up as "Real customer" — founding member #1.
+// aloksivastava1025@gmail.com intentionally excluded from this set
+// so the founder's own row shows up as "Real customer" (#1).
 const ADMIN_EMAILS = new Set([
+  'aloks.int@teachforindia.org',
+  'akashkumar7653099@gmail.com',
+  'srivastavaalok2214@gmail.com',
+])
+
+// Separate list for page access — every admin identity that should
+// be allowed to see the Subscriptions dashboard, including the
+// founder's own gmail. Kept apart from ADMIN_EMAILS because that one
+// is a *filter* (rows to hide from the count), not an *authz* check.
+const PAGE_ADMIN_EMAILS = new Set([
+  'aloksivastava1025@gmail.com',
   'aloks.int@teachforindia.org',
   'akashkumar7653099@gmail.com',
   'srivastavaalok2214@gmail.com',
@@ -33,7 +44,7 @@ function fmtDate(iso) {
 
 export default function AdminSubscriptions() {
   const { isLoaded, isSignedIn, user } = useUser()
-  const isAdmin = isSignedIn && ADMIN_EMAILS.has((user?.primaryEmailAddress?.emailAddress || '').toLowerCase())
+  const isAdmin = isSignedIn && PAGE_ADMIN_EMAILS.has((user?.primaryEmailAddress?.emailAddress || '').toLowerCase())
 
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)

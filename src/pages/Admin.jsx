@@ -380,7 +380,7 @@ export default function Admin() {
     }
   }, [allPrompts, isEditing]);
 
-  const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
+  const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com', 'aloks.int@teachforindia.org'].includes(user?.primaryEmailAddress?.emailAddress);
 
   if (!isLoaded) return <div style={{ color: '#fff', padding: '100px', textAlign: 'center' }}>Loading...</div>;
   if (!isAdmin) {

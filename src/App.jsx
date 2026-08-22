@@ -98,7 +98,7 @@ function MainApp() {
   const [tagsFilter, setTagsFilter] = useState([]);    // array of lowercase tags (OR match)
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
-  const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com'].includes(user?.primaryEmailAddress?.emailAddress);
+  const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com', 'aloks.int@teachforindia.org'].includes(user?.primaryEmailAddress?.emailAddress);
   // Two-stage nav: normal top nav on the hero, floating bottom pill
   // once the user scrolls past a threshold. Uses rAF polling of
   // window.scrollY so it stays correct across route changes (a
