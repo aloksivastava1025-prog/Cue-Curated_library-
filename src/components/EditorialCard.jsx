@@ -82,6 +82,10 @@ export default function EditorialCard({ item, setSelectedItem }) {
     ? (Date.now() - new Date(createdAtIso).getTime()) < 7 * 24 * 60 * 60 * 1000
     : false;
   const isPaid = isPremiumItem(item);
+  // A card has "code" when the admin dropped a full React/HTML snippet
+  // in on top of the prompt. Shown as a pill so users can spot at a
+  // glance which items ship copy-pasteable source vs prompt-only.
+  const hasCode = !!(item.code && String(item.code).trim());
 
   // Show only the primary category, not the full tag dump.
   const primaryCategory = primaryCategoryOf(item);
@@ -147,6 +151,26 @@ export default function EditorialCard({ item, setSelectedItem }) {
           <span style={{ ...pillBase, background: 'rgba(6,6,6,0.72)', color: 'var(--text)', border: '1px solid rgba(255,255,255,0.06)' }}>
             {timeTag}
           </span>
+          {hasCode && (
+            <span
+              title="Includes copy-pasteable React source"
+              style={{
+                ...pillBase,
+                background: 'rgba(204,255,0,0.14)',
+                color: '#ccff00',
+                border: '1px solid rgba(204,255,0,0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+              Code
+            </span>
+          )}
         </div>
 
         {/* Title-fallback removed — every card now has a thumbnail
