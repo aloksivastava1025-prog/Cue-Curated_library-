@@ -163,8 +163,8 @@ function MainApp() {
   const { openAuth } = useAuth();
   const savedCount = bookmarkedIds?.size || 0;
   usePageMeta({
-    title: 'A curated library for AI-native builders',
-    description: 'Every AI tool ships the same-looking hero. Cue is the taste layer that fixes that — hand-picked prompts for Bolt, v0, Cursor, and Framer.',
+    title: 'Awwwards-tier components for builders who stand out',
+    description: 'An Awwwards-tier component library — best-in-class components hand-picked from across the web. Copy the AI prompt into Bolt, v0, Cursor, Framer, ChatGPT or Claude. React source and MCP support rolling out.',
   });
 
   // "Design of the Day" rail — items admin flagged with rail = 'featured'.

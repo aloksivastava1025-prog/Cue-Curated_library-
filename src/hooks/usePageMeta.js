@@ -6,8 +6,8 @@ import { useEffect } from 'react'
  * between pages doesn't leak stale metadata.
  */
 const DEFAULTS = {
-  title: 'CUE — copy · paste · ship',
-  description: 'Battle-tested prompts for landing pages. Copy, paste, ship — built for Bolt, v0, Cursor, and Framer.',
+  title: 'CUE — Awwwards-tier components for builders who stand out',
+  description: 'An Awwwards-tier component library — best-in-class components hand-picked from across the web. AI prompts today, React source and MCP support coming.',
   ogImage: 'https://cuedesign.space/og-image.png',
 }
 
