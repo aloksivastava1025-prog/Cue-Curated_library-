@@ -177,20 +177,16 @@ export function AppProvider({ children }) {
   //   2. Same user open/close/reopen spam
   //   3. Refresh loops on the same item
   // Server still sees ONE bump per real, deliberate open.
+  // Every open pings the server. Real dedup lives on the server
+  // (record-view edge fn dedups by IP+UA hash + prompt_id + date via a
+  // composite PK). The earlier 12-hour client-side lock made the UI
+  // feel broken during testing — the counter never budged even after
+  // opening the card. Optimistic UI: bump immediately so the reader
+  // sees their view register; if the server rejects (dedup hit),
+  // the number stays where the client already put it — never wrong-
+  // direction, and next full refetch reconciles from truth.
   const registerView = useCallback((promptId) => {
     if (!promptId) return
-    const key = `cue.view.${promptId}`
-    const WINDOW_MS = 12 * 60 * 60 * 1000 // 12 hours
-    try {
-      const last = localStorage.getItem(key)
-      if (last) {
-        const lastMs = new Date(last).getTime()
-        if (!Number.isNaN(lastMs) && Date.now() - lastMs < WINDOW_MS) return
-      }
-      localStorage.setItem(key, new Date().toISOString())
-    } catch {
-      // localStorage disabled / private mode — still let the view through
-    }
     backend.incrementView(promptId).catch(() => {})
     setDrafts((list) => list.map((p) => (
       p.id === promptId ? { ...p, view_count: (p.view_count || 0) + 1 } : p
