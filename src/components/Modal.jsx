@@ -352,7 +352,10 @@ export default function Modal({ item, onClose, showToast }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 1100, maxHeight: '90vh',
+          // Bumped from 1100 → 1320 and media/side split from 55/45
+          // to 62/38 — real-user feedback (Ibrahim, Aug 24) said the
+          // preview video was too small to actually see the design.
+          width: '100%', maxWidth: 1320, maxHeight: '92vh',
           background: 'var(--card-bg)',
           borderRadius: 14,
           overflow: 'hidden',
@@ -377,7 +380,7 @@ export default function Modal({ item, onClose, showToast }) {
         </button>
 
         {/* LEFT: Media */}
-        <div className="cue-detail-media" style={{ flex: '1 1 55%', background: '#000', position: 'relative', minHeight: 300 }}>
+        <div className="cue-detail-media" style={{ flex: '1 1 62%', background: '#000', position: 'relative', minHeight: 420 }}>
           {media}
         </div>
 
@@ -386,7 +389,7 @@ export default function Modal({ item, onClose, showToast }) {
           className="cue-detail-side custom-scrollbar"
           data-lenis-prevent
           style={{
-            flex: '1 1 45%',
+            flex: '1 1 38%',
             display: 'flex', flexDirection: 'column',
             padding: '28px 28px 24px',
             overflowY: 'auto',

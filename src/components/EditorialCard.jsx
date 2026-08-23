@@ -107,12 +107,15 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const shouldMountHoverVideo = hoverIsVideo;
 
   const pillBase = {
-    padding: '5px 11px',
+    // Bumped from 10px / 5px×11px — real-user feedback (Ibrahim, Aug 24)
+    // said tags were hard to see. New size reads cleanly at desktop
+    // and mobile without hijacking the card visually.
+    padding: '6px 13px',
     borderRadius: '999px',
     fontFamily: 'var(--font-sans)',
-    fontSize: '10px',
-    fontWeight: 600,
-    letterSpacing: '0.06em',
+    fontSize: '11.5px',
+    fontWeight: 700,
+    letterSpacing: '0.055em',
     textTransform: 'uppercase',
     lineHeight: 1,
     display: 'inline-flex',
@@ -154,7 +157,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
           ) : isNew ? (
             <span style={{ ...pillBase, background: 'var(--electric)', color: '#fff' }}>New</span>
           ) : null}
-          <span style={{ ...pillBase, background: 'rgba(6,6,6,0.72)', color: 'var(--text)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ ...pillBase, background: 'rgba(0,0,0,0.78)', color: '#fff', border: '1px solid rgba(255,255,255,0.14)' }}>
             {timeTag}
           </span>
           {hasCode && (
