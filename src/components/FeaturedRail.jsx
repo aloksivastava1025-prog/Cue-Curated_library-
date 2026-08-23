@@ -142,6 +142,8 @@ export default function FeaturedRail({ items, onOpen }) {
 // ---------------------------------------------------------------------------
 function FeaturedCard({ item, onOpen }) {
   const [hover, setHover] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
+  const [videoFailed, setVideoFailed] = useState(false)
   const videoRef = useRef(null)
   const cardRef = useRef(null)
 
@@ -211,25 +213,53 @@ function FeaturedCard({ item, onOpen }) {
           )}
         </div>
 
-        {media ? (
-          isImage ? (
-            <img src={media} alt={item.title} loading="lazy" decoding="async"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', zIndex: 1 }} />
-          ) : (
-            <video
-              ref={videoRef}
-              src={media}
-              loop muted playsInline preload="metadata"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', zIndex: 1 }}
-            />
-          )
-        ) : item.thumbSrc ? (
-          <img src={item.thumbSrc} alt={item.title} loading="lazy" decoding="async"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', zIndex: 1 }} />
-        ) : (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1a1a1c 0%, #0d0d10 100%)' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 'clamp(28px, 3.5vw, 44px)', color: 'var(--text)' }}>{item.title}</span>
-          </div>
+        {/* Text fallback removed — every card has a thumbnail now. */}
+
+        {item.thumbSrc && (
+          <img
+            src={item.thumbSrc}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'contain',
+              background: '#000',
+              transition: 'opacity 0.35s ease',
+              opacity: (hover && !videoFailed) ? 0 : 1,
+              zIndex: 1,
+            }}
+          />
+        )}
+
+        {media && isImage && (
+          <img
+            src={media}
+            alt={item.title}
+            loading="lazy"
+            decoding="async"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', zIndex: 2 }}
+          />
+        )}
+
+        {media && !isImage && !videoFailed && (
+          <video
+            ref={videoRef}
+            src={media}
+            poster={item.thumbSrc || undefined}
+            loop muted playsInline
+            preload="metadata"
+            onError={() => setVideoFailed(true)}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'contain',
+              transition: 'opacity 0.35s ease',
+              opacity: (hover || !item.thumbSrc) ? 1 : 0,
+              zIndex: 2,
+            }}
+          />
         )}
       </div>
 

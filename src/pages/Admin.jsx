@@ -373,6 +373,7 @@ export default function Admin() {
   // Inline, persistent upload status — the ephemeral toast alone is easy to miss.
   const [uploadStatus, setUploadStatus] = useState({ image: null, video: null }); // { image: {ok, msg}, video: {ok, msg} }
   const [saveError, setSaveError] = useState(null); // persistent submit error
+  const [backfill, setBackfill] = useState({ running: false, done: 0, total: 0, ok: 0, failed: 0, log: '' });
 
   useEffect(() => {
     if (!isEditing) {
@@ -395,6 +396,55 @@ export default function Admin() {
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
 
+  // Client-side helper — loads a video, seeks to ~0.05s (so we skip
+  // any pre-roll black frame), draws that frame to a canvas, and
+  // returns a PNG Blob. Wrapped so nothing breaks the upload flow if
+  // the browser can't decode: the caller catches and skips.
+  const extractVideoFirstFrame = (fileOrUrl) => new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    let done = false;
+    const cleanup = () => {
+      if (video.src && video.src.startsWith('blob:')) URL.revokeObjectURL(video.src);
+    };
+    const fail = (msg) => { if (!done) { done = true; cleanup(); reject(new Error(msg)); } };
+    video.onerror = () => fail('video decode failed');
+    // Once metadata is loaded we know duration + dimensions, then seek.
+    video.onloadedmetadata = () => {
+      const w = video.videoWidth || 1280;
+      const h = video.videoHeight || 720;
+      // Seek to a tiny offset — the very first frame is often black.
+      try { video.currentTime = Math.min(0.1, (video.duration || 1) * 0.05); } catch { /* ignore */ }
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, w, h);
+          canvas.toBlob((blob) => {
+            if (!blob) { fail('canvas produced no blob'); return; }
+            if (!done) { done = true; cleanup(); resolve({ blob, width: w, height: h }); }
+          }, 'image/jpeg', 0.82); // JPEG @ 0.82 = tiny file, universally displayable
+        } catch (err) {
+          fail('canvas draw failed: ' + (err?.message || err));
+        }
+      };
+    };
+    // Safety timeout — if the video won't load in 15s, give up cleanly.
+    setTimeout(() => fail('timeout waiting for video metadata'), 15000);
+    if (typeof fileOrUrl === 'string') {
+      video.src = fileOrUrl;
+    } else {
+      video.src = URL.createObjectURL(fileOrUrl);
+    }
+    // Kick off decode. Some browsers need play() before seeking works.
+    video.play().catch(() => { /* muted+playsinline is enough */ });
+  });
+
   const onPickFile = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -402,6 +452,19 @@ export default function Admin() {
 
     if (type === 'image' && !file.type.startsWith('image/')) { setStatus(false, 'Not an image file'); showToast('Only images allowed'); return; }
     if (type === 'video' && !file.type.startsWith('video/')) { setStatus(false, 'Not a video file'); showToast('Only videos allowed'); return; }
+    // Reject QuickTime .mov — Chrome/Firefox/Edge can't decode it, so
+    // the card would just render a black rectangle with the browser's
+    // native loading glyph forever. Force .mp4/.webm from the start.
+    if (
+      type === 'video' && (
+        file.type === 'video/quicktime' ||
+        /\.mov$/i.test(file.name || '')
+      )
+    ) {
+      setStatus(false, "MOV files don't play in most browsers — please upload MP4 or WebM");
+      showToast('MOV blocked — export as MP4 / WebM');
+      return;
+    }
     if (type === 'video' && file.size > 20 * 1024 * 1024) {
       const mb = (file.size / 1024 / 1024).toFixed(1);
       setStatus(false, `Video too large (${mb}MB) — 20MB max`);
@@ -417,6 +480,32 @@ export default function Admin() {
       else set({ hoverSrc: url });
       setStatus(true, `Uploaded ${file.name}`);
       showToast(`${type} uploaded ✓`);
+
+      // Auto-extract first frame as thumbnail for video uploads. Runs
+      // AFTER the primary upload succeeds so the video URL is already
+      // set even if thumbnail extraction fails. Wrapped in try/catch —
+      // failure here never blocks the admin from saving the prompt.
+      if (type === 'video') {
+        try {
+          setStatus(null, 'Auto-generating thumbnail from first frame…');
+          const { blob } = await extractVideoFirstFrame(file);
+          // Wrap blob in File so uploadMedia sees a proper filename+type.
+          const thumbFile = new File(
+            [blob],
+            (file.name || 'frame').replace(/\.[^.]+$/, '') + '-thumb.jpg',
+            { type: 'image/jpeg' }
+          );
+          const { url: thumbUrl } = await backend.uploadMedia(thumbFile);
+          set({ thumbSrc: thumbUrl });
+          setStatus(true, 'Video + auto-thumbnail uploaded ✓');
+          showToast('Thumbnail auto-generated ✓');
+        } catch (thumbErr) {
+          // Non-blocking — video is still saved, admin can upload a
+          // thumbnail manually if desired.
+          console.warn('Auto-thumbnail generation failed:', thumbErr?.message);
+          setStatus(true, `Video uploaded ✓ (thumbnail auto-gen skipped: ${thumbErr?.message || 'unknown'})`);
+        }
+      }
     } catch (err) {
       const detail = err?.message || (typeof err === 'string' ? err : 'Unknown error');
       setStatus(false, `Upload failed: ${detail}`);
@@ -426,6 +515,45 @@ export default function Admin() {
       if (type === 'image' && fileRef.current) fileRef.current.value = '';
       if (type === 'video' && videoRef.current) videoRef.current.value = '';
     }
+  };
+
+  // One-shot backfill: for every prompt in the library that has a
+  // hover_src video but no thumb_src, extract the first frame in the
+  // admin's browser, upload it, and update the row. Safe to re-run:
+  // rows that already have a thumb_src are skipped.
+  const onBackfillThumbnails = async () => {
+    if (backfill.running) return;
+    // Pick rows that need it: has video, no thumbnail.
+    const isImageUrl = (u) => u && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(u);
+    const targets = (allPrompts || []).filter(p => p.hoverSrc && !isImageUrl(p.hoverSrc) && !p.thumbSrc);
+    if (targets.length === 0) {
+      showToast('Nothing to backfill — every prompt already has a thumbnail');
+      return;
+    }
+    if (!window.confirm(`Backfill thumbnails for ${targets.length} videos? Keep this tab open until it finishes.`)) return;
+    setBackfill({ running: true, done: 0, total: targets.length, ok: 0, failed: 0, log: '' });
+    let ok = 0, failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const p = targets[i];
+      const label = (p.title || p.id || '').slice(0, 40);
+      try {
+        const { blob } = await extractVideoFirstFrame(p.hoverSrc);
+        const thumbFile = new File(
+          [blob],
+          `backfill-${p.id || Date.now()}-thumb.jpg`,
+          { type: 'image/jpeg' }
+        );
+        const { url: thumbUrl } = await backend.uploadMedia(thumbFile);
+        await backend.updateFields(p.id, { thumb_src: thumbUrl });
+        ok += 1;
+        setBackfill(b => ({ ...b, done: i + 1, ok, log: `✓ ${label}` }));
+      } catch (err) {
+        failed += 1;
+        setBackfill(b => ({ ...b, done: i + 1, failed, log: `✗ ${label} — ${err?.message || 'unknown'}` }));
+      }
+    }
+    setBackfill(b => ({ ...b, running: false, log: `Done — ${ok} succeeded, ${failed} failed` }));
+    showToast(`Backfill complete — ${ok} ok, ${failed} failed`);
   };
 
   const onAutofill = async () => {
@@ -608,6 +736,23 @@ export default function Admin() {
           <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button
+            onClick={onBackfillThumbnails}
+            disabled={backfill.running}
+            title="Extract first frame from every video that has no thumbnail and upload it. Safe to re-run."
+            style={{
+              padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
+              background: 'transparent',
+              color: backfill.running ? 'var(--text-dim)' : 'var(--text)',
+              fontSize: 11.5, letterSpacing: '0.02em',
+              fontFamily: 'var(--font-sans)',
+              cursor: backfill.running ? 'wait' : 'pointer',
+            }}
+          >
+            {backfill.running
+              ? `Backfilling ${backfill.done}/${backfill.total}…`
+              : 'Backfill thumbnails'}
+          </button>
           <a href="#/admin/subscriptions" style={{
             padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
             color: 'var(--text)', textDecoration: 'none',

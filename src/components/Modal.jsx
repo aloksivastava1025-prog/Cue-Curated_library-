@@ -65,6 +65,8 @@ export default function Modal({ item, onClose, showToast }) {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('code'); // 'code' | 'prompt'
   const [copied, setCopied] = useState(null); // 'code' | 'prompt' | null
+  const [modalVideoReady, setModalVideoReady] = useState(false);
+  const [modalVideoFailed, setModalVideoFailed] = useState(false);
 
   // Register a view once per modal open (per item). Fires optimistically —
   // failures don't affect the UI.
@@ -270,17 +272,60 @@ export default function Modal({ item, onClose, showToast }) {
   };
 
   // --- Media (left column) ---------------------------------------------------
-  const media = item.hoverSrc
-    ? (isImage(item.hoverSrc)
-        ? <img src={item.hoverSrc} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-        : <video src={item.hoverSrc} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />)
-    : item.thumbSrc
-      ? <img src={item.thumbSrc} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
-      : (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'linear-gradient(135deg, #1a1a1c 0%, #0d0d10 100%)' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 32, color: 'var(--text)' }}>{item.title}</span>
-        </div>
-      );
+  // Layered rendering — base fallback always paints, image + video
+  // overlay on top only when they successfully load. Prevents the
+  // "browser native video loading glyph on a black rectangle" bug
+  // when the source is an unsupported codec (e.g. .mov files).
+  const hoverIsImageMedia = item.hoverSrc && isImage(item.hoverSrc);
+  const hoverIsVideoMedia = item.hoverSrc && !hoverIsImageMedia;
+  const media = (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* Text fallback removed — every card has a thumbnail now. */}
+
+      {/* Middle — thumbnail image on top of fallback. Hidden on error. */}
+      {item.thumbSrc && (
+        <img
+          src={item.thumbSrc}
+          alt={item.title}
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', zIndex: 1 }}
+        />
+      )}
+
+      {/* Top — hoverSrc image (if it's an image, not a video). */}
+      {hoverIsImageMedia && (
+        <img
+          src={item.hoverSrc}
+          alt={item.title}
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', zIndex: 2 }}
+        />
+      )}
+
+      {/* Top — hoverSrc video. Poster paints the thumbnail into the
+          video rectangle instantly. onCanPlay flips opacity to 1; onError
+          keeps opacity 0 so the fallback / thumbnail underneath is what
+          the user sees. No black-rectangle-with-loading-glyph state. */}
+      {hoverIsVideoMedia && !modalVideoFailed && (
+        <video
+          src={item.hoverSrc}
+          poster={item.thumbSrc || undefined}
+          autoPlay loop muted playsInline
+          preload="metadata"
+          onCanPlay={() => setModalVideoReady(true)}
+          onError={() => setModalVideoFailed(true)}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'contain',
+            background: 'transparent',
+            transition: 'opacity 0.3s ease',
+            opacity: modalVideoReady ? 1 : 0,
+            zIndex: 2,
+          }}
+        />
+      )}
+    </div>
+  );
 
   const primaryCategory = primaryCategoryOf(item);
 

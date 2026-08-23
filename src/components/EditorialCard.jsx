@@ -19,7 +19,14 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const isLiked = likedIds?.has(item.id);
   const [likeAnim, setLikeAnim] = useState(false);
   const [inView, setInView] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [mouseHover, setMouseHover] = useState(false);
+  const [inViewportPlay, setInViewportPlay] = useState(false);
+  // Effective active state — either the mouse is over the card OR it
+  // is centered enough in the viewport to auto-play. Separating the
+  // two prevents mouse-leave from pausing a card that's still on-screen.
+  const isHovered = mouseHover || inViewportPlay;
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const ref = useRef(null);
   const videoRef = useRef(null);
 
@@ -31,17 +38,16 @@ export default function EditorialCard({ item, setSelectedItem }) {
     return () => observer.disconnect();
   }, []);
 
-  // Touch devices: no hover → treat "card centered in viewport" as
-  // hover. Second observer with a strict threshold so only the card
-  // the user is actually looking at plays its video.
+  // Auto-play videos for any card that's genuinely in view — desktop
+  // and mobile. Whichever row the user is looking at, its videos play
+  // silently as ambient motion (matches Awwwards / motionsites.ai).
+  // Cards that leave the viewport pause automatically so the browser
+  // doesn't burn cycles on off-screen video decode.
   useEffect(() => {
     if (!ref.current) return;
-    const noHover = typeof window !== 'undefined'
-      && window.matchMedia && window.matchMedia('(hover: none)').matches;
-    if (!noHover) return;
     const io = new IntersectionObserver(([entry]) => {
-      setIsHovered(entry.isIntersecting && entry.intersectionRatio >= 0.55);
-    }, { threshold: [0, 0.55, 1] });
+      setInViewportPlay(entry.isIntersecting && entry.intersectionRatio >= 0.4);
+    }, { threshold: [0, 0.4, 0.8, 1] });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);
@@ -82,7 +88,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
 
   const hoverIsImage = item.hoverSrc && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(item.hoverSrc);
   const hoverIsVideo = item.hoverSrc && !hoverIsImage;
-  const shouldMountHoverVideo = hoverIsVideo && inView && (isHovered || !item.thumbSrc);
+  // Mount the <video> whenever we have a hover video source. Previous
+  // `inView` gate meant off-screen (and sometimes on-screen but not-yet
+  // observed) cards never got the element mounted at all — so users
+  // saw a black rectangle instead of the video first-frame poster.
+  // preload="metadata" keeps the actual byte cost small; play() only
+  // fires on real hover, so bandwidth is bounded.
+  const shouldMountHoverVideo = hoverIsVideo;
 
   const pillBase = {
     padding: '5px 11px',
@@ -101,19 +113,21 @@ export default function EditorialCard({ item, setSelectedItem }) {
     <article
       ref={ref}
       onClick={() => setSelectedItem(item)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => setMouseHover(true)}
+      onMouseLeave={() => setMouseHover(false)}
       style={{
         position: 'relative',
-        background: isHovered ? '#212124' : 'var(--card-bg)',
+        /* Card-level lift + bg change stays gated on real mouse hover
+           (mouseHover) — otherwise every viewport-visible card would
+           lift/tint permanently, which looks noisy. Video play/thumb
+           swap still uses isHovered (mouseHover OR inViewportPlay). */
+        background: mouseHover ? '#212124' : 'var(--card-bg)',
         borderRadius: '14px',
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease',
-        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-        contentVisibility: 'auto',
-        containIntrinsicSize: '360px',
-        willChange: isHovered ? 'transform' : 'auto',
+        transform: mouseHover ? 'translateY(-4px)' : 'translateY(0)',
+        willChange: mouseHover ? 'transform' : 'auto',
       }}
       className="resource-card"
     >
@@ -135,13 +149,9 @@ export default function EditorialCard({ item, setSelectedItem }) {
           </span>
         </div>
 
-        {!item.hoverSrc && !item.thumbSrc && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'linear-gradient(135deg, #1a1a1c 0%, #0d0d10 100%)', transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)', transform: isHovered ? 'scale(1.04)' : 'scale(1)' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(22px, 3vw, 36px)', fontStyle: 'italic', fontWeight: 400, color: 'var(--text)', textAlign: 'center', lineHeight: 1.1, letterSpacing: '-0.015em' }}>
-              {item.title}
-            </span>
-          </div>
-        )}
+        {/* Title-fallback removed — every card now has a thumbnail
+            (backfilled + auto-generated on future uploads), so a black
+            base card is enough backdrop. Video overlays on top. */}
 
         {item.thumbSrc && (
           <img
@@ -149,7 +159,23 @@ export default function EditorialCard({ item, setSelectedItem }) {
             alt={item.title}
             loading="lazy"
             decoding="async"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)', transform: isHovered ? 'scale(1.04)' : 'scale(1)', zIndex: 1 }}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              /* `contain` matches the video's own objectFit — image and
+                 video render at the same actual size so the hover swap
+                 doesn't cause a jump. Letterboxes gracefully if aspect
+                 ratios differ. */
+              objectFit: 'contain',
+              background: '#000',
+              transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
+              transform: isHovered ? 'scale(1.04)' : 'scale(1)',
+              /* On hover the video overlays — hide the image so no
+                 double layer / letterbox bleed-through. Off-hover the
+                 image is back. */
+              opacity: (isHovered && !videoFailed) ? 0 : 1,
+              zIndex: 1,
+            }}
           />
         )}
 
@@ -159,22 +185,32 @@ export default function EditorialCard({ item, setSelectedItem }) {
             alt={item.title}
             loading="lazy"
             decoding="async"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease', opacity: isHovered ? 1 : 0, transform: isHovered ? 'scale(1.04)' : 'scale(1)', zIndex: 2 }}
           />
         )}
 
-        {shouldMountHoverVideo && (
+        {shouldMountHoverVideo && !videoFailed && (
           <video
             ref={videoRef}
             src={item.hoverSrc}
+            poster={item.thumbSrc || undefined}
             loop
             muted
             playsInline
             preload="metadata"
-            /* `contain` = show the whole video, add thin letterbox if aspect
-               ratios differ, instead of cropping the sides. Users need to
-               see the full frame to judge the effect. */
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', transition: 'opacity 0.4s ease', opacity: (isHovered || !item.thumbSrc) ? 1 : 0, zIndex: 2 }}
+            onError={() => setVideoFailed(true)}
+            /* Video overlay ONLY visible on hover. Default state = user
+               sees the thumbnail (JPEG). On hover the video fades in on
+               top and plays. For cards with no thumbnail (rare), video
+               is always visible so there's something to look at. */
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'contain',
+              transition: 'opacity 0.35s ease',
+              opacity: (isHovered || !item.thumbSrc) ? 1 : 0,
+              zIndex: 2,
+            }}
           />
         )}
       </div>
