@@ -502,25 +502,35 @@ export default function Admin() {
       // AFTER the primary upload succeeds so the video URL is already
       // set even if thumbnail extraction fails. Wrapped in try/catch —
       // failure here never blocks the admin from saving the prompt.
+      //
+      // IMPORTANT: only auto-generate when the card has NO thumbnail
+      // yet. If the admin already uploaded one manually (or one was
+      // backfilled earlier), respect it — the user's choice always
+      // wins over the auto-frame.
       if (type === 'video') {
-        try {
-          setStatus(null, 'Auto-generating thumbnail from first frame…');
-          const { blob } = await extractVideoFirstFrame(file);
-          // Wrap blob in File so uploadMedia sees a proper filename+type.
-          const thumbFile = new File(
-            [blob],
-            (file.name || 'frame').replace(/\.[^.]+$/, '') + '-thumb.jpg',
-            { type: 'image/jpeg' }
-          );
-          const { url: thumbUrl } = await backend.uploadMedia(thumbFile);
-          set({ thumbSrc: thumbUrl });
-          setStatus(true, 'Video + auto-thumbnail uploaded ✓');
-          showToast('Thumbnail auto-generated ✓');
-        } catch (thumbErr) {
-          // Non-blocking — video is still saved, admin can upload a
-          // thumbnail manually if desired.
-          console.warn('Auto-thumbnail generation failed:', thumbErr?.message);
-          setStatus(true, `Video uploaded ✓ (thumbnail auto-gen skipped: ${thumbErr?.message || 'unknown'})`);
+        if (form.thumbSrc) {
+          setStatus(true, 'Video uploaded ✓ (kept your existing thumbnail)');
+          showToast('Video uploaded — existing thumbnail kept');
+        } else {
+          try {
+            setStatus(null, 'Auto-generating thumbnail from first frame…');
+            const { blob } = await extractVideoFirstFrame(file);
+            // Wrap blob in File so uploadMedia sees a proper filename+type.
+            const thumbFile = new File(
+              [blob],
+              (file.name || 'frame').replace(/\.[^.]+$/, '') + '-thumb.jpg',
+              { type: 'image/jpeg' }
+            );
+            const { url: thumbUrl } = await backend.uploadMedia(thumbFile);
+            set({ thumbSrc: thumbUrl });
+            setStatus(true, 'Video + auto-thumbnail uploaded ✓');
+            showToast('Thumbnail auto-generated ✓');
+          } catch (thumbErr) {
+            // Non-blocking — video is still saved, admin can upload a
+            // thumbnail manually if desired.
+            console.warn('Auto-thumbnail generation failed:', thumbErr?.message);
+            setStatus(true, `Video uploaded ✓ (thumbnail auto-gen skipped: ${thumbErr?.message || 'unknown'})`);
+          }
         }
       }
     } catch (err) {
