@@ -27,6 +27,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const isHovered = mouseHover || inViewportPlay;
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  // Safety net — if the video hasn't emitted onLoadedData/onPlaying
+  // within 3s of the card being in view, we still fade the image out.
+  // Worst case the user sees the video's poster (which is the same
+  // thumbnail) so the visual state at least *changes* on scroll into
+  // view instead of appearing frozen.
+  const [readyTimeout, setReadyTimeout] = useState(false);
   const ref = useRef(null);
   const videoRef = useRef(null);
 
@@ -52,15 +58,28 @@ export default function EditorialCard({ item, setSelectedItem }) {
     return () => io.disconnect();
   }, []);
 
+  // 3-second grace timer once the card is in view — after this,
+  // treat "ready" as done even if the media events never fired.
+  useEffect(() => {
+    if (!(isHovered && inView)) { setReadyTimeout(false); return; }
+    if (videoReady) return;
+    const t = setTimeout(() => setReadyTimeout(true), 3000);
+    return () => clearTimeout(t);
+  }, [isHovered, inView, videoReady]);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (isHovered && inView) {
-      // Kick play now and again once metadata lands — the initial
-      // call can be a no-op if the element hasn't buffered enough
-      // to start (autoplay policy or byte races). The onLoadedData/
-      // onCanPlay handlers on the <video> below provide a second
-      // trigger; this useEffect stays as the state-change entry.
+      // Browsers don't auto-refetch when the preload attribute flips
+      // metadata -> auto on an already-mounted element, so a card
+      // that mounted off-screen never actually starts buffering when
+      // it scrolls into view. Force it: load() drops the current
+      // network state and honours the *current* preload attribute
+      // (now "auto"), then play() rides on top of the fresh buffer.
+      // readyState < HAVE_FUTURE_DATA (3) means we don't have enough
+      // bytes to play yet — safe to reload.
+      try { if (v.readyState < 3) v.load(); } catch {}
       const p = v.play();
       if (p && typeof p.catch === 'function') p.catch(() => {});
     } else {
@@ -208,7 +227,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
                  entered the viewport, but the video was still buffering
                  so users saw the poster (same image) with no motion and
                  assumed the animation never fired. */
-              opacity: (isHovered && videoReady && !videoFailed) ? 0 : 1,
+              opacity: (isHovered && (videoReady || readyTimeout) && !videoFailed) ? 0 : 1,
               zIndex: 1,
             }}
           />
@@ -265,7 +284,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
               // set to the thumbnail below, so hiding the video overlay
               // while it buffers means users see the real thumbnail —
               // not a frozen first frame — until motion actually starts.
-              opacity: (videoReady && (isHovered || !item.thumbSrc)) ? 1 : 0,
+              opacity: ((videoReady || readyTimeout) && (isHovered || !item.thumbSrc)) ? 1 : 0,
               zIndex: 2,
             }}
           />
