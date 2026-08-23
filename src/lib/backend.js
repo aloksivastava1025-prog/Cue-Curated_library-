@@ -157,7 +157,11 @@ const supabaseAdapter = {
     // Missing-column fallback (partner-schema DB without our newer columns).
     if (error) {
       const msg = error.message || ''
-      const isMissingCol = /(?:could not find|does not exist|schema cache|not found|unknown column)/i.test(msg)
+      // Narrow to Postgres/PostgREST column-missing shapes only. The old
+      // regex ("does not exist" / "not found") matched too broadly — an
+      // unrelated RLS or FK error could trigger the legacy fallback and
+      // silently strip `code`/`tags` from the payload.
+      const isMissingCol = /column .* does not exist|could not find the '.*' column|unknown column|schema cache.*column/i.test(msg)
       if (isMissingCol) {
         // eslint-disable-next-line no-console
         console.warn('[cue] Save failed due to missing column; retrying with legacy payload:', msg)
@@ -167,6 +171,28 @@ const supabaseAdapter = {
       }
     }
     if (error) throw error
+
+    // Round-trip guard: if the caller sent `code` but the DB returned null,
+    // the save silently dropped it (usually because a legacy-fallback retry
+    // stripped the column). Retry a targeted UPDATE of just the code column
+    // so admin never has to re-enter it. Logs a warning either way.
+    const sentCode = payloadItem.code && String(payloadItem.code).trim()
+    if (sentCode && !data.code) {
+      // eslint-disable-next-line no-console
+      console.warn('[cue] Save returned null code despite sending it — patching now.', { id: data.id })
+      const { data: patched, error: patchErr } = await supabase
+        .from('prompts')
+        .update({ code: payloadItem.code })
+        .eq('id', data.id)
+        .select()
+        .single()
+      if (patchErr) {
+        // eslint-disable-next-line no-console
+        console.error('[cue] code round-trip patch failed:', patchErr.message)
+      } else {
+        data = patched
+      }
+    }
 
     if (payloadItem.prompt) {
       const { error: contentError } = await supabase
