@@ -198,7 +198,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
             loop
             muted
             playsInline
-            preload="metadata"
+            // Once the card is within 200px of the viewport we start
+            // buffering so hover → play is instant (was 3-5s with
+            // preload="metadata" — user thought cards were static and
+            // bounced). Off-screen cards stay on metadata so we don't
+            // burn bandwidth on the entire grid.
+            preload={inView ? 'auto' : 'metadata'}
+            onLoadedData={() => setVideoReady(true)}
             onError={() => setVideoFailed(true)}
             /* Video overlay ONLY visible on hover. Default state = user
                sees the thumbnail (JPEG). On hover the video fades in on
