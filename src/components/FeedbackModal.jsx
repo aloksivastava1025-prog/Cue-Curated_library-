@@ -43,9 +43,20 @@ export default function FeedbackModal({ open, onClose, source }) {
 
   if (!open) return null
 
+  // Email is required — we need a way to reply to every piece of
+  // feedback. Anonymous notes were resulting in a lot of "great idea!"
+  // suggestions we couldn't follow up on.
+  const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim())
+  const canSubmit = message.trim().length > 0 && isValidEmail(email)
+
   const submit = async (e) => {
     e.preventDefault()
     if (state === 'submitting') return
+    if (!isValidEmail(email)) {
+      setState('error')
+      setErrorMsg('Please add your email — we need it to reply.')
+      return
+    }
     setState('submitting')
     setErrorMsg('')
     try {
@@ -110,7 +121,7 @@ export default function FeedbackModal({ open, onClose, source }) {
               Thanks — got it.
             </h3>
             <p style={{ margin: 0, color: 'var(--text-dim)', fontSize: 13.5, lineHeight: 1.55, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
-              Your {kindLabel} is in. We read every one. If you left an email we'll follow up when there's news.
+              Your {kindLabel} is in. We read every one and reply personally — usually within a couple of business days.
             </p>
             <button
               onClick={onClose}
@@ -189,13 +200,15 @@ export default function FeedbackModal({ open, onClose, source }) {
               }}
             />
 
-            {/* Email — auto-filled when signed in so we can thread replies */}
+            {/* Email — REQUIRED. Auto-filled if signed in so replies
+                land in the same inbox as the feedback. */}
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               readOnly={!!clerkEmail}
-              placeholder={clerkEmail ? '' : 'you@studio.com (optional — for follow-up)'}
+              required
+              placeholder={clerkEmail ? '' : 'you@studio.com — required so we can reply'}
               style={{
                 width: '100%',
                 marginTop: 10,
@@ -209,20 +222,23 @@ export default function FeedbackModal({ open, onClose, source }) {
                 outline: 'none',
               }}
             />
+            <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.4 }}>
+              We reply to every message. Please add your email so we can get back to you.
+            </div>
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center' }}>
               <button
                 type="submit"
-                disabled={state === 'submitting' || !message.trim()}
+                disabled={state === 'submitting' || !canSubmit}
                 style={{
                   flex: 1,
                   padding: '12px 16px',
-                  background: (state === 'submitting' || !message.trim()) ? '#1c1c1e' : 'var(--electric)',
-                  color: (state === 'submitting' || !message.trim()) ? 'var(--text-dimmer)' : '#fff',
+                  background: (state === 'submitting' || !canSubmit) ? '#1c1c1e' : 'var(--electric)',
+                  color: (state === 'submitting' || !canSubmit) ? 'var(--text-dimmer)' : '#fff',
                   border: 'none', borderRadius: 8,
                   fontSize: 13.5, fontWeight: 600,
-                  cursor: (state === 'submitting' || !message.trim()) ? 'not-allowed' : 'pointer',
+                  cursor: (state === 'submitting' || !canSubmit) ? 'not-allowed' : 'pointer',
                   transition: 'background 0.2s ease',
                 }}
               >
