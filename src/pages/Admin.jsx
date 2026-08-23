@@ -550,9 +550,21 @@ export default function Admin() {
   // rows that already have a thumb_src are skipped.
   const onBackfillThumbnails = async () => {
     if (backfill.running) return;
+    // Pull fresh state first — the admin tab's in-memory list can be
+    // stale (thumbnails backfilled from another tab / by a teammate,
+    // or during the last run before a network hiccup). Without this
+    // the confirm() would keep prompting "backfill N videos" for rows
+    // that already got fixed in the DB.
+    let latest = allPrompts || [];
+    try {
+      const fresh = await backend.list();
+      if (Array.isArray(fresh)) latest = fresh;
+    } catch (e) {
+      console.warn('[backfill] fresh list failed, using cached state:', e?.message);
+    }
     // Pick rows that need it: has video, no thumbnail.
     const isImageUrl = (u) => u && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(u);
-    const targets = (allPrompts || []).filter(p => p.hoverSrc && !isImageUrl(p.hoverSrc) && !p.thumbSrc);
+    const targets = latest.filter(p => p.hoverSrc && !isImageUrl(p.hoverSrc) && !p.thumbSrc);
     if (targets.length === 0) {
       // Both a toast AND a modal — toasts can be missed in a corner, the
       // alert leaves no doubt that the button did register the click.
