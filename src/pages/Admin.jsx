@@ -545,6 +545,9 @@ export default function Admin() {
         );
         const { url: thumbUrl } = await backend.uploadMedia(thumbFile);
         await backend.updateFields(p.id, { thumb_src: thumbUrl });
+        // Sync AppContext state — otherwise the next backfill click still
+        // sees this row as "missing thumb" and prompts to re-do it.
+        updateDraftFields(p.id, { thumbSrc: thumbUrl });
         ok += 1;
         setBackfill(b => ({ ...b, done: i + 1, ok, log: `✓ ${label}` }));
       } catch (err) {
