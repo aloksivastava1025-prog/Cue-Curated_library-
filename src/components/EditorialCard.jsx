@@ -56,7 +56,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
     const v = videoRef.current;
     if (!v) return;
     if (isHovered && inView) {
-      v.play().catch(() => {});
+      // Kick play now and again once metadata lands — the initial
+      // call can be a no-op if the element hasn't buffered enough
+      // to start (autoplay policy or byte races). The onLoadedData/
+      // onCanPlay handlers on the <video> below provide a second
+      // trigger; this useEffect stays as the state-change entry.
+      const p = v.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
     } else {
       v.pause();
     }
@@ -194,10 +200,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
               background: '#000',
               transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-              /* On hover the video overlays — hide the image so no
-                 double layer / letterbox bleed-through. Off-hover the
-                 image is back. */
-              opacity: (isHovered && !videoFailed) ? 0 : 1,
+              /* Only hide the image once the video is *actually
+                 playing* — previously we hid it as soon as the card
+                 entered the viewport, but the video was still buffering
+                 so users saw the poster (same image) with no motion and
+                 assumed the animation never fired. */
+              opacity: (isHovered && videoReady && !videoFailed) ? 0 : 1,
               zIndex: 1,
             }}
           />
@@ -228,7 +236,19 @@ export default function EditorialCard({ item, setSelectedItem }) {
             // bounced). Off-screen cards stay on metadata so we don't
             // burn bandwidth on the entire grid.
             preload={inView ? 'auto' : 'metadata'}
-            onLoadedData={() => setVideoReady(true)}
+            // Multiple readiness signals — some codecs fire only one
+            // of these reliably. Any of them flips videoReady, which
+            // is what actually reveals the video overlay + hides the
+            // thumbnail beneath. Also re-tries play() here in case the
+            // effect's play() call raced ahead of the buffer.
+            onLoadedData={(e) => {
+              setVideoReady(true);
+              if (isHovered && inView) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
+            }}
+            onCanPlay={(e) => {
+              if (isHovered && inView) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
+            }}
+            onPlaying={() => setVideoReady(true)}
             onError={() => setVideoFailed(true)}
             /* Video overlay ONLY visible on hover. Default state = user
                sees the thumbnail (JPEG). On hover the video fades in on
@@ -238,7 +258,11 @@ export default function EditorialCard({ item, setSelectedItem }) {
               position: 'absolute', inset: 0, width: '100%', height: '100%',
               objectFit: 'contain',
               transition: 'opacity 0.35s ease',
-              opacity: (isHovered || !item.thumbSrc) ? 1 : 0,
+              // Show video only once it's actually playing. Poster is
+              // set to the thumbnail below, so hiding the video overlay
+              // while it buffers means users see the real thumbnail —
+              // not a frozen first frame — until motion actually starts.
+              opacity: (videoReady && (isHovered || !item.thumbSrc)) ? 1 : 0,
               zIndex: 2,
             }}
           />
