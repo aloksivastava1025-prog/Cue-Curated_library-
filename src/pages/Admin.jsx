@@ -566,8 +566,13 @@ export default function Admin() {
         const { url: thumbUrl } = await backend.uploadMedia(thumbFile);
         await backend.updateFields(p.id, { thumb_src: thumbUrl });
         // Sync AppContext state — otherwise the next backfill click still
-        // sees this row as "missing thumb" and prompts to re-do it.
-        updateDraftFields(p.id, { thumbSrc: thumbUrl });
+        // sees this row as "missing thumb" and prompts to re-do it. Awaited
+        // + explicit .catch so a state-sync error can't escape the outer
+        // try as an unhandled rejection (Sentry was flagging Supabase-
+        // shaped rejects here).
+        await updateDraftFields(p.id, { thumbSrc: thumbUrl }).catch((e) => {
+          console.warn('[backfill] draft state sync failed for', p.id, e?.message);
+        });
         setBackfilledIds((prev) => {
           const next = new Set(prev);
           next.add(p.id);
