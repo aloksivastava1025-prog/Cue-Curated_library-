@@ -14,7 +14,7 @@ import Contact from './pages/Contact.jsx';
 import Footer from './components/Footer.jsx';
 import EditorialCard from './components/EditorialCard.jsx';
 import FeaturedRail from './components/FeaturedRail.jsx';
-import TagFilter, { normalizeTag } from './components/TagFilter.jsx';
+import TagFilter, { normalizeTag, deriveItemTags } from './components/TagFilter.jsx';
 import TierFilter from './components/TierFilter.jsx';
 import { isPremium as isPremiumItem } from './lib/promptHelpers.js';
 import WaitlistCTA from './components/WaitlistCTA.jsx';
@@ -194,7 +194,10 @@ function MainApp() {
   };
   const matchesTags = (p) => {
     if (!tagsFilter.length) return true;
-    const itemTags = (p.tags || []).map(normalizeTag);
+    // Include title/category-derived semantic tags so filters like
+    // "hero" catch items the admin only tagged with implementation
+    // details (preloader, scroll-pin) but whose title reads "Landing".
+    const itemTags = deriveItemTags(p);
     // OR: item matches if it carries ANY of the selected tags.
     return tagsFilter.some((t) => itemTags.includes(t));
   };

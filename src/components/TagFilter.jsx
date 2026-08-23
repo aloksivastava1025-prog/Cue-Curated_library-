@@ -16,13 +16,52 @@ const rawNormalize = (t) => String(t || '').trim().toLowerCase()
 // Key = canonical display tag; value = list of variants that fold into it.
 const TAG_ALIASES = {
   '3d & webgl': ['webgl', 'three-js', 'three.js', 'threejs', 'shader', 'glsl', '3d', '3d-tilt', '3d-transform', '3d-cylinder', '3d-stack', 'css-3d', 'three'],
-  'scroll': ['scroll-driven', 'scroll-pin', 'scroll-reveal', 'scroll-interaction', 'scroll-animation', 'pinned-scroll'],
+  'scroll': ['scroll-driven', 'scroll-pin', 'scroll-reveal', 'scroll-interaction', 'scroll-animation', 'pinned-scroll', 'scroll-trigger', 'scrolltrigger', 'pinned-section', 'horizontal-pan', 'scroll-scrubbed', 'scroll-transition', 'section-transition'],
   'glass': ['glassmorphism', 'liquid-glass', 'frosted-glass'],
   'toggle': ['toggle', 'theme-toggle', 'dark-mode', 'light-dark-toggle', 'texture-toggle', 'card-toggle'],
-  'card': ['card-stack', 'card-overlay'],
-  'hover': ['hover-interaction', 'hover-reveal', 'hover-scale'],
-  'reveal': ['blur-reveal', 'text-reveal', 'image-reveal'],
+  'card': ['card-stack', 'card-overlay', 'card-layout', 'card-animation'],
+  'hero': ['hero', 'hero-section', 'landing', 'landing-page', 'split-hero', 'landing-flow'],
+  'nav': ['nav', 'navbar', 'navigation', 'menu-bar', 'mega-menu', 'pinned-nav', 'glass-nav'],
+  'preloader': ['preloader', 'loader', 'loading-screen', 'loaders'],
+  'modal': ['modal', 'dialog', 'overlay'],
+  'form': ['form', 'forms', 'input', 'signup', 'signin', 'auth'],
+  'button': ['button', 'buttons', 'cta', 'cream-cta'],
+  'pricing': ['pricing', 'pricing-card', 'pricing-table'],
+  'gallery': ['gallery', 'gallery-images', 'grid-gallery', 'image-gallery'],
+  'carousel': ['carousel', 'slider', 'sliders', 'marquee'],
+  'typography': ['typography', 'text-reveal', 'char-reveal', 'letter-split', 'word-split', 'per-letter-settle', 'kinetic-type', 'sentence-reveal', 'char-animation'],
+  'hover': ['hover-interaction', 'hover-reveal', 'hover-scale', 'hover-panel', 'hover'],
+  'reveal': ['blur-reveal', 'text-reveal', 'image-reveal', 'reveal'],
+  'dashboard': ['dashboard', 'admin-panel', 'analytics'],
+  'portfolio': ['portfolio', 'agency', 'personal-site'],
+  'bento': ['bento', 'bento-grid', 'bento-layout'],
+  'audio-video': ['video', 'audio', 'web-audio', 'video-player'],
 }
+
+// Words / phrases we look for inside title + category to derive
+// semantic tags when the admin hasn't tagged an item with the obvious
+// category. Every entry maps a keyword to a canonical tag from the
+// aliases above. Order doesn't matter — we run every rule.
+const DERIVED_TAG_KEYWORDS = [
+  { match: ['hero', 'landing', 'landing flow', 'landing page', 'above the fold'], tag: 'hero' },
+  { match: ['preload', 'loader', 'loading screen', 'splash'], tag: 'preloader' },
+  { match: ['card stack', 'card overlay', 'stacked card', 'card queue', 'card layout'], tag: 'card' },
+  { match: ['nav', 'menu', 'navbar'], tag: 'nav' },
+  { match: ['modal', 'dialog', 'overlay'], tag: 'modal' },
+  { match: ['form', 'signup', 'sign up', 'sign in', 'login', 'signin', 'auth'], tag: 'form' },
+  { match: ['pricing'], tag: 'pricing' },
+  { match: ['gallery', 'image grid', 'photo grid'], tag: 'gallery' },
+  { match: ['carousel', 'marquee', 'slider'], tag: 'carousel' },
+  { match: ['dashboard', 'admin panel', 'analytics'], tag: 'dashboard' },
+  { match: ['portfolio'], tag: 'portfolio' },
+  { match: ['bento'], tag: 'bento' },
+  { match: ['scroll'], tag: 'scroll' },
+  { match: ['webgl', 'three.js', 'three-js', 'shader', 'glsl', '3d', 'cinematic'], tag: '3d & webgl' },
+  { match: ['glass'], tag: 'glass' },
+  { match: ['button', 'cta'], tag: 'button' },
+  { match: ['toggle'], tag: 'toggle' },
+  { match: ['video', 'audio', 'player'], tag: 'audio-video' },
+]
 
 // Build a variant -> canonical lookup once.
 const VARIANT_TO_CANONICAL = new Map()
@@ -46,6 +85,25 @@ export const expandTag = (canonical) => {
   return variants ? [c, ...variants] : [c]
 }
 
+// Return the FULL set of canonical tags an item should be filterable
+// under — raw tags folded to canonical PLUS tags derived from title
+// and category. Ensures "Full-Club Landing Flow" ends up tagged as
+// "hero" even if the admin only put implementation tags on it.
+export const deriveItemTags = (item) => {
+  const set = new Set()
+  ;(item.tags || []).forEach((raw) => {
+    const t = normalizeTag(raw)
+    if (t) set.add(t)
+  })
+  const haystack = `${item.title || ''} ${item.category || ''}`.toLowerCase()
+  for (const rule of DERIVED_TAG_KEYWORDS) {
+    if (rule.match.some((kw) => haystack.includes(kw))) {
+      set.add(rule.tag)
+    }
+  }
+  return [...set]
+}
+
 export default function TagFilter({ items = [], selected = [], onChange }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -53,12 +111,12 @@ export default function TagFilter({ items = [], selected = [], onChange }) {
   const rootRef = useRef(null)
 
   // Rank tags by frequency across the library so useful ones are top.
+  // Uses deriveItemTags so title/category-derived tags (like "hero"
+  // inferred from "Landing Flow") show up as filter options too.
   const tagOptions = useMemo(() => {
     const counts = new Map()
     items.forEach((it) => {
-      ;(it.tags || []).forEach((raw) => {
-        const t = normalizeTag(raw)
-        if (!t) return
+      deriveItemTags(it).forEach((t) => {
         counts.set(t, (counts.get(t) || 0) + 1)
       })
     })
