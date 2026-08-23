@@ -1,41 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!--
-    Cue uses hash-based routing (/#/pricing etc.). Google's crawler
-    treats the fragment as an in-page anchor, so only the root URL
-    reliably enters the index. We list the root plus the legal pages
-    (which stand on their own for compliance queries) and keep the
-    file trivially maintainable. Regenerate when we migrate to
-    browser routing.
+    Cue is a Vite SPA with hash-based routing (/#/pricing etc.).
+    Google ignores the fragment, so only the root URL reliably enters
+    the index. Listing hash routes here produced "Discovered - not
+    indexed" warnings in GSC because Google treats them as duplicates
+    of the homepage.
+
+    We list ONLY the root URL. The homepage renders all the key
+    content (hero, pricing summary, founder story, prompts grid),
+    so a single indexed page captures every search-relevant surface.
+
+    When we migrate to BrowserRouter (post-launch), regenerate this
+    file to include real per-route URLs (/pricing, /contact, /legal/*).
   -->
   <url>
     <loc>https://cuedesign.space/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://cuedesign.space/#/pricing</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://cuedesign.space/#/legal/privacy</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://cuedesign.space/#/legal/terms</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://cuedesign.space/#/legal/refund</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://cuedesign.space/#/legal/license</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
 </urlset>
