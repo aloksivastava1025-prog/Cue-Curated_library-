@@ -173,7 +173,7 @@ const STACK_SUGGESTIONS = ['CSS', 'JavaScript', 'React', 'GSAP', 'Framer Motion'
 // A single uploaded-resource row: real thumbnail (video first-frame OR image),
 // clean labels, type + tier badges, and edit / delete actions.
 const IMG_EXT_RE = /\.(jpe?g|gif|png|webp|svg|heic|avif)$/i;
-function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured }) {
+function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBackfilled }) {
   const isPaid = p.tier === 'paid' || p.price === 'premium';
   const isDraft = p.status === 'draft';
   const isFeatured = p.rail === 'featured';
@@ -221,6 +221,19 @@ function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured }) {
           {isFeatured && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(204,255,0,0.14)', color: '#ccff00', border: '1px solid rgba(204,255,0,0.5)', borderRadius: '3px', letterSpacing: '0.08em' }}>★ FEATURED</span>}
           {isPaid && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(0,0,255,0.15)', color: 'var(--electric)', border: '1px solid rgba(0,0,255,0.4)', borderRadius: '3px' }}>🔒 Cue+</span>}
           {isDraft && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px' }}>DRAFT</span>}
+          {justBackfilled && (
+            <span style={{
+              fontSize: '9px', padding: '2px 6px',
+              background: 'rgba(34,197,94,0.14)', color: '#4ade80',
+              border: '1px solid rgba(34,197,94,0.45)', borderRadius: '3px',
+              letterSpacing: '0.06em', display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              BACKFILL COMPLETE
+            </span>
+          )}
         </div>
         {p.description
           ? <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '4px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.description}</div>
@@ -374,6 +387,10 @@ export default function Admin() {
   const [uploadStatus, setUploadStatus] = useState({ image: null, video: null }); // { image: {ok, msg}, video: {ok, msg} }
   const [saveError, setSaveError] = useState(null); // persistent submit error
   const [backfill, setBackfill] = useState({ running: false, done: 0, total: 0, ok: 0, failed: 0, log: '' });
+  // IDs of prompts backfilled in the current session — surfaced as a
+  // green pill on each affected row so the admin can see at a glance
+  // which cards just got a thumbnail.
+  const [backfilledIds, setBackfilledIds] = useState(() => new Set());
 
   useEffect(() => {
     if (!isEditing) {
@@ -551,6 +568,11 @@ export default function Admin() {
         // Sync AppContext state — otherwise the next backfill click still
         // sees this row as "missing thumb" and prompts to re-do it.
         updateDraftFields(p.id, { thumbSrc: thumbUrl });
+        setBackfilledIds((prev) => {
+          const next = new Set(prev);
+          next.add(p.id);
+          return next;
+        });
         ok += 1;
         setBackfill(b => ({ ...b, done: i + 1, ok, log: `✓ ${label}` }));
       } catch (err) {
@@ -1035,7 +1057,7 @@ export default function Admin() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px' }}>
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 400, fontStyle: 'italic', marginBottom: '24px' }}>Uploaded resources</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} onToggleFeatured={onToggleFeatured} />)}
+          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} onToggleFeatured={onToggleFeatured} justBackfilled={backfilledIds.has(p.id)} />)}
         </div>
       </div>
 
