@@ -11,6 +11,7 @@ export const normalizeTag = (t) => String(t || '').trim().toLowerCase()
 export default function TagFilter({ items = [], selected = [], onChange }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [showAll, setShowAll] = useState(false)
   const rootRef = useRef(null)
 
   // Rank tags by frequency across the library so useful ones are top.
@@ -28,11 +29,31 @@ export default function TagFilter({ items = [], selected = [], onChange }) {
       .map(([tag, count]) => ({ tag, count }))
   }, [items])
 
+  // Curated default view — hide the long tail of one-off tags that every
+  // new component drops into the library, otherwise the list explodes.
+  // Singletons stay searchable (typing surfaces them) and toggle-able via
+  // "Show all". Also cap the default-visible ceiling so 20 tags with
+  // count=1 don't push down the useful ones.
+  const MIN_COUNT_DEFAULT = 2
+  const MAX_DEFAULT_VISIBLE = 20
+  const hiddenCount = tagOptions.filter((o) => o.count < MIN_COUNT_DEFAULT).length
+    + Math.max(0, tagOptions.filter((o) => o.count >= MIN_COUNT_DEFAULT).length - MAX_DEFAULT_VISIBLE)
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return tagOptions
-    return tagOptions.filter(({ tag }) => tag.includes(q))
-  }, [tagOptions, query])
+    // While searching, show every match regardless of count — user is
+    // asking for something specific, so completeness matters.
+    if (q) return tagOptions.filter(({ tag }) => tag.includes(q))
+    // Also show the full list when the user has already picked a rare
+    // tag (so they can un-pick it) or clicked "Show all".
+    if (showAll) return tagOptions
+    const selectedSet = new Set(selected)
+    return tagOptions.filter(({ tag, count }, i) => {
+      if (selectedSet.has(tag)) return true
+      if (count < MIN_COUNT_DEFAULT) return false
+      return i < MAX_DEFAULT_VISIBLE
+    })
+  }, [tagOptions, query, showAll, selected])
 
   useEffect(() => {
     if (!open) return
@@ -158,6 +179,32 @@ export default function TagFilter({ items = [], selected = [], onChange }) {
                 </button>
               )
             })}
+            {!query && !showAll && hiddenCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                style={{
+                  width: '100%', padding: '10px', marginTop: 4,
+                  background: 'transparent', border: '1px dashed var(--border)',
+                  borderRadius: 6, color: 'var(--text-dim)',
+                  fontFamily: 'var(--font-sans)', fontSize: 11.5, cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                }}
+              >Show all tags ({hiddenCount} more)</button>
+            )}
+            {!query && showAll && (
+              <button
+                type="button"
+                onClick={() => setShowAll(false)}
+                style={{
+                  width: '100%', padding: '10px', marginTop: 4,
+                  background: 'transparent', border: '1px dashed var(--border)',
+                  borderRadius: 6, color: 'var(--text-dim)',
+                  fontFamily: 'var(--font-sans)', fontSize: 11.5, cursor: 'pointer',
+                  letterSpacing: '0.02em',
+                }}
+              >Show only popular tags</button>
+            )}
           </div>
 
           {selected.length > 0 && (
