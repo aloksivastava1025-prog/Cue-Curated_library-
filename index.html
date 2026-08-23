@@ -67,12 +67,47 @@
       "name": "Cue+ Founding Lifetime",
       "description": "Lifetime access to Cue — an Awwwards-tier component library with AI prompts, React source, and MCP support (rolling out). Founding pricing capped at 50 members.",
       "brand": { "@type": "Brand", "name": "Cue" },
+      "image": "https://cuedesign.space/og-image.png",
+      "sku": "cue-plus-founding-lifetime",
+      "category": "Software / Design tools",
       "offers": {
         "@type": "Offer",
         "url": "https://cuedesign.space/#/pricing",
         "priceCurrency": "USD",
         "price": "99.00",
-        "availability": "https://schema.org/LimitedAvailability"
+        "availability": "https://schema.org/LimitedAvailability",
+        "priceValidUntil": "2026-12-31",
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": ["US", "IN", "GB", "EU"],
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 14,
+          "returnMethod": "https://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/FreeReturn"
+        },
+        "shippingDetails": {
+          "@type": "OfferShippingDetails",
+          "shippingRate": {
+            "@type": "MonetaryAmount",
+            "value": "0.00",
+            "currency": "USD"
+          },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "MIN"
+            },
+            "transitTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "MIN"
+            }
+          }
+        }
       }
     }
     </script>
