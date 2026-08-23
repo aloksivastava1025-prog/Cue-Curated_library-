@@ -527,7 +527,10 @@ export default function Admin() {
     const isImageUrl = (u) => u && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(u);
     const targets = (allPrompts || []).filter(p => p.hoverSrc && !isImageUrl(p.hoverSrc) && !p.thumbSrc);
     if (targets.length === 0) {
-      showToast('Nothing to backfill — every prompt already has a thumbnail');
+      // Both a toast AND a modal — toasts can be missed in a corner, the
+      // alert leaves no doubt that the button did register the click.
+      showToast('Every prompt already has a thumbnail — nothing to backfill');
+      window.alert('All prompts already have thumbnails — nothing to backfill.');
       return;
     }
     if (!window.confirm(`Backfill thumbnails for ${targets.length} videos? Keep this tab open until it finishes.`)) return;
