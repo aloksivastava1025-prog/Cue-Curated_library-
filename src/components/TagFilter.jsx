@@ -6,7 +6,45 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
  * doesn't produce duplicate options.
  * Selection is OR (union): an item matches if it carries ANY selected tag.
  */
-export const normalizeTag = (t) => String(t || '').trim().toLowerCase()
+// Raw lowercase + trim.
+const rawNormalize = (t) => String(t || '').trim().toLowerCase()
+
+// Canonicalize related tag variants so a single filter checkbox matches
+// every item in that family. Without this, users tagged items 9 different
+// ways for "3D/WebGL" (three-js, three.js, webgl, shader, 3d-tilt,
+// 3d-transform, css-3d, ...) so clicking "webgl" only surfaced 2 of 15.
+// Key = canonical display tag; value = list of variants that fold into it.
+const TAG_ALIASES = {
+  '3d & webgl': ['webgl', 'three-js', 'three.js', 'threejs', 'shader', 'glsl', '3d', '3d-tilt', '3d-transform', '3d-cylinder', '3d-stack', 'css-3d', 'three'],
+  'scroll': ['scroll-driven', 'scroll-pin', 'scroll-reveal', 'scroll-interaction', 'scroll-animation', 'pinned-scroll'],
+  'glass': ['glassmorphism', 'liquid-glass', 'frosted-glass'],
+  'toggle': ['toggle', 'theme-toggle', 'dark-mode', 'light-dark-toggle', 'texture-toggle', 'card-toggle'],
+  'card': ['card-stack', 'card-overlay'],
+  'hover': ['hover-interaction', 'hover-reveal', 'hover-scale'],
+  'reveal': ['blur-reveal', 'text-reveal', 'image-reveal'],
+}
+
+// Build a variant -> canonical lookup once.
+const VARIANT_TO_CANONICAL = new Map()
+for (const [canonical, variants] of Object.entries(TAG_ALIASES)) {
+  for (const v of variants) VARIANT_TO_CANONICAL.set(v, canonical)
+}
+
+// Public normalize: fold aliases into canonical. Used everywhere a tag
+// enters the filter machinery — TagFilter's counting, App.jsx's match
+// logic, and the "selected chips" UI.
+export const normalizeTag = (t) => {
+  const raw = rawNormalize(t)
+  return VARIANT_TO_CANONICAL.get(raw) || raw
+}
+
+// Full expansion — given a canonical tag, return every raw variant so
+// App.jsx's filter can match items whose raw stored tag differs.
+export const expandTag = (canonical) => {
+  const c = rawNormalize(canonical)
+  const variants = TAG_ALIASES[c]
+  return variants ? [c, ...variants] : [c]
+}
 
 export default function TagFilter({ items = [], selected = [], onChange }) {
   const [open, setOpen] = useState(false)
