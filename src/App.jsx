@@ -177,10 +177,18 @@ function MainApp() {
     .sort((a, b) => itemDate(b) - itemDate(a))
     .slice(0, 12);
 
-  // Grid shows EVERYTHING, featured included. Newest first — otherwise fresh
-  // drops disappear into the middle of the grid and users think we stopped
-  // shipping. Rail is a spotlight above, grid stays complete below.
-  const sortedByNewest = [...allPrompts].sort((a, b) => itemDate(b) - itemDate(a));
+  // Grid shows EVERYTHING, featured included. Featured (starred in admin)
+  // items float to the top so the admin can hand-pick what a first-time
+  // visitor sees at the head of the grid — same star toggle drives both
+  // the Signature Picks rail above and the grid ordering below. Within
+  // each group we still fall back to newest-first so fresh drops don't
+  // disappear into the middle.
+  const sortedByNewest = [...allPrompts].sort((a, b) => {
+    const aFeat = a.rail === 'featured' ? 1 : 0;
+    const bFeat = b.rail === 'featured' ? 1 : 0;
+    if (aFeat !== bFeat) return bFeat - aFeat;
+    return itemDate(b) - itemDate(a);
+  });
 
   const matchesType = (p) => {
     if (typeFilter === 'all') return true;
