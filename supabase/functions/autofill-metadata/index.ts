@@ -86,7 +86,7 @@ const METADATA_SCHEMA = {
       type: "array",
       items: { type: "string" },
       description:
-        "1-6 short lowercase tags describing the effect/technique (e.g. 'parallax', 'gsap', 'hero'). Include only the ones that are genuinely relevant — one strong tag is better than three weak ones. No spaces; use hyphens.",
+        "2-4 short lowercase tags. STRICT RULE: only tag effects/ingredients that are EXPLICITLY named in the prompt or that are the single dominant technique the prompt is built around. Do NOT infer tags from adjacent aesthetics ('cinematic' does NOT imply 'noise-texture'; 'depth' does NOT imply '3d-transform'). If in doubt, leave it out — under-tagged is far better than over-tagged. No spaces; use hyphens.",
     },
     description: {
       type: "string",

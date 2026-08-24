@@ -289,6 +289,25 @@ export default function EditorialCard({ item, setSelectedItem }) {
             }}
           />
         )}
+
+        {/* Bottom-right FREE / PAID chip — user feedback: makes tier
+            scannable across the grid without opening a card. Sits on
+            top of the media (zIndex 3) but below the inner hairline. */}
+        <span
+          style={{
+            ...pillBase,
+            position: 'absolute',
+            bottom: 10, right: 10,
+            zIndex: 3,
+            fontSize: '10.5px',
+            padding: '5px 11px',
+            background: isPaid ? 'var(--electric)' : 'rgba(0,0,0,0.78)',
+            color: '#fff',
+            border: `1px solid ${isPaid ? 'transparent' : 'rgba(255,255,255,0.14)'}`,
+          }}
+        >
+          {isPaid ? 'Paid' : 'Free'}
+        </span>
       </div>
 
       {/* Meta */}
