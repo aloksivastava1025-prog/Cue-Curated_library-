@@ -632,6 +632,12 @@ export default function Admin() {
   // Re-run the (now-tightened) AI autofill over every prompt and
   // rewrite its `tags` array. Read the prompt text from prompt_contents
   // fresh — the drafts list doesn't carry the prompt body, only metadata.
+  //
+  // Safety flow:
+  //   1. Auto-download a JSON backup of every current { id, tags } pair
+  //      before touching anything — restoration is a single SQL loop.
+  //   2. Confirm dialog explicitly names the backup filename.
+  //   3. Progress log shows old -> new so admin sees each swap.
   const onRetagAll = async () => {
     if (retag.running) return;
     // Refetch to work on the current DB state.
@@ -643,7 +649,26 @@ export default function Admin() {
       console.warn('[retag] fresh list failed, using cached:', e?.message);
     }
     if (!latest.length) { showToast('No prompts to retag'); return; }
-    if (!window.confirm(`Re-tag ${latest.length} prompts with the tightened AI? Existing tags will be OVERWRITTEN. Keep this tab open until it finishes.`)) return;
+
+    // Step 1 — download current tags as a JSON backup. Runs before the
+    // confirm so if the admin cancels, they already have the safety net
+    // in their Downloads folder.
+    const backup = latest.map((p) => ({ id: p.id, title: p.title, tags: Array.isArray(p.tags) ? p.tags : [] }));
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `cue-tags-backup-${stamp}.json`;
+    try {
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      console.warn('[retag] backup download failed:', e?.message);
+    }
+
+    if (!window.confirm(`Re-tag ${latest.length} prompts with the tightened AI?\n\nExisting tags WILL be OVERWRITTEN.\n\nA backup was just downloaded as ${filename} — keep it. If the new tags are worse, we can restore from that file.\n\nKeep this tab open until it finishes.`)) return;
     setRetag({ running: true, done: 0, total: latest.length, ok: 0, failed: 0, log: '' });
     let ok = 0, failed = 0;
     for (let i = 0; i < latest.length; i++) {
@@ -667,14 +692,60 @@ export default function Admin() {
         await updateDraftFields(p.id, { tags: clean }).catch(() => {});
         setRetaggedIds((prev) => { const next = new Set(prev); next.add(p.id); return next; });
         ok += 1;
-        setRetag(r => ({ ...r, done: i + 1, ok, log: `✓ ${label} → ${clean.slice(0, 3).join(', ')}${clean.length > 3 ? '…' : ''}` }));
+        const oldPreview = (Array.isArray(p.tags) ? p.tags : []).slice(0, 3).join(', ') || '(none)';
+        const newPreview = clean.slice(0, 3).join(', ') + (clean.length > 3 ? '…' : '');
+        setRetag(r => ({ ...r, done: i + 1, ok, log: `✓ ${label}  [${oldPreview}] → [${newPreview}]` }));
       } catch (err) {
         failed += 1;
         setRetag(r => ({ ...r, done: i + 1, failed, log: `✗ ${label} — ${err?.message || 'unknown'}` }));
       }
     }
-    setRetag(r => ({ ...r, running: false, log: `Done — ${ok} succeeded, ${failed} failed` }));
+    setRetag(r => ({ ...r, running: false, log: `Done — ${ok} succeeded, ${failed} failed. If tags look worse, use 'Restore tags from backup' to undo.` }));
     showToast(`Retag complete — ${ok} ok, ${failed} failed`);
+  };
+
+  // Undo counterpart — admin picks the JSON backup that was downloaded
+  // before the retag run and every prompt's tags get restored to that
+  // snapshot. No AI involvement, just verbatim write-back.
+  const onRestoreTags = async () => {
+    if (retag.running) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      let parsed;
+      try {
+        const text = await file.text();
+        parsed = JSON.parse(text);
+      } catch (err) {
+        window.alert(`Could not read the backup: ${err?.message || 'invalid JSON'}`);
+        return;
+      }
+      if (!Array.isArray(parsed) || !parsed.every((r) => r && typeof r.id === 'string' && Array.isArray(r.tags))) {
+        window.alert('That file does not look like a cue tag backup. Expected an array of { id, tags }.');
+        return;
+      }
+      if (!window.confirm(`Restore tags on ${parsed.length} prompts from ${file.name}? This overwrites current tags with the backup snapshot.`)) return;
+      setRetag({ running: true, done: 0, total: parsed.length, ok: 0, failed: 0, log: 'Restoring…' });
+      let ok = 0, failed = 0;
+      for (let i = 0; i < parsed.length; i++) {
+        const row = parsed[i];
+        try {
+          await backend.updateFields(row.id, { tags: row.tags });
+          await updateDraftFields(row.id, { tags: row.tags }).catch(() => {});
+          ok += 1;
+          setRetag(r => ({ ...r, done: i + 1, ok, log: `↺ ${row.id} restored` }));
+        } catch (err) {
+          failed += 1;
+          setRetag(r => ({ ...r, done: i + 1, failed, log: `✗ ${row.id} — ${err?.message || 'unknown'}` }));
+        }
+      }
+      setRetag(r => ({ ...r, running: false, log: `Restore done — ${ok} succeeded, ${failed} failed` }));
+      showToast(`Restore complete — ${ok} ok, ${failed} failed`);
+    };
+    input.click();
   };
 
   const onAutofill = async () => {
@@ -890,6 +961,21 @@ export default function Admin() {
             {retag.running
               ? `Retagging ${retag.done}/${retag.total}…`
               : 'AI re-tag all'}
+          </button>
+          <button
+            onClick={onRestoreTags}
+            disabled={retag.running}
+            title="Undo a retag run by picking the JSON backup that was downloaded just before it."
+            style={{
+              padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
+              background: 'transparent',
+              color: retag.running ? 'var(--text-dim)' : 'var(--text-dim)',
+              fontSize: 11.5, letterSpacing: '0.02em',
+              fontFamily: 'var(--font-sans)',
+              cursor: retag.running ? 'wait' : 'pointer',
+            }}
+          >
+            Restore tags from backup
           </button>
           <a href="#/admin/subscriptions" style={{
             padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
