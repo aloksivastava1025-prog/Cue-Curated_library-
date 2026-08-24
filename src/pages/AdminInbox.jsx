@@ -119,7 +119,7 @@ export default function AdminInbox() {
         borderBottom: '1px solid var(--border)', padding: '14px 24px',
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        <a href="#/admin" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 20, color: 'var(--text)', textDecoration: 'none' }}>CUE</a>
+        <a href="#/admin" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 20, color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></a>
         <span style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Inbox</span>
         {unread.total > 0 && (
           <span style={{

@@ -122,7 +122,7 @@ export default function Pricing() {
       {/* Nav */}
       <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
         <a href="#/" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, textDecoration: 'none' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 24, color: 'var(--text)' }}>CUE</span>
+          <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></span>
           <span style={{
             fontSize: 9.5, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase',
             padding: '3px 8px', borderRadius: 999,
