@@ -63,7 +63,10 @@ export default function EditorialCard({ item, setSelectedItem }) {
   useEffect(() => {
     if (!(isHovered && inView)) { setReadyTimeout(false); return; }
     if (videoReady) return;
-    const t = setTimeout(() => setReadyTimeout(true), 3000);
+    // 600ms grace — user complained the thumbnail limbo felt broken.
+    // Force the crossfade this soon; worst case the poster shows for
+    // a heartbeat before frames catch up.
+    const t = setTimeout(() => setReadyTimeout(true), 600);
     return () => clearTimeout(t);
   }, [isHovered, inView, videoReady]);
 

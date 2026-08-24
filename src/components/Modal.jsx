@@ -92,7 +92,12 @@ export default function Modal({ item, onClose, showToast }) {
   // 1.5s grace — if events never fire, fade in the video overlay anyway.
   useEffect(() => {
     if (!item?.id || modalVideoReady || modalVideoFailed) return;
-    const t = setTimeout(() => setModalVideoTimeout(true), 1500);
+    // Aggressive fade: 400ms cap. User feedback said the thumbnail
+    // limbo felt like the site was broken. If bytes haven't landed by
+    // then, fade the video overlay in anyway — worst case the browser
+    // paints the poster (which is the same thumbnail) for another
+    // fraction of a second before frames start.
+    const t = setTimeout(() => setModalVideoTimeout(true), 400);
     return () => clearTimeout(t);
   }, [item?.id, modalVideoReady, modalVideoFailed]);
 
@@ -226,11 +231,56 @@ export default function Modal({ item, onClose, showToast }) {
   if (!item) return null;
 
   const onCopy = async (which) => {
-    // Even free prompts require sign-in. Free = lead capture, not free-for-all
-    // — signup emails are the strongest signal for a beta.
+    // Anonymous "first taste" — a signed-out visitor may copy ONE free
+    // prompt without an account, so the value moment fires before the
+    // wall. Premium items still gate (Cue+ subscription enforces
+    // account link), and the counter is per-browser (localStorage) so
+    // it resets on a new device but that's the industry norm.
+    const ANON_KEY = 'cue.anon.copies';
     if (!isSignedIn) {
-      if (showToast) showToast('Sign in to copy — takes 10 seconds');
-      openAuth('sign-in');
+      if (isPremium) {
+        if (showToast) showToast('Sign in to unlock this premium prompt');
+        openAuth('sign-in');
+        return;
+      }
+      // Read the counter from BOTH localStorage and sessionStorage —
+      // some privacy extensions block localStorage but not session,
+      // and vice versa. Any positive hit locks further anon copies.
+      let usedAnon = 0;
+      try {
+        const ls = parseInt(localStorage.getItem(ANON_KEY) || '0', 10) || 0;
+        const ss = parseInt(sessionStorage.getItem(ANON_KEY) || '0', 10) || 0;
+        usedAnon = Math.max(ls, ss);
+      } catch {}
+      if (usedAnon >= 1) {
+        if (showToast) showToast('Sign in for 2 free copies a day + saved favorites');
+        openAuth('sign-in');
+        return;
+      }
+      // Anonymous first-copy path — build the text and lock the counter
+      // BEFORE the async clipboard write, so a slow / cancelled write
+      // still consumes the anon budget. Otherwise a user could spam-
+      // click while the clipboard promise was in flight and land more
+      // than one copy before the counter caught up.
+      let anonText = '';
+      if (which === 'code') anonText = item.code || '';
+      else if (which === 'prompt') anonText = content || item.prompt || '';
+      else if (which === 'use_case') anonText = item.use_case || '';
+      if (!anonText) {
+        if (showToast) showToast('Nothing to copy');
+        return;
+      }
+      // Lock first — write later.
+      try { localStorage.setItem(ANON_KEY, '1'); } catch {}
+      try { sessionStorage.setItem(ANON_KEY, '1'); } catch {}
+      const ok = await copyToClipboard(anonText);
+      if (!ok) {
+        if (showToast) showToast('Copy failed');
+        return;
+      }
+      if (showToast) showToast('Copied ✓  Sign in to save this + get 2 more daily copies');
+      setCopied(which);
+      setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
       return;
     }
     let text = '';
@@ -355,7 +405,7 @@ export default function Modal({ item, onClose, showToast }) {
             position: 'absolute', inset: 0, width: '100%', height: '100%',
             objectFit: 'contain',
             background: 'transparent',
-            transition: 'opacity 0.15s ease',
+            transition: 'opacity 0.08s ease',
             opacity: (modalVideoReady || modalVideoTimeout) ? 1 : 0,
             zIndex: 2,
           }}
@@ -726,11 +776,6 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             >
               {copied === active ? (
                 <><CheckIcon /> Copied</>
-              ) : !isSignedIn ? (
-                <>
-                  <LockIcon size={14} />
-                  Sign in to copy {activeLabel.toLowerCase()}
-                </>
               ) : outOfFree ? (
                 <>Upgrade to Cue+ for unlimited copies →</>
               ) : (
@@ -739,7 +784,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             </button>
             {!isSignedIn && !isEmpty && (
               <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
-                Free — sign in takes 10 seconds
+                Your first copy is free — no signup needed
               </div>
             )}
             {isSignedIn && !isCuePlus && isPromptTab && typeof dailyRemaining === 'number' && dailyRemaining > 0 && (

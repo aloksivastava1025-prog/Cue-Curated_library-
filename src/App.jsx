@@ -18,6 +18,7 @@ import TagFilter, { normalizeTag, deriveItemTags } from './components/TagFilter.
 import TierFilter from './components/TierFilter.jsx';
 import { isPremium as isPremiumItem } from './lib/promptHelpers.js';
 import WaitlistCTA from './components/WaitlistCTA.jsx';
+import WelcomeCard from './components/WelcomeCard.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
@@ -687,6 +688,19 @@ function MainApp() {
         foundingFilled={foundingFilled}
         savedCount={savedCount}
         isAdmin={isAdmin}
+      />
+
+      <WelcomeCard
+        onExploreFree={() => {
+          setTierFilter('free');
+          // Smooth-scroll to the grid so the user sees free items immediately.
+          try {
+            const grid = document.querySelector('.cue-grid') || document.querySelector('main');
+            if (grid && grid.scrollIntoView) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            else window.scrollTo({ top: 800, behavior: 'smooth' });
+          } catch {}
+        }}
+        onSuggest={() => openFeedback('welcome-card')}
       />
 
       {selectedItem && (
