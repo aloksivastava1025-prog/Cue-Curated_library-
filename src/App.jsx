@@ -334,7 +334,7 @@ function MainApp() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '24px', color: 'var(--text)' }}>CUE</div>
+            <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: '24px', color: 'var(--text)', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></div>
             <span className="cue-nav-beta" style={{
               fontSize: '9.5px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
               padding: '3px 8px', borderRadius: '999px',

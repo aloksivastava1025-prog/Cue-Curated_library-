@@ -924,7 +924,7 @@ export default function Admin() {
       <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <a href="#/" style={{ background: 'transparent', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '3px', color: 'var(--text-dim)', textDecoration: 'none', fontSize: '12px' }}>← Library</a>
-          <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '24px' }}>CUE</div>
+          <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: '24px', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></div>
           <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>ADMIN</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

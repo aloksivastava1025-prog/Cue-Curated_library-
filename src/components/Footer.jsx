@@ -34,7 +34,7 @@ export default function Footer({ onSuggest }) {
         gap: 16, flexWrap: 'wrap',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--text)' }}>CUE</span>
+          <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></span>
           <span style={{ fontSize: 11.5, letterSpacing: '0.02em' }}>© {year} · Copy · paste · ship.</span>
           <a
             href="https://x.com/Alok619308"
