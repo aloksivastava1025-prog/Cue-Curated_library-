@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { copyToClipboard } from '../hooks/useClipboard.js';
 import { backend } from '../lib/backend.js';
 import { useClerk, useUser } from '@clerk/clerk-react';
@@ -67,6 +67,34 @@ export default function Modal({ item, onClose, showToast }) {
   const [copied, setCopied] = useState(null); // 'code' | 'prompt' | null
   const [modalVideoReady, setModalVideoReady] = useState(false);
   const [modalVideoFailed, setModalVideoFailed] = useState(false);
+  // Grace timer — after 1.5s in the open modal we fade the video in
+  // anyway. Worst case the user sees the poster (thumbnail) so the
+  // visual state changes; best case the video actually plays.
+  const [modalVideoTimeout, setModalVideoTimeout] = useState(false);
+  const modalVideoRef = useRef(null);
+
+  // Reset video state whenever we open a different item — otherwise
+  // opening card A then card B would carry modalVideoReady=true over,
+  // painting the wrong video briefly.
+  useEffect(() => {
+    setModalVideoReady(false);
+    setModalVideoFailed(false);
+    setModalVideoTimeout(false);
+    // Force the <video> to (re-)start buffering fresh under the new src.
+    // Some browsers hold the previous element in cache and don't refetch
+    // when src changes via React re-render alone.
+    const v = modalVideoRef.current;
+    if (v) {
+      try { v.load(); } catch {}
+    }
+  }, [item?.id]);
+
+  // 1.5s grace — if events never fire, fade in the video overlay anyway.
+  useEffect(() => {
+    if (!item?.id || modalVideoReady || modalVideoFailed) return;
+    const t = setTimeout(() => setModalVideoTimeout(true), 1500);
+    return () => clearTimeout(t);
+  }, [item?.id, modalVideoReady, modalVideoFailed]);
 
   // Register a view once per modal open (per item). Fires optimistically —
   // failures don't affect the UI.
@@ -308,13 +336,14 @@ export default function Modal({ item, onClose, showToast }) {
           the user sees. No black-rectangle-with-loading-glyph state. */}
       {hoverIsVideoMedia && !modalVideoFailed && (
         <video
+          ref={modalVideoRef}
           src={item.hoverSrc}
           poster={item.thumbSrc || undefined}
           autoPlay loop muted playsInline
           preload="auto"
-          onLoadedData={() => setModalVideoReady(true)}
+          onLoadedData={(e) => { setModalVideoReady(true); const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }}
           onPlaying={() => setModalVideoReady(true)}
-          onCanPlay={() => setModalVideoReady(true)}
+          onCanPlay={(e) => { setModalVideoReady(true); const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }}
           onError={() => setModalVideoFailed(true)}
           /* preload="auto" starts fetching the full clip immediately
              when the modal opens (instead of metadata-only), and we
@@ -327,7 +356,7 @@ export default function Modal({ item, onClose, showToast }) {
             objectFit: 'contain',
             background: 'transparent',
             transition: 'opacity 0.15s ease',
-            opacity: modalVideoReady ? 1 : 0,
+            opacity: (modalVideoReady || modalVideoTimeout) ? 1 : 0,
             zIndex: 2,
           }}
         />
