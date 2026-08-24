@@ -173,7 +173,7 @@ const STACK_SUGGESTIONS = ['CSS', 'JavaScript', 'React', 'GSAP', 'Framer Motion'
 // A single uploaded-resource row: real thumbnail (video first-frame OR image),
 // clean labels, type + tier badges, and edit / delete actions.
 const IMG_EXT_RE = /\.(jpe?g|gif|png|webp|svg|heic|avif)$/i;
-function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBackfilled }) {
+function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBackfilled, justRetagged }) {
   const isPaid = p.tier === 'paid' || p.price === 'premium';
   const isDraft = p.status === 'draft';
   const isFeatured = p.rail === 'featured';
@@ -232,6 +232,19 @@ function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBack
                 <path d="M20 6L9 17l-5-5" />
               </svg>
               BACKFILL COMPLETE
+            </span>
+          )}
+          {justRetagged && (
+            <span style={{
+              fontSize: '9px', padding: '2px 6px',
+              background: 'rgba(0,0,255,0.12)', color: 'var(--electric)',
+              border: '1px solid rgba(0,0,255,0.4)', borderRadius: '3px',
+              letterSpacing: '0.06em', display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              RETAGGED
             </span>
           )}
         </div>
@@ -391,6 +404,11 @@ export default function Admin() {
   // green pill on each affected row so the admin can see at a glance
   // which cards just got a thumbnail.
   const [backfilledIds, setBackfilledIds] = useState(() => new Set());
+  // Bulk AI retag — reruns the tightened autofill over every prompt
+  // and rewrites just the `tags` array. Same progress-tracking shape
+  // as backfill.
+  const [retag, setRetag] = useState({ running: false, done: 0, total: 0, ok: 0, failed: 0, log: '' });
+  const [retaggedIds, setRetaggedIds] = useState(() => new Set());
 
   useEffect(() => {
     if (!isEditing) {
@@ -611,6 +629,54 @@ export default function Admin() {
     showToast(`Backfill complete — ${ok} ok, ${failed} failed`);
   };
 
+  // Re-run the (now-tightened) AI autofill over every prompt and
+  // rewrite its `tags` array. Read the prompt text from prompt_contents
+  // fresh — the drafts list doesn't carry the prompt body, only metadata.
+  const onRetagAll = async () => {
+    if (retag.running) return;
+    // Refetch to work on the current DB state.
+    let latest = allPrompts || [];
+    try {
+      const fresh = await backend.list();
+      if (Array.isArray(fresh)) latest = fresh;
+    } catch (e) {
+      console.warn('[retag] fresh list failed, using cached:', e?.message);
+    }
+    if (!latest.length) { showToast('No prompts to retag'); return; }
+    if (!window.confirm(`Re-tag ${latest.length} prompts with the tightened AI? Existing tags will be OVERWRITTEN. Keep this tab open until it finishes.`)) return;
+    setRetag({ running: true, done: 0, total: latest.length, ok: 0, failed: 0, log: '' });
+    let ok = 0, failed = 0;
+    for (let i = 0; i < latest.length; i++) {
+      const p = latest[i];
+      const label = (p.title || p.id || '').slice(0, 40);
+      try {
+        // Autofill needs the raw prompt text — pull it from prompt_contents.
+        const promptText = await backend.getPromptContent(p.id);
+        if (!promptText || !promptText.trim()) {
+          throw new Error('no prompt content stored');
+        }
+        const { data, error } = await supabase.functions.invoke('autofill-metadata', {
+          body: { prompt: promptText },
+        });
+        if (error) throw new Error(error.message || 'autofill failed');
+        const suggested = data?.metadata?.tags;
+        if (!Array.isArray(suggested)) throw new Error('no tags returned');
+        // Normalize + dedupe.
+        const clean = [...new Set(suggested.map((t) => String(t).trim().toLowerCase()).filter(Boolean))];
+        await backend.updateFields(p.id, { tags: clean });
+        await updateDraftFields(p.id, { tags: clean }).catch(() => {});
+        setRetaggedIds((prev) => { const next = new Set(prev); next.add(p.id); return next; });
+        ok += 1;
+        setRetag(r => ({ ...r, done: i + 1, ok, log: `✓ ${label} → ${clean.slice(0, 3).join(', ')}${clean.length > 3 ? '…' : ''}` }));
+      } catch (err) {
+        failed += 1;
+        setRetag(r => ({ ...r, done: i + 1, failed, log: `✗ ${label} — ${err?.message || 'unknown'}` }));
+      }
+    }
+    setRetag(r => ({ ...r, running: false, log: `Done — ${ok} succeeded, ${failed} failed` }));
+    showToast(`Retag complete — ${ok} ok, ${failed} failed`);
+  };
+
   const onAutofill = async () => {
     setAutofillError(null);
     if (!form.prompt || !form.prompt.trim()) {
@@ -807,6 +873,23 @@ export default function Admin() {
             {backfill.running
               ? `Backfilling ${backfill.done}/${backfill.total}…`
               : 'Backfill thumbnails'}
+          </button>
+          <button
+            onClick={onRetagAll}
+            disabled={retag.running}
+            title="Re-run AI autofill on every prompt and rewrite its tags. Overwrites existing tags."
+            style={{
+              padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
+              background: 'transparent',
+              color: retag.running ? 'var(--text-dim)' : 'var(--text)',
+              fontSize: 11.5, letterSpacing: '0.02em',
+              fontFamily: 'var(--font-sans)',
+              cursor: retag.running ? 'wait' : 'pointer',
+            }}
+          >
+            {retag.running
+              ? `Retagging ${retag.done}/${retag.total}…`
+              : 'AI re-tag all'}
           </button>
           <a href="#/admin/subscriptions" style={{
             padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
@@ -1084,7 +1167,7 @@ export default function Admin() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px' }}>
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 400, fontStyle: 'italic', marginBottom: '24px' }}>Uploaded resources</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} onToggleFeatured={onToggleFeatured} justBackfilled={backfilledIds.has(p.id)} />)}
+          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} onToggleFeatured={onToggleFeatured} justBackfilled={backfilledIds.has(p.id)} justRetagged={retaggedIds.has(p.id)} />)}
         </div>
       </div>
 
