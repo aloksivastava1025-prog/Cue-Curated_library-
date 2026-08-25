@@ -470,18 +470,32 @@ function MainApp() {
               backdrop-blur · inner bg-white/90 text-neutral-900).
               Right label carries a Cue-native tagline instead of
               'Agentic AI — Built for SMBs'. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24, transform: 'translateX(28px)' }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
               flexWrap: 'wrap', justifyContent: 'center',
               maxWidth: 'calc(100vw - 24px)',
               padding: '8px 10px',                                          /* py-2 px-2.5 */
-              background: 'rgba(255,255,255,0.10)',                         /* bg-white/10 */
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',          /* ring-1 ring-white/15 */
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
+              /* Slightly 3D / embossed — brighter top-highlight, deeper
+                 bottom-shadow, plus a soft outer drop-shadow so the
+                 pill visibly lifts off the hero background. Not a full
+                 raised button, just enough "solid" feel that it reads
+                 as a real object, not a flat overlay. */
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.04) 100%)',
+              boxShadow: [
+                'inset 0 1.5px 0 rgba(255,255,255,0.35)',   /* top highlight */
+                'inset 0 -1.5px 0 rgba(0,0,0,0.35)',        /* bottom shadow */
+                'inset 0 0 0 1px rgba(255,255,255,0.14)',   /* ring */
+                '0 2px 4px rgba(0,0,0,0.35)',               /* close drop */
+                '0 10px 30px -10px rgba(0,0,0,0.55)',       /* soft ambient */
+                '0 0 0 1px rgba(0,0,0,0.4)',                /* dark outer edge to separate from bg */
+              ].join(', '),
+              backdropFilter: 'blur(10px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(10px) saturate(140%)',
               borderRadius: 9999,                                           /* rounded-full */
               textDecoration: 'none',
+              position: 'relative',
+              overflow: 'hidden',
               transition: 'transform 0.2s ease, background 0.2s ease',
             }}>
               <span style={{
@@ -511,12 +525,40 @@ function MainApp() {
               from { opacity: 0; transform: translateY(-8px); }
               to   { opacity: 1; transform: translateY(0);    }
             }
+            /* Slow, subtle diagonal shimmer — makes the pill read as
+               polished glass without becoming a "loading" state. */
+            @keyframes cue-hero-pill-shine {
+              0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+              20%  { opacity: 0.55; }
+              60%  { opacity: 0.55; }
+              100% { transform: translateX(220%)  skewX(-18deg); opacity: 0; }
+            }
             .cue-hero-pill {
               animation: cue-hero-pill-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
             }
+            /* The shine strip — a thin bright band that sweeps across
+               the pill every 6 seconds. Sits above content but below
+               any interactive elements via pointer-events: none. */
+            .cue-hero-pill::after {
+              content: '';
+              position: absolute;
+              top: 0; bottom: 0;
+              left: 0;
+              width: 40%;
+              background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(255,255,255,0.18) 45%,
+                rgba(255,255,255,0.28) 50%,
+                rgba(255,255,255,0.18) 55%,
+                transparent 100%);
+              transform: translateX(-120%) skewX(-18deg);
+              pointer-events: none;
+              animation: cue-hero-pill-shine 6s ease-in-out infinite;
+              animation-delay: 2s;
+            }
             .cue-hero-pill:hover {
-              background: rgba(255,255,255,0.14) !important;
               transform: translateY(-1px);
+              background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.10) 45%, rgba(255,255,255,0.06) 100%) !important;
             }
           `}</style>
           <h1 className="cue-hero-title" style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(56px, 13vw, 200px)', fontStyle: 'italic', letterSpacing: '-0.035em', lineHeight: 0.9, color: 'var(--text)' }}>
