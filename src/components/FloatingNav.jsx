@@ -242,7 +242,7 @@ export default function FloatingNav({
                   fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
                   boxShadow: '0 4px 10px -2px rgba(12,46,99,0.5)',
                 }}
-              >Join Cue</button>
+              >Login</button>
             </>
           )}
         </div>

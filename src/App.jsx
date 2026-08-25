@@ -428,7 +428,7 @@ function MainApp() {
             <button
               onClick={() => openAuth('sign-in')}
               style={{ background: 'var(--electric)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}
-            >Join Cue</button>
+            >Login</button>
           ) : (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               {isCuePlus && (
