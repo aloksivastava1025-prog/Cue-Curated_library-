@@ -470,7 +470,7 @@ function MainApp() {
               backdrop-blur · inner bg-white/90 text-neutral-900).
               Right label carries a Cue-native tagline instead of
               'Agentic AI — Built for SMBs'. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24, transform: 'translateX(28px)' }}>
+          <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
               flexWrap: 'wrap', justifyContent: 'center',
@@ -535,6 +535,13 @@ function MainApp() {
             }
             .cue-hero-pill {
               animation: cue-hero-pill-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+            /* Desktop-only optical shift — italic hero wordmark biases
+               visual center rightward, so we nudge the pill to match.
+               Mobile keeps it geometrically centered (short viewport
+               = the shift pushes the pill off-canvas). */
+            @media (min-width: 720px) {
+              .cue-hero-pill-wrap { transform: translateX(28px); }
             }
             /* The shine strip — a thin bright band that sweeps across
                the pill every 6 seconds. Sits above content but below
