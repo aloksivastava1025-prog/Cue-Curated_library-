@@ -3,6 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
+import { optimizeCloudinaryUrl } from '../lib/media.js';
 
 function formatCount(n) {
   const x = Number(n) || 0;
@@ -250,7 +251,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
         {shouldMountHoverVideo && !videoFailed && (
           <video
             ref={videoRef}
-            src={item.hoverSrc}
+            src={optimizeCloudinaryUrl(item.hoverSrc)}
             poster={item.thumbSrc || undefined}
             loop
             muted

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { copyToClipboard } from '../hooks/useClipboard.js';
 import { backend } from '../lib/backend.js';
+import { optimizeCloudinaryUrl } from '../lib/media.js';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -387,7 +388,7 @@ export default function Modal({ item, onClose, showToast }) {
       {hoverIsVideoMedia && !modalVideoFailed && (
         <video
           ref={modalVideoRef}
-          src={item.hoverSrc}
+          src={optimizeCloudinaryUrl(item.hoverSrc)}
           poster={item.thumbSrc || undefined}
           autoPlay loop muted playsInline
           preload="auto"
