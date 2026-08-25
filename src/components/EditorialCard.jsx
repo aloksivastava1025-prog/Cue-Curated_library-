@@ -34,6 +34,11 @@ export default function EditorialCard({ item, setSelectedItem }) {
   // thumbnail) so the visual state at least *changes* on scroll into
   // view instead of appearing frozen.
   const [readyTimeout, setReadyTimeout] = useState(false);
+  // If the optimized (transformed) Cloudinary URL 404s — which happens
+  // on accounts with "Strict Transformations" enabled — we drop back
+  // to the raw URL the admin actually stored. Every Cloudinary account
+  // is supported this way, whether transforms are locked down or not.
+  const [videoSrcFallback, setVideoSrcFallback] = useState(false);
   const ref = useRef(null);
   const videoRef = useRef(null);
 
@@ -251,7 +256,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
         {shouldMountHoverVideo && !videoFailed && (
           <video
             ref={videoRef}
-            src={optimizeCloudinaryUrl(item.hoverSrc)}
+            src={videoSrcFallback ? item.hoverSrc : optimizeCloudinaryUrl(item.hoverSrc)}
             poster={item.thumbSrc || undefined}
             loop
             muted
@@ -275,7 +280,17 @@ export default function EditorialCard({ item, setSelectedItem }) {
               if (isHovered && inView) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onPlaying={() => setVideoReady(true)}
-            onError={() => setVideoFailed(true)}
+            onError={() => {
+              // Strict-Transformations accounts return 404 on the
+              // optimized URL. Retry once with the raw URL before
+              // giving up — that path works on every Cloudinary
+              // account regardless of security settings.
+              if (!videoSrcFallback) {
+                setVideoSrcFallback(true);
+                return;
+              }
+              setVideoFailed(true);
+            }}
             /* Video overlay ONLY visible on hover. Default state = user
                sees the thumbnail (JPEG). On hover the video fades in on
                top and plays. For cards with no thumbnail (rare), video

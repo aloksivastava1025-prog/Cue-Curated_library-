@@ -68,6 +68,7 @@ export default function Modal({ item, onClose, showToast }) {
   const [copied, setCopied] = useState(null); // 'code' | 'prompt' | null
   const [modalVideoReady, setModalVideoReady] = useState(false);
   const [modalVideoFailed, setModalVideoFailed] = useState(false);
+  const [modalVideoSrcFallback, setModalVideoSrcFallback] = useState(false);
   // Grace timer — after 1.5s in the open modal we fade the video in
   // anyway. Worst case the user sees the poster (thumbnail) so the
   // visual state changes; best case the video actually plays.
@@ -81,6 +82,7 @@ export default function Modal({ item, onClose, showToast }) {
     setModalVideoReady(false);
     setModalVideoFailed(false);
     setModalVideoTimeout(false);
+    setModalVideoSrcFallback(false);
     // Force the <video> to (re-)start buffering fresh under the new src.
     // Some browsers hold the previous element in cache and don't refetch
     // when src changes via React re-render alone.
@@ -388,14 +390,23 @@ export default function Modal({ item, onClose, showToast }) {
       {hoverIsVideoMedia && !modalVideoFailed && (
         <video
           ref={modalVideoRef}
-          src={optimizeCloudinaryUrl(item.hoverSrc)}
+          src={modalVideoSrcFallback ? item.hoverSrc : optimizeCloudinaryUrl(item.hoverSrc)}
           poster={item.thumbSrc || undefined}
           autoPlay loop muted playsInline
           preload="auto"
           onLoadedData={(e) => { setModalVideoReady(true); const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }}
           onPlaying={() => setModalVideoReady(true)}
           onCanPlay={(e) => { setModalVideoReady(true); const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }}
-          onError={() => setModalVideoFailed(true)}
+          onError={() => {
+            // Strict-Transformations Cloudinary accounts 404 the
+            // optimized URL — fall back to the raw one before giving
+            // up so any account (relaxed OR strict) works.
+            if (!modalVideoSrcFallback) {
+              setModalVideoSrcFallback(true);
+              return;
+            }
+            setModalVideoFailed(true);
+          }}
           /* preload="auto" starts fetching the full clip immediately
              when the modal opens (instead of metadata-only), and we
              flip opacity as soon as ANY of loadeddata / canplay /
