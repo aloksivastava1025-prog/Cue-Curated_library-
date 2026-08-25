@@ -160,8 +160,42 @@ function MainApp() {
   const spotsLeft = Math.max(FOUNDING_CAP - foundingCount, 0);
   const foundingFilled = spotsLeft === 0;
 
-  const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback } = useApp();
+  const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback, filter, updateFilter } = useApp();
   const { openAuth } = useAuth();
+  // Search state — free-text search over the whole library. Trigger
+  // paths: (1) mouse hover in the top viewport strip on desktop,
+  // (2) ⌘K / Ctrl+K, (3) FloatingNav search icon on mobile.
+  const [searchInput, setSearchInput] = useState(filter?.q || '');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    const t = setTimeout(() => updateFilter && updateFilter({ q: searchInput }), 120);
+    return () => clearTimeout(t);
+  }, [searchInput, updateFilter]);
+  useEffect(() => {
+    const HOVER_ZONE = 140;
+    const onMove = (e) => {
+      if (!scrolledPastHero) return;
+      setSearchOpen(e.clientY <= HOVER_ZONE);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setSearchOpen(false); setSearchInput(''); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 100); }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [scrolledPastHero]);
+  useEffect(() => { if (!scrolledPastHero) setSearchOpen(false); }, [scrolledPastHero]);
+  useEffect(() => {
+    if (searchOpen) {
+      const t = setTimeout(() => searchInputRef.current?.focus(), 250);
+      return () => clearTimeout(t);
+    }
+  }, [searchOpen]);
   const savedCount = bookmarkedIds?.size || 0;
   usePageMeta({
     title: 'Awwwards-tier components for builders who stand out',
@@ -211,7 +245,17 @@ function MainApp() {
     return tagsFilter.some((t) => itemTags.includes(t));
   };
 
-  const visiblePrompts = sortedByNewest.filter((p) => matchesType(p) && matchesTier(p) && matchesTags(p));
+  const matchesQuery = (p) => {
+    const q = String(filter?.q || '').trim().toLowerCase();
+    if (!q) return true;
+    const derived = deriveItemTags(p).join(' ');
+    const rawTags = Array.isArray(p.tags) ? p.tags.join(' ') : '';
+    const stack = Array.isArray(p.stack) ? p.stack.join(' ') : '';
+    const hay = [p.title, p.description, p.category, p.use_case, rawTags, derived, stack, p.id]
+      .map((s) => String(s || '').toLowerCase()).join(' ');
+    return q.split(/\s+/).every((tok) => hay.includes(tok));
+  };
+  const visiblePrompts = sortedByNewest.filter((p) => matchesType(p) && matchesTier(p) && matchesTags(p) && matchesQuery(p));
   const counts = {
     all: allPrompts.length,
     sections: allPrompts.filter((p) => itemType(p) === 'section').length,
@@ -325,6 +369,88 @@ function MainApp() {
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', position: 'relative', fontFamily: 'var(--font-sans)', color: 'var(--text)' }}>
+      {/* Top slide-down search — cursor top edge OR ⌘K trigger. */}
+      <div className={`cue-topsearch${searchOpen ? ' open' : ''}`} aria-hidden={!searchOpen}>
+        <div className="cue-topsearch-inner">
+          <svg className="cue-topsearch-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search — try 'webgl hero', 'preloader', 'editorial'…"
+            className="cue-topsearch-input"
+            aria-label="Search components"
+          />
+          {searchInput && (
+            <span className="cue-topsearch-count">{visiblePrompts.length}</span>
+          )}
+          <div className="cue-topsearch-kbd" aria-hidden="true">
+            {searchInput ? (
+              <button type="button" onClick={() => { setSearchInput(''); searchInputRef.current?.focus() }} className="cue-topsearch-clear" aria-label="Clear search">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            ) : (
+              <span><kbd>⌘</kbd><kbd>K</kbd></span>
+            )}
+          </div>
+        </div>
+      </div>
+      <style>{`
+        .cue-topsearch {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 120;
+          transform: translateY(-100%); opacity: 0;
+          transition: transform 420ms cubic-bezier(0.34, 1.05, 0.64, 1), opacity 260ms ease;
+          padding: 14px 20px 24px;
+          background: linear-gradient(180deg, rgba(6,6,6,0.98) 0%, rgba(6,6,6,0.88) 50%, rgba(6,6,6,0.55) 80%, rgba(6,6,6,0) 100%);
+          pointer-events: none;
+        }
+        .cue-topsearch.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .cue-topsearch-inner {
+          max-width: 720px; margin: 0 auto;
+          display: flex; align-items: center; gap: 12px;
+          padding: 13px 18px;
+          background: #141416;
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 14px;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+        .cue-topsearch-icon { color: var(--text-dim); flex-shrink: 0; }
+        .cue-topsearch-input {
+          flex: 1; background: transparent; border: none; outline: none;
+          color: var(--text); font-family: var(--font-sans);
+          font-size: 14px; letter-spacing: 0.005em;
+        }
+        .cue-topsearch-input::placeholder { color: rgba(255,255,255,0.35); }
+        .cue-topsearch-count {
+          font-size: 11.5px; color: rgba(255,255,255,0.55);
+          background: rgba(255,255,255,0.06);
+          padding: 4px 10px; border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.08);
+          white-space: nowrap;
+        }
+        .cue-topsearch-kbd { display: inline-flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.4); font-size: 10.5px; }
+        .cue-topsearch-kbd kbd {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-width: 18px; height: 18px; padding: 0 5px;
+          font-family: var(--font-sans); font-size: 10px; font-weight: 600;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 4px; color: rgba(255,255,255,0.7);
+        }
+        .cue-topsearch-clear {
+          background: transparent; border: 1px solid rgba(255,255,255,0.10);
+          cursor: pointer; color: var(--text-dim);
+          width: 22px; height: 22px; border-radius: 999px;
+          display: inline-flex; align-items: center; justify-content: center;
+        }
+        .cue-topsearch-clear:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+      `}</style>
       {/* Sticky Nav */}
       <nav className="cue-nav" style={{
         position: 'sticky', top: 0, zIndex: 100,
@@ -733,6 +859,7 @@ function MainApp() {
         visible={scrolledPastHero}
         onOpenFeedback={openFeedback}
         onOpenAuth={openAuth}
+        onOpenSearch={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 250); }}
         spotsLeft={spotsLeft}
         foundingFilled={foundingFilled}
         savedCount={savedCount}

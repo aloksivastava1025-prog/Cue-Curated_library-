@@ -23,6 +23,7 @@ export default function FloatingNav({
   visible,
   onOpenFeedback,
   onOpenAuth,
+  onOpenSearch,
   spotsLeft,
   foundingFilled,
   savedCount,
@@ -76,6 +77,12 @@ export default function FloatingNav({
   return (
     <>
       <style>{`
+        /* Mobile-only search icon — desktop uses top-of-viewport
+           hover-slide, so the icon would be redundant there. */
+        .cue-floatnav-search { display: none; }
+        @media (max-width: 719px) {
+          .cue-floatnav-search { display: inline-flex; }
+        }
         /* Breathing outer glow — subtle brand halo pulse */
         @keyframes cue-floatnav-pulse {
           0%, 100% {
@@ -179,6 +186,31 @@ export default function FloatingNav({
             fontFamily: 'var(--font-sans)',
           }}
         >
+          {/* Mobile-only search icon — desktop uses top hover-slide.
+              Sits at the very left so it lives right next to the
+              wordmark and the user's thumb naturally hits it. */}
+          {onOpenSearch && (
+            <button
+              onClick={onOpenSearch}
+              aria-label="Search components"
+              className="cue-floatnav-search"
+              style={{
+                position: 'relative', zIndex: 2,
+                width: 30, height: 30, borderRadius: 4,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: '#0C2E63',
+                alignItems: 'center', justifyContent: 'center',
+                transition: 'background 160ms ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.30)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </button>
+          )}
           {/* cue wordmark — tap to jump to top */}
           <button
             onClick={scrollTop}
