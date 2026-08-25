@@ -176,7 +176,7 @@ function MainApp() {
   const featured = allPrompts
     .filter((p) => p.rail === 'featured')
     .sort((a, b) => itemDate(b) - itemDate(a))
-    .slice(0, 12);
+    .slice(0, 20);
 
   // Grid shows EVERYTHING, featured included. Featured (starred in admin)
   // items float to the top so the admin can hand-pick what a first-time
