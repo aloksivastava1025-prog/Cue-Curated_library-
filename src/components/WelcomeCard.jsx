@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useUser } from '@clerk/clerk-react'
 import { useApp } from '../context/AppContext.jsx'
 
 /**
@@ -22,6 +23,7 @@ const APPEAR_DELAY_MS = 3000
 
 export default function WelcomeCard({ onExploreFree, onSuggest }) {
   const { allPrompts } = useApp()
+  const { isSignedIn } = useUser()
   const [visible, setVisible] = useState(false)
   const [dismissing, setDismissing] = useState(false)
   // IDs of tiles whose image URL failed to load — hidden from render
@@ -67,16 +69,21 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
   }, [pool, brokenIds])
 
   useEffect(() => {
-    let seen = false
-    try { seen = localStorage.getItem(STORAGE_KEY) === '1' } catch {}
-    if (seen) return
+    // Signed-out visitors see the welcome card on every visit — first
+    // impression + conversion nudge every time. Signed-in users only
+    // see it once via the localStorage flag so it doesn't nag them.
+    if (isSignedIn) {
+      let seen = false
+      try { seen = localStorage.getItem(STORAGE_KEY) === '1' } catch {}
+      if (seen) return
+    }
     // Only fire once we have real thumbnails to render — otherwise the
     // mosaic would boot as six empty dark tiles, which was the "small
     // Text-only card" the user reported on first tests.
     if (tiles.length < 3) return
     const t = setTimeout(() => setVisible(true), APPEAR_DELAY_MS)
     return () => clearTimeout(t)
-  }, [tiles.length])
+  }, [tiles.length, isSignedIn])
 
   useEffect(() => {
     if (!visible) return
