@@ -213,11 +213,22 @@ function MainApp() {
     .sort((a, b) => itemDate(b) - itemDate(a))
     .slice(0, 20);
 
-  // When the user picks a Sort (New/Old), respect PURE date order so a
-  // fresh drop never gets buried under older-but-featured items. The
-  // Signature Picks rail above already surfaces admin picks, so the grid
-  // doesn't need to double-pin them.
+  // Signed-in users get a pure date sort so their scroll matches their
+  // Sort selection exactly (New/Old). Anonymous users get a temptation
+  // sort — featured + paid components float to the top of the grid so
+  // the first 12 they see (before the sign-up wall) are the strongest
+  // conversion bait. As soon as they sign in, the sort snaps back to
+  // pure date order, matching the signed-in experience across every
+  // other page.
   const sortedByNewest = [...allPrompts].sort((a, b) => {
+    if (!isSignedIn) {
+      const aFeat = a.rail === 'featured' ? 1 : 0;
+      const bFeat = b.rail === 'featured' ? 1 : 0;
+      if (aFeat !== bFeat) return bFeat - aFeat;
+      const aPaid = isPremiumItem(a) ? 1 : 0;
+      const bPaid = isPremiumItem(b) ? 1 : 0;
+      if (aPaid !== bPaid) return bPaid - aPaid;
+    }
     return sortOrder === 'oldest'
       ? itemDate(a) - itemDate(b)
       : itemDate(b) - itemDate(a);
@@ -919,7 +930,7 @@ function MainApp() {
                             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                           }}
                         >
-                          Sign up free — unlock all components
+                          Sign up free — unlock 60+ more
                         </button>
                         <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-dim)' }}>
                           Already have an account?{' '}
