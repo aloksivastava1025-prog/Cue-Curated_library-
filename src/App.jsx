@@ -96,6 +96,7 @@ function MainApp() {
   const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'sections' | 'interactions'
   const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'paid'
+  const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
   const [tagsFilter, setTagsFilter] = useState([]);    // array of lowercase tags (OR match)
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
@@ -222,7 +223,11 @@ function MainApp() {
     const aFeat = a.rail === 'featured' ? 1 : 0;
     const bFeat = b.rail === 'featured' ? 1 : 0;
     if (aFeat !== bFeat) return bFeat - aFeat;
-    return itemDate(b) - itemDate(a);
+    // Featured items stay pinned; within each group the date order
+    // flips based on the user's Sort selection.
+    return sortOrder === 'oldest'
+      ? itemDate(a) - itemDate(b)
+      : itemDate(b) - itemDate(a);
   });
 
   const matchesType = (p) => {
@@ -765,8 +770,9 @@ function MainApp() {
           })}
         </div>
 
-        {/* Right: tier dropdown */}
-        <div style={{ justifySelf: 'end' }}>
+        {/* Right: sort + tier */}
+        <div style={{ justifySelf: 'end', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SortToggle value={sortOrder} onChange={setSortOrder} />
           <TierFilter value={tierFilter} counts={counts} onChange={setTierFilter} />
         </div>
       </div>
@@ -882,6 +888,59 @@ function MainApp() {
       {selectedItem && (
         <Modal item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
+    </div>
+  );
+}
+
+// Compact newest/oldest toggle matching the filter-bar pill vocabulary.
+// Two-pill segmented control — same footprint as TierFilter so the
+// right cluster reads as one row.
+function SortToggle({ value, onChange }) {
+  return (
+    <div
+      role="group"
+      aria-label="Sort order"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: 3,
+        borderRadius: 999,
+        background: 'transparent',
+        border: '1px solid var(--border)',
+      }}
+    >
+      {[
+        { key: 'newest', label: 'New' },
+        { key: 'oldest', label: 'Old' },
+      ].map((opt) => {
+        const on = value === opt.key;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            aria-pressed={on}
+            style={{
+              padding: '5px 12px',
+              height: 24,
+              borderRadius: 999,
+              border: 'none',
+              cursor: 'pointer',
+              background: on ? 'var(--electric)' : 'transparent',
+              color: on ? '#fff' : 'var(--text-dim)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              transition: 'background 0.15s ease, color 0.15s ease',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

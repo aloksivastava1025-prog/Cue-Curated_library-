@@ -649,6 +649,47 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
       {/* Body — signed-out users see a blurred + overlay-locked version so
           the text is teasingly visible but not readable / selectable. */}
       <div style={{ position: 'relative' }}>
+        {/* Floating copy button — sits in the panel's top-right so the
+            user can copy without scrolling to the bottom of a long
+            code block. Hides when there is nothing to copy, when the
+            free daily limit is out, and when the panel is locked. */}
+        {!isEmpty && !blockContent && (
+          <button
+            type="button"
+            onClick={() => onCopy(active)}
+            aria-label={`Copy ${activeLabel.toLowerCase()}`}
+            style={{
+              position: 'absolute',
+              top: 10, right: 10,
+              zIndex: 3,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px',
+              background: 'rgba(20,20,22,0.85)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 8,
+              color: 'var(--text)',
+              fontSize: 11.5, fontWeight: 600, letterSpacing: '0.02em',
+              cursor: 'pointer',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              transition: 'background 0.15s ease, border-color 0.15s ease, transform 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'rgba(28,28,30,0.9)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(20,20,22,0.85)' }}
+          >
+            {copied === active ? (
+              <><CheckIcon /> Copied</>
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                Copy
+              </>
+            )}
+          </button>
+        )}
         <div
           className="custom-scrollbar"
           data-lenis-prevent
