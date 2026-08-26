@@ -126,13 +126,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
 
   const hoverIsImage = item.hoverSrc && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(item.hoverSrc);
   const hoverIsVideo = item.hoverSrc && !hoverIsImage;
-  // Mount the <video> whenever we have a hover video source. Previous
-  // `inView` gate meant off-screen (and sometimes on-screen but not-yet
-  // observed) cards never got the element mounted at all — so users
-  // saw a black rectangle instead of the video first-frame poster.
-  // preload="metadata" keeps the actual byte cost small; play() only
-  // fires on real hover, so bandwidth is bounded.
-  const shouldMountHoverVideo = hoverIsVideo;
+  // Only mount the <video> when the card is near the viewport (200px
+  // rootMargin on the IntersectionObserver). Mounting all 70+ videos
+  // at once was pinning the main thread on scroll — each element
+  // reserves a GPU decoder slot even at preload="metadata". Thumbnail
+  // stays visible for out-of-viewport cards, so scroll stays smooth
+  // and the video hydrates just in time before the card is on screen.
+  const shouldMountHoverVideo = hoverIsVideo && inView;
 
   const pillBase = {
     // Bumped from 10px / 5px×11px — real-user feedback (Ibrahim, Aug 24)
