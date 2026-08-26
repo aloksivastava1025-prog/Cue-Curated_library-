@@ -213,18 +213,11 @@ function MainApp() {
     .sort((a, b) => itemDate(b) - itemDate(a))
     .slice(0, 20);
 
-  // Grid shows EVERYTHING, featured included. Featured (starred in admin)
-  // items float to the top so the admin can hand-pick what a first-time
-  // visitor sees at the head of the grid — same star toggle drives both
-  // the Signature Picks rail above and the grid ordering below. Within
-  // each group we still fall back to newest-first so fresh drops don't
-  // disappear into the middle.
+  // When the user picks a Sort (New/Old), respect PURE date order so a
+  // fresh drop never gets buried under older-but-featured items. The
+  // Signature Picks rail above already surfaces admin picks, so the grid
+  // doesn't need to double-pin them.
   const sortedByNewest = [...allPrompts].sort((a, b) => {
-    const aFeat = a.rail === 'featured' ? 1 : 0;
-    const bFeat = b.rail === 'featured' ? 1 : 0;
-    if (aFeat !== bFeat) return bFeat - aFeat;
-    // Featured items stay pinned; within each group the date order
-    // flips based on the user's Sort selection.
     return sortOrder === 'oldest'
       ? itemDate(a) - itemDate(b)
       : itemDate(b) - itemDate(a);
