@@ -845,9 +845,96 @@ function MainApp() {
             )}
           </div>
         ) : (
-          visiblePrompts.map(item => (
-            <EditorialCard key={item.id} item={item} setSelectedItem={setSelectedItem} />
-          ))
+          (() => {
+            // Mobbin-style scroll wall — anon users see the first ~12
+            // components; the next ~6 render behind a heavy blur so the
+            // eye reads "there's more here" but no card is actually
+            // readable, and a centered sign-in CTA sits on top. Signed
+            // -in users see the full grid unblurred.
+            const ANON_GRID_LIMIT = 12;
+            const TEASE_COUNT = 6;
+            const shownItems = isSignedIn ? visiblePrompts : visiblePrompts.slice(0, ANON_GRID_LIMIT);
+            const teaseItems = isSignedIn ? [] : visiblePrompts.slice(ANON_GRID_LIMIT, ANON_GRID_LIMIT + TEASE_COUNT);
+            const hiddenCount = isSignedIn ? 0 : Math.max(0, visiblePrompts.length - ANON_GRID_LIMIT);
+            return (
+              <>
+                {shownItems.map(item => (
+                  <EditorialCard key={item.id} item={item} setSelectedItem={setSelectedItem} />
+                ))}
+                {hiddenCount > 0 && (
+                  <div style={{ gridColumn: '1 / -1', position: 'relative', marginTop: 16 }}>
+                    {/* Blurred tease strip — real cards behind glass so the
+                        user sees there's more without reading anything. */}
+                    <div
+                      aria-hidden
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                        columnGap: 24, rowGap: 48,
+                        filter: 'blur(14px) saturate(0.7) brightness(0.85)',
+                        transform: 'scale(1.02)',
+                        transformOrigin: 'top center',
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        // Fade the tease into the sign-in wall so the
+                        // bottom of the strip disappears into the CTA.
+                        maskImage: 'linear-gradient(180deg, #000 0%, rgba(0,0,0,0.85) 40%, transparent 100%)',
+                        WebkitMaskImage: 'linear-gradient(180deg, #000 0%, rgba(0,0,0,0.85) 40%, transparent 100%)',
+                        maxHeight: 520,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {teaseItems.map((item) => (
+                        <EditorialCard key={`tease-${item.id}`} item={item} setSelectedItem={() => {}} />
+                      ))}
+                    </div>
+
+                    {/* CTA overlay — centered on top of the blurred strip */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '24px 16px',
+                    }}>
+                      <div style={{ textAlign: 'center', maxWidth: 520 }}>
+                        <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--electric)', fontWeight: 700, marginBottom: 14 }}>
+                          {hiddenCount} more components locked
+                        </div>
+                        <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontStyle: 'italic', fontWeight: 300, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: 12, lineHeight: 1.1 }}>
+                          Sign in to see the rest
+                        </h3>
+                        <p style={{ fontSize: 14, color: 'var(--text-dim)', margin: '0 auto 24px', lineHeight: 1.55 }}>
+                          Free — no card required. Sign up in 5 seconds to browse all {visiblePrompts.length} components, save favorites, and get every new drop.
+                        </p>
+                        <button
+                          onClick={() => openAuth('sign-up')}
+                          className="hover-btn-get"
+                          style={{
+                            padding: '13px 28px', background: 'var(--electric)', color: '#fff',
+                            border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 600,
+                            cursor: 'pointer', letterSpacing: '0.01em',
+                            boxShadow: '0 10px 28px -10px rgba(59,130,246,0.6)',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                          }}
+                        >
+                          Sign up free — unlock all components
+                        </button>
+                        <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-dim)' }}>
+                          Already have an account?{' '}
+                          <button
+                            onClick={() => openAuth('sign-in')}
+                            style={{ background: 'none', border: 'none', color: 'var(--electric)', cursor: 'pointer', fontSize: 12, padding: 0, textDecoration: 'underline' }}
+                          >Sign in</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()
         )}
       </section>
 
