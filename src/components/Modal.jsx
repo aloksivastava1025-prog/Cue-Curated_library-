@@ -234,56 +234,12 @@ export default function Modal({ item, onClose, showToast }) {
   if (!item) return null;
 
   const onCopy = async (which) => {
-    // Anonymous "first taste" — a signed-out visitor may copy ONE free
-    // prompt without an account, so the value moment fires before the
-    // wall. Premium items still gate (Cue+ subscription enforces
-    // account link), and the counter is per-browser (localStorage) so
-    // it resets on a new device but that's the industry norm.
-    const ANON_KEY = 'cue.anon.copies';
+    // Anon users can't reach this modal any more — card clicks are
+    // gated by sign-in on the home page — but if somehow a signed-in
+    // session lapsed while the modal was open, send them to sign-up
+    // instead of leaking any copy.
     if (!isSignedIn) {
-      if (isPremium) {
-        if (showToast) showToast('Sign in to unlock this premium prompt');
-        openAuth('sign-in');
-        return;
-      }
-      // Read the counter from BOTH localStorage and sessionStorage —
-      // some privacy extensions block localStorage but not session,
-      // and vice versa. Any positive hit locks further anon copies.
-      let usedAnon = 0;
-      try {
-        const ls = parseInt(localStorage.getItem(ANON_KEY) || '0', 10) || 0;
-        const ss = parseInt(sessionStorage.getItem(ANON_KEY) || '0', 10) || 0;
-        usedAnon = Math.max(ls, ss);
-      } catch {}
-      if (usedAnon >= 1) {
-        if (showToast) showToast('Sign in for 2 free copies a day + saved favorites');
-        openAuth('sign-in');
-        return;
-      }
-      // Anonymous first-copy path — build the text and lock the counter
-      // BEFORE the async clipboard write, so a slow / cancelled write
-      // still consumes the anon budget. Otherwise a user could spam-
-      // click while the clipboard promise was in flight and land more
-      // than one copy before the counter caught up.
-      let anonText = '';
-      if (which === 'code') anonText = item.code || '';
-      else if (which === 'prompt') anonText = content || item.prompt || '';
-      else if (which === 'use_case') anonText = item.use_case || '';
-      if (!anonText) {
-        if (showToast) showToast('Nothing to copy');
-        return;
-      }
-      // Lock first — write later.
-      try { localStorage.setItem(ANON_KEY, '1'); } catch {}
-      try { sessionStorage.setItem(ANON_KEY, '1'); } catch {}
-      const ok = await copyToClipboard(anonText);
-      if (!ok) {
-        if (showToast) showToast('Copy failed');
-        return;
-      }
-      if (showToast) showToast('Copied ✓  Sign in to save this + get 2 more daily copies');
-      setCopied(which);
-      setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
+      openAuth('sign-up');
       return;
     }
     let text = '';

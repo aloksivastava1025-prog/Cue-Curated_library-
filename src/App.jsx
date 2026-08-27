@@ -163,6 +163,24 @@ function MainApp() {
 
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback, filter, updateFilter } = useApp();
   const { openAuth } = useAuth();
+
+  // Anon users can browse the first 12 cards visually AND open up to
+  // 2 of them via click (a small taste that makes the sign-in feel
+  // earned instead of blocking). On the 3rd click the sign-up modal
+  // opens instead of the item modal. Counter resets on sign-in so a
+  // returning session that lapses starts a fresh budget.
+  const ANON_OPEN_LIMIT = 2;
+  const openItem = (item) => {
+    if (isSignedIn) { setSelectedItem(item); return; }
+    let used = 0;
+    try { used = parseInt(localStorage.getItem('cue_anon_opens') || '0', 10) || 0; } catch {}
+    if (used >= ANON_OPEN_LIMIT) { openAuth('sign-up'); return; }
+    try { localStorage.setItem('cue_anon_opens', String(used + 1)); } catch {}
+    setSelectedItem(item);
+  };
+  useEffect(() => {
+    if (isSignedIn) { try { localStorage.removeItem('cue_anon_opens'); } catch {} }
+  }, [isSignedIn]);
   // Search state — free-text search over the whole library. Trigger
   // paths: (1) mouse hover in the top viewport strip on desktop,
   // (2) ⌘K / Ctrl+K, (3) FloatingNav search icon on mobile.
@@ -717,7 +735,7 @@ function MainApp() {
       </section>
 
       {/* Design of the Day rail — only rendered if there are featured items */}
-      <FeaturedRail items={featured} onOpen={setSelectedItem} />
+      <FeaturedRail items={featured} onOpen={openItem} />
 
       {/* Filter bar — 3-column grid so the center toggle is TRULY centered
           regardless of how wide the left/right dropdowns get. */}
@@ -870,7 +888,7 @@ function MainApp() {
             return (
               <>
                 {shownItems.map(item => (
-                  <EditorialCard key={item.id} item={item} setSelectedItem={setSelectedItem} />
+                  <EditorialCard key={item.id} item={item} setSelectedItem={openItem} />
                 ))}
                 {hiddenCount > 0 && (
                   <div style={{ gridColumn: '1 / -1', position: 'relative', marginTop: 16 }}>
