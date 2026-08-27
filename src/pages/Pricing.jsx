@@ -289,7 +289,7 @@ export default function Pricing() {
                   'Full library, unlocked',
                   'Works with Framer, Bolt, v0, Cursor',
                   'New drops every week — forever',
-                  { text: 'React source code', soon: true },
+                  'React source code',
                   'Request any component\'s code — I ship it personally',
                   { text: 'MCP support', soon: true },
                   'Unlimited prompts',
