@@ -793,7 +793,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             </button>
             {!isSignedIn && !isEmpty && (
               <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
-                Your first copy is free — no signup needed
+                Sign up to copy — 2 free prompts daily
               </div>
             )}
             {isSignedIn && !isCuePlus && isPromptTab && typeof dailyRemaining === 'number' && dailyRemaining > 0 && (

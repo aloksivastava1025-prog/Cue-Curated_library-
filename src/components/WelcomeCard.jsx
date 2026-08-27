@@ -284,7 +284,7 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
             </h3>
             <p className="cue-welcome-sub">
               Awwwards-tier components hand-picked for creatives.
-              Start with the free prompts — your first copy is on us.
+              Sign in to browse the full library.
             </p>
             <div className="cue-welcome-actions">
               <button className="cue-welcome-cta" onClick={onPrimary}>
