@@ -292,31 +292,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
                 Continue with Google
               </button>
 
-              {/* X / Twitter — mirrors the Google button styling but
-                  uses X's dark brand fill so users read the two as a
-                  matched pair, not one sitting under the other. */}
-              <button
-                type="button"
-                onClick={xLogin}
-                disabled={busy}
-                style={{
-                  background: '#000', color: '#fff', border: `1px solid #000`,
-                  borderRadius: 24, padding: 14, fontSize: 14, fontWeight: 500,
-                  width: '100%', cursor: busy ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  marginBottom: 16, fontFamily: 'inherit',
-                  transition: 'background 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseEnter={(e) => { if (!busy) { e.currentTarget.style.background = '#111'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.14)' } }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#000'; e.currentTarget.style.boxShadow = 'none' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
-                  <path d="M18.244 2H21l-6.522 7.457L22 22h-6.828l-5.35-6.99L3.6 22H.844l6.98-7.977L2 2h6.914l4.85 6.4L18.244 2Zm-2.396 18h1.62L8.28 4H6.56l9.288 16Z"/>
-                </svg>
-                Continue with X
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', marginBottom: 16, color: '#AAAAAA', fontSize: 12, fontWeight: 500 }}>
+<div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', marginBottom: 16, color: '#AAAAAA', fontSize: 12, fontWeight: 500 }}>
                 <span style={{ flex: 1, borderBottom: `1px solid ${P.border}` }} />
                 <span style={{ padding: '0 14px' }}>or</span>
                 <span style={{ flex: 1, borderBottom: `1px solid ${P.border}` }} />
