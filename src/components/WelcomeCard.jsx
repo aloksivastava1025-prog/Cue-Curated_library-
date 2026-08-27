@@ -19,6 +19,7 @@ import { useApp } from '../context/AppContext.jsx'
  */
 
 const STORAGE_KEY = 'cue.welcomed.v2'
+const SESSION_KEY = 'cue.welcomed.session'
 const APPEAR_DELAY_MS = 3000
 
 export default function WelcomeCard({ onExploreFree, onSuggest }) {
@@ -69,13 +70,19 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
   }, [pool, brokenIds])
 
   useEffect(() => {
-    // Signed-out visitors see the welcome card on every visit — first
-    // impression + conversion nudge every time. Signed-in users only
-    // see it once via the localStorage flag so it doesn't nag them.
+    // Signed-in users see the welcome card at most once ever (localStorage).
+    // Signed-out visitors see it at most once per browser SESSION —
+    // sessionStorage clears when the tab closes, so a same-tab refresh
+    // won't re-nag them, but a fresh visit tomorrow will still catch
+    // returning anon users with a first-impression hit.
     if (isSignedIn) {
       let seen = false
       try { seen = localStorage.getItem(STORAGE_KEY) === '1' } catch {}
       if (seen) return
+    } else {
+      let seenSession = false
+      try { seenSession = sessionStorage.getItem(SESSION_KEY) === '1' } catch {}
+      if (seenSession) return
     }
     // Only fire once we have real thumbnails to render — otherwise the
     // mosaic would boot as six empty dark tiles, which was the "small
@@ -93,6 +100,8 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
   }, [visible])
 
   const markSeen = () => {
+    // Session flag for anon (refresh-safe), persistent flag for signed-in.
+    try { sessionStorage.setItem(SESSION_KEY, '1') } catch {}
     try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
   }
 
@@ -235,6 +244,21 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
           transition: color 180ms ease;
         }
         .cue-welcome-secondary:hover { color: #fff; }
+        .cue-welcome-skip {
+          margin-left: auto;
+          background: transparent;
+          border: 1px solid rgba(255,255,255,0.14);
+          color: rgba(255,255,255,0.55);
+          font-family: var(--font-sans); font-size: 12.5px; font-weight: 500;
+          cursor: pointer;
+          padding: 8px 16px; border-radius: 999px;
+          transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+        }
+        .cue-welcome-skip:hover {
+          color: #fff;
+          border-color: rgba(255,255,255,0.28);
+          background: rgba(255,255,255,0.04);
+        }
         @media (max-width: 480px) {
           .cue-welcome-panel { max-width: 100%; }
           .cue-welcome-body { padding: 18px 20px 20px; }
@@ -302,6 +326,13 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
                 }}
               >
                 Suggest anything →
+              </button>
+              <button
+                className="cue-welcome-skip"
+                onClick={dismiss}
+                aria-label="Skip"
+              >
+                Skip
               </button>
             </div>
           </div>

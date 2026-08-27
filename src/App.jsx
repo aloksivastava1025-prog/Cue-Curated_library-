@@ -19,6 +19,8 @@ import TierFilter from './components/TierFilter.jsx';
 import { isPremium as isPremiumItem } from './lib/promptHelpers.js';
 import WaitlistCTA from './components/WaitlistCTA.jsx';
 import WelcomeCard from './components/WelcomeCard.jsx';
+import FoundingPoll from './components/FoundingPoll.jsx';
+import FounderDock from './components/FounderDock.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
@@ -997,6 +999,9 @@ function MainApp() {
       {selectedItem && (
         <Modal item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
+
+      <FoundingPoll />
+      <FounderDock />
     </div>
   );
 }

@@ -12,10 +12,17 @@ function formatCount(n) {
   return String(x);
 }
 
+const ADMIN_EMAILS = new Set([
+  'akashkumar7653099@gmail.com',
+  'aloksivastava1025@gmail.com',
+  'aloks.int@teachforindia.org',
+]);
+
 export default function EditorialCard({ item, setSelectedItem }) {
   const { bookmarkedIds, likedIds, toggleBookmark, toggleLike } = useApp();
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const { openAuth } = useAuth();
+  const isAdmin = isSignedIn && ADMIN_EMAILS.has(user?.primaryEmailAddress?.emailAddress);
   const isBookmarked = bookmarkedIds?.has(item.id);
   const isLiked = likedIds?.has(item.id);
   const [likeAnim, setLikeAnim] = useState(false);
@@ -357,14 +364,17 @@ export default function EditorialCard({ item, setSelectedItem }) {
               </svg>
               <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.02em', minWidth: 8 }}>{formatCount(item.like_count)}</span>
             </button>
-            {/* Views (display only) */}
-            <span title="Views" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-dim)', padding: '6px 8px' }}>
+            {/* Views (admin-only — regular users never see the traffic
+                signal, which prevents anchoring on early-days low counts). */}
+            {isAdmin && (
+            <span title="Views (admin only)" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-dim)', padding: '6px 8px' }}>
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
               <span style={{ fontWeight: 600 }}>{formatCount(item.view_count)}</span>
             </span>
+            )}
             {/* Bookmark */}
             <button
               type="button"
