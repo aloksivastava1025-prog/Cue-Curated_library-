@@ -112,6 +112,26 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
     }
   }
 
+  // X / Twitter OAuth — mirrors the Google flow, uses Clerk's
+  // `oauth_x` strategy which is the current name for the Twitter/X
+  // provider (Clerk kept `oauth_twitter` as an alias for older apps).
+  const xLogin = async () => {
+    if (busy) return
+    setError(''); setBusy(true)
+    try {
+      const target = isSignIn ? signIn : signUp
+      if (!target) throw new Error('Getting ready — try again in a couple of seconds.')
+      await target.authenticateWithRedirect({
+        strategy: 'oauth_twitter',
+        redirectUrl: window.location.origin + '/sso-callback',
+        redirectUrlComplete: window.location.href,
+      })
+    } catch (err) {
+      setBusy(false)
+      setError(clerkErr(err))
+    }
+  }
+
   const submitEmail = async (e) => {
     e.preventDefault()
     if (busy) return
@@ -270,6 +290,30 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
                 Continue with Google
+              </button>
+
+              {/* X / Twitter — mirrors the Google button styling but
+                  uses X's dark brand fill so users read the two as a
+                  matched pair, not one sitting under the other. */}
+              <button
+                type="button"
+                onClick={xLogin}
+                disabled={busy}
+                style={{
+                  background: '#000', color: '#fff', border: `1px solid #000`,
+                  borderRadius: 24, padding: 14, fontSize: 14, fontWeight: 500,
+                  width: '100%', cursor: busy ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  marginBottom: 16, fontFamily: 'inherit',
+                  transition: 'background 0.15s ease, box-shadow 0.15s ease',
+                }}
+                onMouseEnter={(e) => { if (!busy) { e.currentTarget.style.background = '#111'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.14)' } }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#000'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+                  <path d="M18.244 2H21l-6.522 7.457L22 22h-6.828l-5.35-6.99L3.6 22H.844l6.98-7.977L2 2h6.914l4.85 6.4L18.244 2Zm-2.396 18h1.62L8.28 4H6.56l9.288 16Z"/>
+                </svg>
+                Continue with X
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', marginBottom: 16, color: '#AAAAAA', fontSize: 12, fontWeight: 500 }}>
@@ -468,8 +512,8 @@ function clerkErr(err) {
   if (/password.*incorrect|invalid.*credential/i.test(lower)) {
     return "That password doesn't match. Try again."
   }
-  if (/oauth|social|google|apple/i.test(lower) && /error|fail|denied/i.test(lower)) {
-    return "Sign-in with Google didn't complete — try again or use email."
+  if (/oauth|social|google|apple|twitter|\bx\b/i.test(lower) && /error|fail|denied/i.test(lower)) {
+    return "Social sign-in didn't complete — try again or use email."
   }
   // Final safety: never surface anything with "clerk" or a stack trace.
   if (/clerk|error:|at .*\(/i.test(raw)) {
