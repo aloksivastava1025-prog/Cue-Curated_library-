@@ -5,6 +5,7 @@ import Lenis from 'lenis';
 import Modal from './components/Modal.jsx';
 import Admin from './pages/Admin.jsx';
 import AdminInbox from './pages/AdminInbox.jsx';
+import AdminPolls from './pages/AdminPolls.jsx';
 import AdminSubscriptions from './pages/AdminSubscriptions.jsx';
 import Pricing from './pages/Pricing.jsx';
 import Legal from './pages/Legal.jsx';
@@ -20,6 +21,7 @@ import { isPremium as isPremiumItem } from './lib/promptHelpers.js';
 import WaitlistCTA from './components/WaitlistCTA.jsx';
 import WelcomeCard from './components/WelcomeCard.jsx';
 import FounderDock from './components/FounderDock.jsx';
+import FoundingPoll from './components/FoundingPoll.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
@@ -347,6 +349,9 @@ function MainApp() {
 
   if (route === '#/admin/inbox' && isAdmin) {
     return <AdminInbox />;
+  }
+  if (route === '#/admin/polls' && isAdmin) {
+    return <AdminPolls />;
   }
 
   if (route === '#/admin/subscriptions' && isAdmin) {
@@ -1065,6 +1070,10 @@ function AppShell() {
       <MainApp />
       <FeedbackModal open={feedbackOpen} onClose={closeFeedback} source={feedbackSource} />
       <SignInCard open={authOpen} mode={authMode} onClose={closeAuth} />
+      {/* FoundingPoll lives at the shell level so it persists as
+          the user navigates between /pricing, /account, etc. Its
+          own internal state gates when it renders. */}
+      <FoundingPoll />
       {/* Vercel Web Analytics — Vercel dashboard mein 'Enable' toggle
           on karna hai then data flow shuru. Zero-config beyond that,
           no cookies, no consent banner needed. */}
