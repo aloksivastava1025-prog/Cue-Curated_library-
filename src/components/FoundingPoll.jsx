@@ -240,8 +240,8 @@ export default function FoundingPoll() {
         setState('ready')
       }
     }
-    document.addEventListener('mousedown', onDocDown)
-    return () => document.removeEventListener('mousedown', onDocDown)
+    document.addEventListener('pointerdown', onDocDown)
+    return () => document.removeEventListener('pointerdown', onDocDown)
   }, [state])
 
   // Periodic wiggle to remind the user the notch is ready. Runs
@@ -354,15 +354,22 @@ export default function FoundingPoll() {
     else if (state === 'email') setState('q3')
   }
 
-  // Hover behaviour — resume from the last step the user was on
-  // (or Q1 if they haven't started). Hover-off no longer collapses
-  // once they're inside the survey; only a click outside closes it,
-  // and that too preserves the resume step.
-  const onEnter = () => {
+  // Hover on desktop / tap on mobile both call the same handler.
+  // Once the user is in the survey, hover-off no longer collapses
+  // — only a click outside does.
+  const openSurvey = () => {
     if (state !== 'ready') return
     setState(resumeStep || 'q1')
   }
+  const onEnter = openSurvey
   const onLeave = () => { /* stay open once user has entered survey */ }
+  const onChipClick = (e) => {
+    // Only capture taps on the chip itself, not on things inside
+    // the expanded survey (buttons handle their own clicks).
+    if (state !== 'ready') return
+    e.stopPropagation()
+    openSurvey()
+  }
 
   if (state === 'hidden' || state === 'gone') return null
 
@@ -391,6 +398,7 @@ export default function FoundingPoll() {
         ].filter(Boolean).join(' ')}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
+        onClick={onChipClick}
         style={
           inSurvey && contentHeight
             ? { height: contentHeight }
@@ -412,7 +420,7 @@ export default function FoundingPoll() {
         <div className={`cue-notch-view cue-notch-compact ${isReady ? 'is-on' : ''}`}>
           <span className="cue-notch-dot" />
           <span ref={isReady ? chipTextRef : null} className="cue-notch-compact-text">
-            Take your time — hover to answer
+            Take your time — tap here to answer
           </span>
         </div>
 
@@ -675,6 +683,7 @@ export default function FoundingPoll() {
           font-size: 13px; font-weight: 500;
           padding: 0 20px;
           white-space: nowrap;
+          cursor: pointer;
         }
         .cue-notch-dot {
           width: 7px; height: 7px; border-radius: 999px;
