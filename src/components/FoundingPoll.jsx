@@ -133,7 +133,13 @@ export default function FoundingPoll() {
   // the same step on next visit.
   useEffect(() => {
     if (!isLoaded) return
-    if (isSignedIn) return
+    // Show the poll to BOTH anon visitors and signed-in free-tier
+    // users. Cue+ paying members are unlikely to see it — anyone
+    // who submitted it once has the STORAGE_KEY flag set — but the
+    // copy still reads sensibly for them ("would you join?") since
+    // a Cue+ user would just tap "already joined" via the yes lane
+    // or dismiss. Keeping this open to signed-in visitors triples
+    // the sample size on the signal.
     let seen = false
     try { seen = localStorage.getItem(STORAGE_KEY) === '1' } catch {}
     if (seen) return
