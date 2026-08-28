@@ -57,14 +57,14 @@ serve(async (req) => {
     // Profile row — user_id first, email fallback for self-healed rows.
     let { data: profile } = await supabase
       .from('user_profiles')
-      .select('user_id, email, plan, plan_source, plan_started_at, dodo_customer_id, full_name')
+      .select('*')
       .eq('user_id', userId)
       .maybeSingle()
 
     if ((!profile || profile.plan === 'free') && email) {
       const { data: byEmail } = await supabase
         .from('user_profiles')
-        .select('user_id, email, plan, plan_source, plan_started_at, dodo_customer_id, full_name')
+        .select('*')
         .ilike('email', email)
         .order('plan_started_at', { ascending: false, nullsFirst: false })
         .limit(1)
@@ -112,11 +112,16 @@ serve(async (req) => {
     // client already has them from useUser(); echoing them from the
     // server would be an extra PII surface for a spoofed userId.
     return new Response(JSON.stringify({
-      plan:              profile?.plan || 'free',
-      plan_source:       profile?.plan_source || null,
-      plan_started_at:   profile?.plan_started_at || null,
-      dodo_customer_id:  profile?.dodo_customer_id || null,
-      last_payment_id:   history[0]?.payment_id || null,
+      plan:                    profile?.plan || 'free',
+      plan_source:             profile?.plan_source || null,
+      plan_started_at:         profile?.plan_started_at || null,
+      plan_expires_at:         profile?.plan_expires_at || null,
+      dodo_customer_id:        profile?.dodo_customer_id || null,
+      subscription_id:         profile?.dodo_subscription_id || null,
+      next_billing_date:       profile?.next_billing_date || null,
+      auto_renew:              profile?.auto_renew ?? null,
+      failed_renewal_count:    profile?.failed_renewal_count ?? 0,
+      last_payment_id:         history[0]?.payment_id || null,
       history,
     }), {
       headers: { ...headers, 'Content-Type': 'application/json' },

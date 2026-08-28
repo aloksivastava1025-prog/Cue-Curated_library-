@@ -70,9 +70,17 @@ serve(async (req) => {
     }
 
     // Validate billing_cycle
-    const validCycles = new Set(['annual', 'lifetime'])
+    const validCycles = new Set(['monthly', 'annual', 'lifetime'])
     if (!validCycles.has(billing_cycle)) {
-      return new Response(JSON.stringify({ error: 'Invalid billing_cycle. Must be "annual" or "lifetime".' }), {
+      return new Response(JSON.stringify({ error: 'Invalid billing_cycle. Must be "monthly", "annual" or "lifetime".' }), {
+        status: 400,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      })
+    }
+    // Monthly currently only ships for the individual Cue+ plan.
+    // If Team monthly is added later, drop this guard.
+    if (billing_cycle === 'monthly' && plan_type !== 'cue_plus') {
+      return new Response(JSON.stringify({ error: 'Monthly is only available on the individual Cue+ plan.' }), {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' },
       })
@@ -201,16 +209,22 @@ serve(async (req) => {
     // ---- Create Dodo checkout session ----
     const dodoApiKey = (Deno.env.get('DODO_PAYMENTS_API_KEY') || '').trim()
     
-    // Select product ID based on plan_type and billing_cycle
+    // Select product ID based on plan_type and billing_cycle.
+    // Individual monthly is the new billing cycle; team monthly is
+    // not shipped yet and is blocked earlier in this function.
     let productId;
     if (plan_type === 'cue_plus_team') {
       productId = billing_cycle === 'annual'
         ? Deno.env.get('DODO_PRODUCT_ID_TEAM_ANNUAL')
         : Deno.env.get('DODO_PRODUCT_ID_TEAM_LIFETIME');
     } else {
-      productId = billing_cycle === 'annual'
-        ? Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_ANNUAL')
-        : Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_LIFETIME');
+      if (billing_cycle === 'monthly') {
+        productId = Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY');
+      } else if (billing_cycle === 'annual') {
+        productId = Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_ANNUAL');
+      } else {
+        productId = Deno.env.get('DODO_PRODUCT_ID_INDIVIDUAL_LIFETIME');
+      }
     }
     // Env vars often pick up stray whitespace from dashboard paste.
     productId = productId ? productId.trim() : productId;
@@ -242,24 +256,19 @@ serve(async (req) => {
     ).toUpperCase()
     const buyerCountry = /^[A-Z]{2}$/.test(rawCountry) ? rawCountry : 'IN'
 
-    // Dodo's /payments endpoint requires a `billing` object. On a hosted
-    // checkout flow the user fills these fields on Dodo's page — we
-    // just seed defaults so the API accepts the create call. Fragment
-    // (#) in return_url is stripped by some providers, so we point at
-    // the root and rely on hash routing to hop to /billing/success via
-    // a small handler in App.jsx.
-    const requestBody = {
+    // Dodo splits its checkout API by product type:
+    //   • /payments        — one-time products (annual + lifetime here)
+    //   • /subscriptions   — recurring products (monthly here)
+    // The bodies differ: /payments takes product_cart[], /subscriptions
+    // takes product_id + quantity at the root. Everything else — customer,
+    // billing, metadata, return_url — is identical.
+    const isSubscription = billing_cycle === 'monthly'
+    const commonFields = {
       payment_link: true,
       customer: {
         email: String(customerEmail).trim(),
         name: String(customerName || 'Cue User').trim().slice(0, 100),
       },
-      product_cart: [
-        {
-          product_id: productId,
-          quantity: 1,
-        },
-      ],
       billing: {
         country: buyerCountry,
         state:   'NA',
@@ -275,11 +284,15 @@ serve(async (req) => {
         email: String(customerEmail).trim(),
       },
     }
+    const requestBody = isSubscription
+      ? { ...commonFields, product_id: productId, quantity: 1 }
+      : { ...commonFields, product_cart: [{ product_id: productId, quantity: 1 }] }
 
     const isLive = Deno.env.get('DODO_ENV') === 'live'
     const baseUrl = isLive ? 'https://live.dodopayments.com' : 'https://test.dodopayments.com'
+    const endpointPath = isSubscription ? '/subscriptions' : '/payments'
 
-    const response = await fetch(`${baseUrl}/payments`, {
+    const response = await fetch(`${baseUrl}${endpointPath}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${dodoApiKey}`,

@@ -892,6 +892,28 @@ const supabaseAdapter = {
     if (!data?.url) throw new Error('No checkout URL returned')
     return data.url
   },
+
+  // Cancel a monthly subscription at period end. Access continues
+  // through the current billing cycle; auto-renew is turned off.
+  // Idempotent — a second call for an already-cancelled subscription
+  // returns { already_cancelled: true } without hitting Dodo again.
+  async cancelSubscription(clerkUserId) {
+    if (!clerkUserId) throw new Error('Sign in required')
+    const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+      body: { userId: clerkUserId },
+    })
+    if (error) {
+      let msg = error.message || 'Cancellation failed'
+      try {
+        if (error.context?.json) {
+          const j = await error.context.json()
+          if (j?.error) msg = j.error
+        }
+      } catch { /* ignore */ }
+      throw new Error(msg)
+    }
+    return data
+  },
   
   async remove(id) {
     const { error } = await supabase.from('prompts').delete().eq('id', id)

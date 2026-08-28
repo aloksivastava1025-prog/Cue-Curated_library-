@@ -88,6 +88,7 @@ export default function Pricing() {
   const foundingFilled = spotsLeft === 0
 
   const [checkoutBusy, setCheckoutBusy] = useState(false)
+  const [monthlyBusy, setMonthlyBusy] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
   async function startFoundingCheckout() {
     if (checkoutBusy) return
@@ -114,6 +115,23 @@ export default function Pricing() {
         )
         setCheckoutBusy(false)
       }
+    }
+  }
+
+  // Monthly Cue+ subscription. Same edge function, different billing
+  // cycle — Dodo routes it through /subscriptions and the webhook
+  // grants access on subscription.active / subscription.renewed.
+  async function startMonthlyCheckout() {
+    if (monthlyBusy) return
+    if (!isSignedIn) { openAuth('sign-up'); return }
+    setCheckoutError('')
+    setMonthlyBusy(true)
+    try {
+      const url = await backend.createFoundingCheckout(user, { billingCycle: 'monthly' })
+      window.location.href = url
+    } catch (err) {
+      setCheckoutError(friendlyError(err, "Couldn't open checkout. Give it another tap in a moment."))
+      setMonthlyBusy(false)
     }
   }
 
@@ -298,22 +316,31 @@ export default function Pricing() {
                 ]}
               />
 
-              {/* MONTHLY (waitlist decoy) */}
+              {/* MONTHLY — live subscription. Cancel-at-period-end
+                  policy: subscription stops renewing; access remains
+                  active until the current billing cycle ends. */}
               <Col
                 title="Monthly"
-                description="Try Cue without commitment. Cancel anytime — access ends on cancel."
+                description="Try Cue without commitment. Cancel anytime — access remains active until the end of your current billing cycle."
                 price={`${P.sym}${P.monthly}`}
                 priceSub="/month"
-                subLine={`${P.sym}${P.yearlyCost} over a year · launching after beta`}
+                subLine={`${P.sym}${P.yearlyCost} over a year · auto-renews monthly`}
                 muted
-                cta={<button onClick={() => setMonthlyOpen(true)} style={btnGhost}>Notify me</button>}
+                cta={
+                  <button
+                    onClick={startMonthlyCheckout}
+                    disabled={monthlyBusy}
+                    style={{ ...btnGhost, opacity: monthlyBusy ? 0.6 : 1, cursor: monthlyBusy ? 'wait' : 'pointer' }}
+                  >
+                    {monthlyBusy ? 'Opening checkout…' : 'Start monthly'}
+                  </button>
+                }
                 features={[
                   'Full library unlocked',
                   'Works with Framer, Bolt, v0, Cursor',
                   'New drops every week — while active',
-                  'Cancel anytime',
+                  'Cancel anytime — access until cycle end',
                   'Personal use only',
-                  'Access ends on cancel',
                 ]}
               />
             </div>

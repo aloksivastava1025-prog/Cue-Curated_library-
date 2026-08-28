@@ -148,10 +148,33 @@ serve(async (req) => {
       const email = event.data?.customer?.email || event.data?.metadata?.email || null
       const teamSeats = planType === 'cue_plus_team' ? 5 : 1
 
-      // If annual, set expiry to 1 year + 3 days grace period from now. If lifetime, null.
-      const planExpiresAt = billingCycle === 'annual' 
-        ? new Date(Date.now() + 368 * 24 * 60 * 60 * 1000).toISOString() 
-        : null
+      // Plan expiry per billing cycle:
+      //   monthly  → 35 days out (30 + 5 grace), or Dodo's next_billing_date
+      //   annual   → 368 days out (365 + 3 grace)
+      //   lifetime → null (never expires)
+      // For monthly we prefer Dodo's own next_billing_date because it
+      // accounts for anniversary dates the webhook doesn't have to
+      // recompute (e.g. billed on the 30th of every month).
+      const dodoNextBilling = event.data?.next_billing_date
+        || event.data?.subscription?.next_billing_date
+        || event.data?.current_period_end
+        || null
+      let planExpiresAt: string | null = null
+      if (billingCycle === 'annual') {
+        planExpiresAt = new Date(Date.now() + 368 * 24 * 60 * 60 * 1000).toISOString()
+      } else if (billingCycle === 'monthly') {
+        planExpiresAt = dodoNextBilling
+          ? new Date(new Date(dodoNextBilling).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString()
+      }
+
+      // Dodo subscription id — set for monthly, null for lifetime/annual
+      // one-time products. Persisted so the Cancel button can PATCH the
+      // correct subscription resource.
+      const dodoSubscriptionId = event.data?.subscription_id
+        || event.data?.subscription?.subscription_id
+        || event.data?.subscription?.id
+        || null
 
       // Dodo customer id — used as the source-of-truth identifier that
       // survives across sign-in/sign-out and pre-signup purchases.
@@ -229,6 +252,15 @@ serve(async (req) => {
           team_owner_id: resolvedUserId,
           team_seats: teamSeats,
           dodo_customer_id: dodoCustomerId,
+        }
+        // Monthly-only fields — populated for subscriptions, left
+        // untouched for one-time payments so lifetime rows aren't
+        // polluted with subscription state.
+        if (billingCycle === 'monthly') {
+          payload.dodo_subscription_id = dodoSubscriptionId
+          payload.next_billing_date = dodoNextBilling
+          payload.auto_renew = true
+          payload.failed_renewal_count = 0
         }
         // Only set plan_started_at on FIRST-time insert. Renewals should
         // preserve the original date.
@@ -427,6 +459,91 @@ serve(async (req) => {
       } else {
         log.warn('payment.succeeded but no user_id in metadata', { webhookId })
       }
+    }
+
+    // Handle a failed renewal charge WITHOUT revoking access — Dodo
+    // typically retries the card 2-3 times before giving up and firing
+    // subscription.canceled. Here we bump the failure counter, keep
+    // access active (grace period), and alert the founder. The eventual
+    // subscription.canceled event (below) is what actually downgrades
+    // the user.
+    if (
+      event.type === 'payment.failed' ||
+      event.type === 'subscription.renewal_failed' ||
+      event.type === 'subscription.past_due'
+    ) {
+      const failEmail = event.data?.customer?.email
+        || event.data?.metadata?.email
+        || null
+      const failCustomerId = event.data?.customer?.customer_id
+        || event.data?.customer_id
+        || null
+      let failUserId = event.data?.metadata?.user_id
+        || event.data?.metadata?.reference
+        || event.data?.reference
+        || null
+      if (!failUserId && failEmail) {
+        const { data: byEmail } = await supabase
+          .from('user_profiles')
+          .select('user_id, failed_renewal_count')
+          .ilike('email', failEmail)
+          .maybeSingle()
+        if (byEmail?.user_id) failUserId = byEmail.user_id
+      }
+      if (!failUserId && failCustomerId) {
+        const { data: byCustomer } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('dodo_customer_id', failCustomerId)
+          .maybeSingle()
+        if (byCustomer?.user_id) failUserId = byCustomer.user_id
+      }
+
+      if (failUserId) {
+        // Fetch current counter atomically-ish (read, +1, write).
+        const { data: currentRow } = await supabase
+          .from('user_profiles')
+          .select('failed_renewal_count')
+          .eq('user_id', failUserId)
+          .maybeSingle()
+        const nextCount = ((currentRow?.failed_renewal_count as number) || 0) + 1
+        await supabase
+          .from('user_profiles')
+          .update({ failed_renewal_count: nextCount })
+          .eq('user_id', failUserId)
+
+        // Founder alert on every failure — small volume today, so
+        // noise cost is negligible and each failure is worth investigating.
+        try {
+          const resendKey = Deno.env.get('RESEND_API_KEY')
+          const founderEmail = Deno.env.get('FOUNDER_EMAIL')
+          if (resendKey && founderEmail) {
+            await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resendKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'Cue Alerts <alerts@cuedesign.space>',
+                to: founderEmail,
+                subject: `⚠️ Renewal failed (attempt ${nextCount}) — ${failEmail || failUserId}`,
+                html: `<p>Dodo reported a failed renewal for <strong>${failEmail || failUserId}</strong>.</p><p>Consecutive failures: <strong>${nextCount}</strong>. Access remains active until subscription.canceled fires. Consider reaching out.</p>`,
+              }),
+            })
+          }
+        } catch (e: any) {
+          log.warn('Founder failure-alert threw', { error: e?.message })
+        }
+
+        log.info('Renewal failure recorded', { userId: failUserId, failureCount: nextCount, eventType: event.type })
+      } else {
+        log.warn('Renewal-failure event with no attributable user', { webhookId, eventType: event.type })
+      }
+
+      return new Response(JSON.stringify({ ok: true, event: event.type }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     // Handle refunds / cancellations / failed payments.

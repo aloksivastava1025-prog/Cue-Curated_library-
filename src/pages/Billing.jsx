@@ -27,6 +27,8 @@ function BillingAccount() {
   const [billing, setBilling] = useState(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [cancelState, setCancelState] = useState('idle') // idle | confirming | cancelling | cancelled | error
+  const [cancelMsg, setCancelMsg] = useState('')
 
   useEffect(() => {
     if (!isSignedIn || !user?.id) { setLoading(false); return }
@@ -55,6 +57,34 @@ function BillingAccount() {
         year: 'numeric', month: 'short', day: 'numeric',
       })
     : '—'
+
+  // Monthly-subscription detection. get-my-billing returns
+  // `subscription_id` + `next_billing_date` for monthly rows; lifetime
+  // rows return neither. `plan_source === 'monthly:cancelling'` means
+  // cancel-at-period-end is already in flight.
+  const hasSubscription = !!billing?.subscription_id
+  const isCancelling = billing?.plan_source === 'monthly:cancelling'
+  const nextBillingRaw = billing?.next_billing_date
+  const nextBillingFmt = nextBillingRaw
+    ? new Date(nextBillingRaw).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : null
+
+  async function handleCancel() {
+    if (cancelState === 'cancelling') return
+    setCancelState('cancelling')
+    setCancelMsg('')
+    try {
+      const res = await backend.cancelSubscription(user.id)
+      setCancelState('cancelled')
+      setCancelMsg(res?.message || 'Cancellation scheduled — access remains active until your billing cycle ends.')
+      // Reload billing to reflect the new plan_source / expires_at.
+      const fresh = await backend.getMyBilling(user)
+      setBilling(fresh)
+    } catch (e) {
+      setCancelState('error')
+      setCancelMsg(e?.message || 'Could not cancel — please email hello@cuedesign.space.')
+    }
+  }
 
   const supaBase = import.meta.env.VITE_SUPABASE_URL || ''
   const invoiceUrl = (pid) =>
@@ -95,7 +125,72 @@ function BillingAccount() {
               <Row label="Billed to" value={<span style={{ fontSize: 13 }}>{user.primaryEmailAddress.emailAddress}</span>} />
             </>
           )}
+          {hasSubscription && (
+            <>
+              <Divider />
+              <Row
+                label={isCancelling ? 'Access ends' : 'Next billing date'}
+                value={<span style={{ fontSize: 13 }}>{nextBillingFmt || '—'}</span>}
+              />
+              <Divider />
+              <Row
+                label="Auto-renew"
+                value={
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <span style={{
+                      display: 'inline-block', width: 8, height: 8, borderRadius: 999,
+                      background: isCancelling ? '#8a8a82' : '#22c55e',
+                    }} />
+                    {isCancelling ? 'Cancelled — no further charge' : 'On'}
+                  </span>
+                }
+              />
+            </>
+          )}
         </div>
+
+        {/* Cancel subscription (monthly only). Cancel-at-period-end
+            policy: subscription stops renewing at the next billing
+            boundary; Cue+ access continues until then. */}
+        {hasSubscription && (
+          <div style={{ ...cardStyle, marginTop: 20 }}>
+            {isCancelling ? (
+              <div style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.55 }}>
+                Cancellation is scheduled. Your Cue+ access remains active until <strong style={{ color: 'var(--text)' }}>{nextBillingFmt || 'the end of your current billing cycle'}</strong>. No further charges will be made.
+              </div>
+            ) : cancelState === 'cancelled' ? (
+              <div style={{ fontSize: 13, color: '#22c55e', lineHeight: 1.55 }}>
+                {cancelMsg}
+              </div>
+            ) : cancelState === 'confirming' ? (
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 12, lineHeight: 1.55 }}>
+                  Cancel your Cue+ subscription? Access continues until <strong>{nextBillingFmt || 'the end of your current billing cycle'}</strong>. You can resubscribe any time.
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button onClick={handleCancel} disabled={cancelState === 'cancelling'} style={dangerBtn}>
+                    {cancelState === 'cancelling' ? 'Cancelling…' : 'Yes, cancel at period end'}
+                  </button>
+                  <button onClick={() => { setCancelState('idle'); setCancelMsg('') }} style={ghostBtn}>
+                    Keep subscription
+                  </button>
+                </div>
+                {cancelState === 'error' && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#ff6b6b' }}>{cancelMsg}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.5, flex: 1, minWidth: 220 }}>
+                  Cancel anytime. Access remains active until the end of your current billing cycle.
+                </div>
+                <button onClick={() => setCancelState('confirming')} style={ghostBtn}>
+                  Cancel subscription
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Invoice history */}
         <h2 style={sectionHeadingStyle}>Invoices</h2>
@@ -196,8 +291,23 @@ const ghostBtn = {
   borderRadius: 999,
   border: '1px solid var(--border)',
   color: 'var(--text)',
+  background: 'transparent',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
   textDecoration: 'none',
   whiteSpace: 'nowrap',
+}
+const dangerBtn = {
+  fontSize: 12,
+  padding: '8px 14px',
+  borderRadius: 999,
+  border: '1px solid #ff4d6d',
+  background: 'rgba(255,77,109,0.10)',
+  color: '#ff4d6d',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  whiteSpace: 'nowrap',
+  fontWeight: 500,
 }
 
 // ---------- SUCCESS ------------------------------------------------
