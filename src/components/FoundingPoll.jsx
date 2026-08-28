@@ -410,7 +410,9 @@ export default function FoundingPoll() {
         {/* Countdown */}
         <div className={`cue-notch-view cue-notch-locked ${isCountdown ? 'is-on' : ''}`}>
           <span ref={isCountdown ? chipTextRef : null}>
-            Explore first — I&apos;ll ping you shortly &nbsp;·&nbsp; {secondsLeft}s
+            <span className="cue-notch-long-text">Explore Cue · </span>
+            <span className="cue-notch-short-text">Cue · </span>
+            {secondsLeft}s
           </span>
         </div>
 
@@ -420,7 +422,8 @@ export default function FoundingPoll() {
         <div className={`cue-notch-view cue-notch-compact ${isReady ? 'is-on' : ''}`}>
           <span className="cue-notch-dot" />
           <span ref={isReady ? chipTextRef : null} className="cue-notch-compact-text">
-            Take your time — tap here to answer
+            <span className="cue-notch-long-text">Take your time — tap here to answer</span>
+            <span className="cue-notch-short-text">Quick question</span>
           </span>
         </div>
 
@@ -854,23 +857,25 @@ export default function FoundingPoll() {
           letter-spacing: -0.01em;
         }
 
+        /* Desktop shows the full-sentence chip. Mobile swaps to a
+           tighter two-word version so it can't hide the Pricing /
+           Login pills in the top nav. */
+        .cue-notch-short-text { display: none; }
+
         @media (max-width: 720px) {
-          /* On mobile the top row already has Pricing / Login pills.
-             Shrink the notch to a discreet chip so it never overlays
-             them — smaller text, tighter padding, capped width so it
-             sits neatly in the free space between them. */
-          .cue-notch.is-active {
-            min-width: 0;
-          }
+          .cue-notch-long-text { display: none; }
+          .cue-notch-short-text { display: inline; }
+
+          .cue-notch.is-active { min-width: 0; }
           .cue-notch-compact,
           .cue-notch-locked {
-            font-size: 11.5px;
-            padding: 0 12px;
-            gap: 6px;
+            font-size: 10.5px;
+            padding: 0 10px;
+            gap: 5px;
           }
-          .cue-notch-dot { width: 6px; height: 6px; }
-          .cue-notch.is-active { height: 34px; }
-          .cue-notch { border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
+          .cue-notch-dot { width: 5px; height: 5px; box-shadow: 0 0 0 2px rgba(59,130,246,0.16); }
+          .cue-notch.is-active { height: 28px; }
+          .cue-notch { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
           .cue-notch-curve { display: none; }
           .cue-notch.is-expanded {
             width: calc(100vw - 24px); max-width: 400px; height: 540px;
