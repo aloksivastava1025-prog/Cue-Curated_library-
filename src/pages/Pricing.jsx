@@ -338,6 +338,7 @@ export default function Pricing() {
                 features={[
                   'Full library unlocked',
                   'Works with Framer, Bolt, v0, Cursor',
+                  '15 prompt copies per month · need more? DM Alok on X',
                   'New drops every week — while active',
                   'Cancel anytime — access until cycle end',
                   'Personal use only',

@@ -147,20 +147,32 @@ export default function Modal({ item, onClose, showToast }) {
   // the modal changes user/item so the number stays honest.
   const [dailyRemaining, setDailyRemaining] = useState(null); // null = unknown/loading, -1 = unlimited
   const [dailyResetAt, setDailyResetAt] = useState(null); // ISO timestamp for countdown
+  // 'free' | 'monthly' | 'lifetime' | 'team' — surfaces which quota
+  // rule is in play so we can render the right footer message.
+  const [copyTier, setCopyTier] = useState(null);
+  const [copyLimit, setCopyLimit] = useState(null);
   useEffect(() => {
     let alive = true;
-    if (!isSignedIn || !user?.id || isCuePlus) {
-      setDailyRemaining(isCuePlus ? -1 : null);
+    if (!isSignedIn || !user?.id) {
+      setDailyRemaining(null);
       setDailyResetAt(null);
+      setCopyTier(null);
+      setCopyLimit(null);
       return;
     }
+    // We call peek for every signed-in user (including Cue+) because
+    // monthly subscribers are cue_plus but have a 15/cycle cap. The
+    // RPC returns tier='lifetime'/'team' with remaining=-1 for the
+    // truly unlimited plans, so the UI logic below stays clean.
     backend.peekDailyCopy(user.id)
       .then((r) => {
         if (!alive) return;
         setDailyRemaining(r?.remaining ?? null);
         setDailyResetAt(r?.reset_at || null);
+        setCopyTier(r?.tier || null);
+        setCopyLimit(r?.limit ?? null);
       })
-      .catch(() => { if (alive) setDailyRemaining(null); });
+      .catch(() => { if (alive) { setDailyRemaining(null); setCopyTier(null); } });
     return () => { alive = false; };
   }, [isSignedIn, user?.id, isCuePlus, item?.id]);
 
@@ -178,10 +190,12 @@ export default function Modal({ item, onClose, showToast }) {
   // without a hard reload. Also fires once when the countdown
   // reaches zero.
   useEffect(() => {
-    if (!isSignedIn || !user?.id || isCuePlus) return;
+    if (!isSignedIn || !user?.id) return;
     const refetch = () => {
       backend.peekDailyCopy(user.id).then((r) => {
         setDailyRemaining(r?.remaining ?? null);
+        setCopyTier(r?.tier || null);
+        setCopyLimit(r?.limit ?? null);
         if (r?.reset_at) setDailyResetAt(r.reset_at);
         else if ((r?.remaining ?? 0) > 0) setDailyResetAt(null);
       }).catch(() => {});
@@ -193,7 +207,7 @@ export default function Modal({ item, onClose, showToast }) {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
     };
-  }, [isSignedIn, user?.id, isCuePlus]);
+  }, [isSignedIn, user?.id]);
 
   const resetCountdown = useMemo(() => {
     // No explicit reset_at? Fall back to a safe generic. The RPC
@@ -263,20 +277,28 @@ export default function Modal({ item, onClose, showToast }) {
       return;
     }
 
-    // Free-tier gate — only "prompt" copies count against the daily
-    // limit (code + use_case are unrestricted for free users, but
-    // premium items are already paywalled upstream).
-    if (!isCuePlus && which === 'prompt') {
+    // Quota gate — every "prompt" copy for a signed-in user is
+    // recorded so the free (2/day) and monthly (15/cycle) caps
+    // both flow through the same RPC. Lifetime and Team plans
+    // still bounce off the "unlimited" branch at the top of the
+    // RPC and never touch a counter.
+    if (which === 'prompt') {
       try {
         const r = await backend.recordDailyCopy(user.id);
         setDailyRemaining(r?.remaining ?? null);
+        if (r?.tier) setCopyTier(r.tier);
+        if (typeof r?.limit === 'number') setCopyLimit(r.limit);
         // Capture reset_at from the record response too — the peek
         // call at modal open returns no reset_at for a fresh window
         // (nothing to reset yet), so this is the only reliable
         // source once the user actually starts consuming copies.
         if (r?.reset_at) setDailyResetAt(r.reset_at);
         if (r && r.allowed === false) {
-          if (showToast) showToast('Free daily limit reached — upgrade to Cue+ for unlimited.');
+          if (r?.tier === 'monthly') {
+            if (showToast) showToast('Monthly limit reached — DM Alok on X for more.');
+          } else {
+            if (showToast) showToast('Free daily limit reached — upgrade to Cue+ for unlimited.');
+          }
           import('../lib/analytics.js').then(({ events }) => events.dailyLimitHit());
           setCopied(which);
           setTimeout(() => setCopied((c) => (c === which ? null : c)), 1600);
@@ -533,6 +555,8 @@ export default function Modal({ item, onClose, showToast }) {
               isSignedIn={isSignedIn}
               isCuePlus={isCuePlus}
               dailyRemaining={dailyRemaining}
+              copyTier={copyTier}
+              copyLimit={copyLimit}
               resetCountdown={resetCountdown}
             />
           )}
@@ -553,7 +577,7 @@ export default function Modal({ item, onClose, showToast }) {
 
 // ---------------------------------------------------------------------------
 // Free item: Code / Prompt / Use Case tabs
-function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn, isCuePlus, dailyRemaining, resetCountdown }) {
+function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeText, promptText, useCaseText, copied, onCopy, isSignedIn, isCuePlus, dailyRemaining, copyTier, copyLimit, resetCountdown }) {
   const TABS = [
     { key: 'code',     label: 'Code',     present: hasCode },
     { key: 'prompt',   label: 'Prompt',   present: hasPrompt },
@@ -572,8 +596,13 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
   // hide the actual text — otherwise the daily limit is trivially
   // bypassed by manual select-copy from the modal body.
   const isPromptTab = active === 'prompt';
+  // Copy is blocked either because the free user hit their 2/day cap
+  // (outOfFree) OR because the monthly Cue+ user has used all 15
+  // prompts in their current billing cycle (outOfMonthly). The two
+  // states share the paywall gutter but show different CTAs.
   const outOfFree = isSignedIn && !isCuePlus && isPromptTab && dailyRemaining === 0;
-  const blockContent = (!isSignedIn && !isEmpty) || outOfFree;
+  const outOfMonthly = isSignedIn && isCuePlus && copyTier === 'monthly' && dailyRemaining === 0;
+  const blockContent = (!isSignedIn && !isEmpty) || outOfFree || outOfMonthly;
 
   const activeLabel = TABS.find((t) => t.key === active)?.label || active;
 
@@ -804,9 +833,20 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
                 {2 - dailyRemaining} of 2 free prompt copies used today
               </div>
             )}
+            {isSignedIn && isCuePlus && copyTier === 'monthly' && isPromptTab && typeof dailyRemaining === 'number' && dailyRemaining > 0 && (
+              <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
+                {(copyLimit || 15) - dailyRemaining} of {copyLimit || 15} monthly copies used
+              </div>
+            )}
             {outOfFree && (
               <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--text-dim)', textAlign: 'center' }}>
                 Daily limit reached{resetCountdown ? ` — resets in ${resetCountdown}` : ''}
+              </div>
+            )}
+            {outOfMonthly && (
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.20)', fontSize: 12, color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.5 }}>
+                You&apos;ve used all {copyLimit || 15} monthly copies. Need more?{' '}
+                <a href="https://x.com/Alok619308" target="_blank" rel="noreferrer noopener" style={{ color: 'var(--electric)', textDecoration: 'none', fontWeight: 500 }}>DM Alok on X →</a>
               </div>
             )}
           </>
