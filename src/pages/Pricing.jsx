@@ -330,7 +330,7 @@ export default function Pricing() {
                   <button
                     onClick={startMonthlyCheckout}
                     disabled={monthlyBusy}
-                    style={{ ...btnGhost, opacity: monthlyBusy ? 0.6 : 1, cursor: monthlyBusy ? 'wait' : 'pointer' }}
+                    style={{ ...btnPrimary, opacity: monthlyBusy ? 0.6 : 1, cursor: monthlyBusy ? 'wait' : 'pointer' }}
                   >
                     {monthlyBusy ? 'Opening checkout…' : 'Start monthly'}
                   </button>
