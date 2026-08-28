@@ -102,6 +102,18 @@ const COMMITS = [
   { key: 'no',    label: 'No — still not for me' },
 ]
 
+// Concrete supply-side follow-up — only fires when Q1 = "not
+// enough components yet". Gives us the ideal-count target for
+// the picked category so the roadmap has a number attached.
+const IDEAL_COUNTS = [
+  { key: 'sub_10',  label: 'Under 10 more' },
+  { key: '10_25',   label: '10–25 more' },
+  { key: '25_50',   label: '25–50 more' },
+  { key: '50_100',  label: '50–100 more' },
+  { key: '100_up',  label: 'More than 100' },
+  { key: 'no_clue', label: 'Not sure, honestly' },
+]
+
 export default function FoundingPoll() {
   const { isSignedIn, isLoaded } = useUser()
   // 'hidden' | 'countdown' | 'ready' | 'q1' | 'q2' | 'q3' | 'email' | 'thanks' | 'gone'
@@ -304,6 +316,13 @@ export default function FoundingPoll() {
     }
     setAnswers((a) => ({ ...a, q2: opt.key }))
     recordStep(`q2:${answers.blocker}`, opt.key)
+    // Extra follow-up for "need more components" — ask how many
+    // would be ideal so we have a concrete supply-side target,
+    // not just "more".
+    if (answers.blocker === 'need_more_components') {
+      setState('q2b')
+      return
+    }
     setState('q3')
   }
 
@@ -319,6 +338,12 @@ export default function FoundingPoll() {
     const trimmed = q2Text.trim().slice(0, 500)
     setAnswers((a) => ({ ...a, q2Text: trimmed }))
     recordStep(`q2:${answers.blocker}`, null, trimmed || null)
+    setState('q3')
+  }
+
+  const answerQ2b = (opt) => {
+    setAnswers((a) => ({ ...a, q2b: opt.key }))
+    recordStep('q2b:ideal_count', opt.key)
     setState('q3')
   }
 
@@ -356,7 +381,12 @@ export default function FoundingPoll() {
   // Back navigation
   const goBack = () => {
     if (state === 'q2') setState('q1')
-    else if (state === 'q3') setState('q2')
+    else if (state === 'q2b') setState('q2')
+    else if (state === 'q3') {
+      // If they came from the ideal-count follow-up, drop them
+      // back there — not one step further to the category picker.
+      setState(answers.blocker === 'need_more_components' ? 'q2b' : 'q2')
+    }
     else if (state === 'email') setState('q3')
   }
 
@@ -381,11 +411,17 @@ export default function FoundingPoll() {
 
   const isCountdown = state === 'countdown'
   const isReady = state === 'ready'
-  const inSurvey = state === 'q1' || state === 'q2' || state === 'q3' || state === 'email'
+  const inSurvey = state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email'
   const thanks = state === 'thanks'
 
   // Pips: 4 slots for q1, q2, q3, email
-  const stepIndex = state === 'q1' ? 0 : state === 'q2' ? 1 : state === 'q3' ? 2 : state === 'email' ? 3 : -1
+  // q2b (the "ideal count" follow-up for need_more_components) shares
+  // the second pip with q2 so the progress bar doesn't visually
+  // regress when the extra step fires.
+  const stepIndex = state === 'q1' ? 0
+    : state === 'q2' || state === 'q2b' ? 1
+    : state === 'q3' ? 2
+    : state === 'email' ? 3 : -1
 
   const q2Config = answers.blocker ? Q2_MAP[answers.blocker] : null
   const q2IsText = q2Config?.type === 'text'
@@ -437,7 +473,7 @@ export default function FoundingPoll() {
         {inSurvey && (
           <div className="cue-notch-view cue-notch-poll is-on" ref={contentRef}>
             <div className="cue-notch-topbar">
-              {(state === 'q2' || state === 'q3' || state === 'email') ? (
+              {(state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email') ? (
                 <button type="button" className="cue-notch-back" aria-label="Back" onClick={goBack}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   Back
@@ -533,6 +569,27 @@ export default function FoundingPoll() {
                   </div>
                 )}
                 <div className="cue-notch-foot">2 of 3</div>
+              </>
+            )}
+
+            {state === 'q2b' && (
+              <>
+                <div className="cue-notch-title">
+                  How many more would feel like enough to join?
+                </div>
+                <div className="cue-notch-options">
+                  {IDEAL_COUNTS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      className="cue-notch-option"
+                      onClick={() => answerQ2b(opt)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="cue-notch-foot">Almost there · one tap for the number</div>
               </>
             )}
 
@@ -895,7 +952,7 @@ export default function FoundingPoll() {
 }
 
 function inSurveyRef(state) {
-  return state === 'q1' || state === 'q2' || state === 'q3' || state === 'email'
+  return state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email'
 }
 
 function getSessionId() {
