@@ -55,6 +55,7 @@ const isImage = (src) => !!src && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(sr
 
 export default function Modal({ item, onClose, showToast }) {
   const { user, isSignedIn } = useUser();
+  const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com', 'aloks.int@teachforindia.org'].includes(user?.primaryEmailAddress?.emailAddress);
   const clerk = useClerk();
   const { openAuth } = useAuth();
   const { bookmarkedIds, likedIds, toggleBookmark, toggleLike, registerView } = useApp();
@@ -484,7 +485,9 @@ export default function Modal({ item, onClose, showToast }) {
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
                 <span>{isLiked ? 'Liked' : 'Like'}</span>
-                <span style={{ opacity: 0.7 }}>· {formatCount(item.like_count)}</span>
+                {isAdmin && (
+                  <span style={{ opacity: 0.7 }}>· {formatCount(item.like_count)}</span>
+                )}
               </button>
 
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 999, fontSize: 12, color: 'var(--text-dim)' }} title="Views">

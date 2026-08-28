@@ -362,7 +362,11 @@ export default function EditorialCard({ item, setSelectedItem }) {
               <svg viewBox="0 0 24 24" width="16" height="16" fill={isLiked ? '#ff4d6d' : 'none'} stroke={isLiked ? '#ff4d6d' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: likeAnim ? 'scale(1.35)' : 'scale(1)', transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)' }} aria-hidden="true">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
-              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.02em', minWidth: 8 }}>{formatCount(item.like_count)}</span>
+              {/* Like count admin-only for the same reason view count is —
+                  early low numbers anchor perceived popularity down. */}
+              {isAdmin && (
+                <span title="Likes (admin only)" style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.02em', minWidth: 8 }}>{formatCount(item.like_count)}</span>
+              )}
             </button>
             {/* Views (admin-only — regular users never see the traffic
                 signal, which prevents anchoring on early-days low counts). */}
