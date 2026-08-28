@@ -162,7 +162,15 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Geist:wght@400;500;600;700&family=Instrument+Serif:wght@400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <!--
+      Hero serif (Fraunces) is loaded with display=block so the
+      giant italic word never flashes as a bold Georgia fallback
+      before the real font arrives — the block window is short
+      and much cleaner visually. Body fonts still use swap so text
+      is legible immediately.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=block" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Geist:wght@400;500;600;700&family=Instrument+Serif:wght@400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
   </head>
   <body>
     <div id="root"></div>
