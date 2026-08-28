@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useApp } from '../context/AppContext.jsx'
 
 /**
  * FounderDock — a small persistent floating avatar of the founder
@@ -26,6 +27,13 @@ const FOUNDER_NAME = 'Alok'
 const HINT_DISMISSED_KEY = 'cue.founder.hint.dismissed'
 
 export default function FounderDock() {
+  const { allPrompts } = useApp()
+  // Round the live count down to the nearest 5 so the dock reads as
+  // "75+", "80+", "85+" instead of an oddly specific "83+". Every
+  // drop from the admin panel updates this automatically the next
+  // time the client fetches the library.
+  const componentCount = Math.floor(((allPrompts?.length) || 0) / 5) * 5
+  const componentLabel = componentCount > 0 ? `${componentCount}+` : '75+'
   const [expanded, setExpanded] = useState(false)
   const [hintVisible, setHintVisible] = useState(() => {
     try { return localStorage.getItem(HINT_DISMISSED_KEY) !== '1' } catch { return true }
@@ -143,7 +151,7 @@ export default function FounderDock() {
 
           <div className="cue-founder-stats">
             <div className="cue-founder-stat">
-              <div className="cue-founder-stat-value">75+</div>
+              <div className="cue-founder-stat-value">{componentLabel}</div>
               <div className="cue-founder-stat-label">Components</div>
             </div>
             <div className="cue-founder-stat">
