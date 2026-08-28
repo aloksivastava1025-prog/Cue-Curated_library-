@@ -102,6 +102,19 @@ const COMMITS = [
   { key: 'no',    label: 'No — still not for me' },
 ]
 
+// Human-readable name for the category the user picked in Q2
+// (need_more_components branch). Used to render the Q2b title so
+// it reads "how many more Text components..." rather than a
+// vague "how many more".
+const CATEGORY_LABEL = {
+  text:    'text-animation',
+  hero:    'hero',
+  webgl:   'WebGL / 3D',
+  cards:   'card & grid',
+  buttons: 'button & micro-interaction',
+  pages:   'full-page-flow',
+}
+
 // Concrete supply-side follow-up — only fires when Q1 = "not
 // enough components yet". Gives us the ideal-count target for
 // the picked category so the roadmap has a number attached.
@@ -119,7 +132,7 @@ export default function FoundingPoll() {
   // 'hidden' | 'countdown' | 'ready' | 'q1' | 'q2' | 'q3' | 'email' | 'thanks' | 'gone'
   const [state, setState] = useState('hidden')
   const [secondsLeft, setSecondsLeft] = useState(TRIGGER_SECONDS)
-  const [answers, setAnswers] = useState({ blocker: null, q2: null, q2Text: '', commit: null, email: '' })
+  const [answers, setAnswers] = useState({ blocker: null, q2: null, q2Text: '', q2b: null, commit: null, email: '' })
   const [q2Text, setQ2Text] = useState('')
   const [emailText, setEmailText] = useState('')
   // When an option row is "prompt" (like the "Something else" row
@@ -350,14 +363,10 @@ export default function FoundingPoll() {
   const answerQ3 = (opt) => {
     setAnswers((a) => ({ ...a, commit: opt.key }))
     recordStep('commit', opt.key)
-    if (opt.key === 'yes') {
-      // Ready-to-buy → route to pricing immediately.
-      try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
-      try { localStorage.removeItem(PROGRESS_KEY) } catch {}
-      setState('gone')
-      window.location.hash = '#/pricing'
-      return
-    }
+    // Every commit answer routes through the contact step first.
+    // Yes-buyers still land on the pricing page — but only AFTER
+    // they leave a way for Alok to reach them, so a hot lead is
+    // never lost to a redirect.
     setState('email')
   }
 
@@ -369,6 +378,14 @@ export default function FoundingPoll() {
     recordStep('contact', null, clean || null)
     try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
     try { localStorage.removeItem(PROGRESS_KEY) } catch {}
+    // If they said "yes I'd join" earlier, send them to pricing
+    // AFTER contact info is captured — so a converting lead is
+    // never lost to the redirect.
+    if (answers.commit === 'yes') {
+      setState('gone')
+      window.location.hash = '#/pricing'
+      return
+    }
     setState('thanks')
     setTimeout(() => setState('gone'), 2000)
   }
@@ -577,7 +594,7 @@ export default function FoundingPoll() {
             {state === 'q2b' && (
               <>
                 <div className="cue-notch-title">
-                  How many more would feel like enough to join?
+                  How many more components would tip you in?
                 </div>
                 <div className="cue-notch-options">
                   {IDEAL_COUNTS.map((opt) => (
