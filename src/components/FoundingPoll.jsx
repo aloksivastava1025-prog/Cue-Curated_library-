@@ -362,9 +362,11 @@ export default function FoundingPoll() {
   }
 
   const submitEmail = () => {
-    const clean = emailText.trim().slice(0, 100)
+    // Renamed conceptually to "contact" — accepts email, @handle,
+    // LinkedIn URL, anything the user wants to be reached at.
+    const clean = emailText.trim().slice(0, 120)
     setAnswers((a) => ({ ...a, email: clean }))
-    recordStep('email', null, clean || null)
+    recordStep('contact', null, clean || null)
     try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
     try { localStorage.removeItem(PROGRESS_KEY) } catch {}
     setState('thanks')
@@ -616,23 +618,23 @@ export default function FoundingPoll() {
 
             {state === 'email' && (
               <>
-                <div className="cue-notch-title">Leave your email — I&apos;ll reply personally.</div>
+                <div className="cue-notch-title">How can I reach you?</div>
                 <div className="cue-notch-subtitle">
-                  If what you asked for is genuinely useful, I ship it within 24 hours and tag you when it&apos;s live on Cue.
+                  Email, X handle, LinkedIn, whatever you prefer. If what you asked for is genuinely useful, I ship it within 24 hours and ping you when it&apos;s live on Cue.
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   className="cue-notch-input"
-                  placeholder="your@email.com"
+                  placeholder="you@email.com  ·  @yourhandle  ·  linkedin.com/in/…"
                   value={emailText}
-                  onChange={(e) => setEmailText(e.target.value.slice(0, 100))}
+                  onChange={(e) => setEmailText(e.target.value.slice(0, 120))}
                   autoFocus
                 />
                 <div className="cue-notch-actions">
                   <button
                     type="button"
                     onClick={submitEmail}
-                    disabled={!emailText.includes('@')}
+                    disabled={emailText.trim().length < 3}
                     className="cue-notch-submit"
                   >
                     Send to Alok →
