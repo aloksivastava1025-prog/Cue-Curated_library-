@@ -728,17 +728,9 @@ function MainApp() {
           <div style={{ marginTop: '24px', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '26px', color: 'var(--text)' }}>
             New drop <span style={{ color: 'var(--electric)' }}>today</span>
           </div>
-          <div style={{ margin: '40px auto 0', maxWidth: '580px', fontSize: '14px', color: 'var(--text-dim)', lineHeight: 1.65 }}>
-            <p style={{ margin: 0, color: 'var(--text)', fontSize: '16px', fontWeight: 500 }}>
-              The best web interactions, all in one place.
-            </p>
-            <p style={{ margin: '14px 0 0' }}>
-              From Awwwards &amp; CollectUI to the best creative work shared across X — discover premium interactions, then get the code + prompt to recreate them in your own project.
-            </p>
-            <p style={{ margin: '18px 0 0', fontStyle: 'italic', color: 'var(--electric)', fontSize: '13.5px', letterSpacing: '0.01em' }}>
-              See it. Copy it. Build it.
-            </p>
-          </div>
+          <p style={{ margin: '36px auto 0', maxWidth: '580px', fontSize: '14.5px', color: 'var(--text-dim)', lineHeight: 1.65 }}>
+            The best web interactions — from Awwwards, CollectUI and X — with the code + prompt to recreate them in your own project.
+          </p>
           <WaitlistCTA source="newsletter-hero" />
         </div>
       </section>
