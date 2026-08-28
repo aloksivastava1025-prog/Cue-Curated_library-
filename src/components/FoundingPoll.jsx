@@ -854,9 +854,29 @@ export default function FoundingPoll() {
           letter-spacing: -0.01em;
         }
 
-        @media (max-width: 480px) {
-          .cue-notch { width: 300px; }
-          .cue-notch.is-expanded { width: calc(100vw - 24px); max-width: 400px; height: 540px; }
+        @media (max-width: 720px) {
+          /* On mobile the top row already has Pricing / Login pills.
+             Shrink the notch to a discreet chip so it never overlays
+             them — smaller text, tighter padding, capped width so it
+             sits neatly in the free space between them. */
+          .cue-notch.is-active {
+            min-width: 0;
+          }
+          .cue-notch-compact,
+          .cue-notch-locked {
+            font-size: 11.5px;
+            padding: 0 12px;
+            gap: 6px;
+          }
+          .cue-notch-dot { width: 6px; height: 6px; }
+          .cue-notch.is-active { height: 34px; }
+          .cue-notch { border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
+          .cue-notch-curve { display: none; }
+          .cue-notch.is-expanded {
+            width: calc(100vw - 24px); max-width: 400px; height: 540px;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+          }
         }
       `}</style>
     </div>
