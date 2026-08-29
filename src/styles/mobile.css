@@ -40,6 +40,13 @@
   .cue-nav-pricing {
     display: none !important;
   }
+  .cue-nav-hire-inline {
+    /* On mobile the nav is already carrying the count, Suggest,
+       bell, menu, avatar — adding the Hire me chip makes the row
+       wrap. Keep desktop-only; mobile users still reach it from
+       the hero pill, FounderDock, and footer. */
+    display: none !important;
+  }
   .cue-nav-suggest {
     display: none !important;
   }
