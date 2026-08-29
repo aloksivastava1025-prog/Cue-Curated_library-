@@ -683,7 +683,13 @@ function MainApp() {
                   ? couponLabel.text
                   : foundingFilled
                     ? 'Founding closed — launch pricing live'
-                    : `${spotsLeft} founding spots left · $99 lifetime`}
+                    : (
+                      <>
+                        {spotsLeft} founding spots left ·{' '}
+                        <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
+                        $49 lifetime
+                      </>
+                    )}
               </span>
             </a>
           </div>
