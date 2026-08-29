@@ -1113,7 +1113,7 @@ function useCouponHeroLabel() {
   const chip = `${pad(h)}:${pad(m)}:${pad(s)}`;
   return {
     chip,
-    text: 'Find the coupon today — $50 off',
+    text: 'Find the coupon today — 50% off',
     _tick: tick,
   };
 }

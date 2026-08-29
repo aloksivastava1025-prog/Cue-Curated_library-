@@ -97,27 +97,27 @@ export default function Pricing() {
   const [couponInput, setCouponInput] = useState('')
   const [couponApplied, setCouponApplied] = useState('')
 
-  // CUE49 is a flat $50-off code created on Dodo in USD. On the INR
-  // storefront Dodo's currency conversion has been producing a broken
-  // final price (~₹229 in testing) instead of a clean ~₹4,000 knock-off,
-  // so we hide the coupon input and reject the code entirely on the INR
-  // view. USD users only for now.
-  const couponEligible = P.sym === '$'
+  // CUE49 is a 50%-off percentage code on Dodo. Works cleanly across
+  // both USD and INR because Dodo applies the percentage on the
+  // localised price, so we can render the discount natively in either
+  // currency without a broken FX conversion.
+  const couponEligible = true
   const isCue49 = couponEligible && couponApplied === 'CUE49'
   const foundingNumericForCue49 = Number(String(P.founding).replace(/,/g, '')) || 0
-  const cue49Off = 50
+  const cue49Pct = 50
+  const cue49AmountOff = Math.round((foundingNumericForCue49 * cue49Pct) / 100)
   const cue49Display = isCue49
     ? {
         isCue49: true,
-        price: `${P.sym}${Math.max(0, foundingNumericForCue49 - cue49Off).toLocaleString('en-US')}`,
+        price: `${P.sym}${Math.max(0, foundingNumericForCue49 - cue49AmountOff).toLocaleString('en-US')}`,
         crossed: `${P.sym}${P.founding}`,
-        offLabel: `${P.sym}${cue49Off}`,
+        offLabel: `${cue49Pct}%`,
       }
     : {
         isCue49: false,
         price: `${P.sym}${P.founding}`,
         crossed: `${P.sym}${P.crossed}`,
-        offLabel: `${P.sym}${cue49Off}`,
+        offLabel: `${cue49Pct}%`,
       }
 
   async function startFoundingCheckout() {
