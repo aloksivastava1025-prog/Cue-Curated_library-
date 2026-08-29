@@ -900,7 +900,7 @@ function MainApp() {
             // eye reads "there's more here" but no card is actually
             // readable, and a centered sign-in CTA sits on top. Signed
             // -in users see the full grid unblurred.
-            const ANON_GRID_LIMIT = 9;
+            const ANON_GRID_LIMIT = 12;
             const TEASE_COUNT = 6;
             const shownItems = isSignedIn ? visiblePrompts : visiblePrompts.slice(0, ANON_GRID_LIMIT);
             const teaseItems = isSignedIn ? [] : visiblePrompts.slice(ANON_GRID_LIMIT, ANON_GRID_LIMIT + TEASE_COUNT);
