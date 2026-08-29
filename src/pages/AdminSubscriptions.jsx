@@ -100,9 +100,27 @@ export default function AdminSubscriptions() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>All rows</div>
-        <button onClick={load} disabled={loading} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => exportAsCsv(rows)}
+            disabled={loading || rows.length === 0}
+            title="Download every row as CSV — Cue's insurance policy: if the app is ever gone you still have every founding-member record."
+            style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: 6, cursor: rows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 12, opacity: rows.length === 0 ? 0.5 : 1 }}
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => exportAsJson(rows)}
+            disabled={loading || rows.length === 0}
+            title="Download every row as JSON — full field fidelity, machine-readable."
+            style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: 6, cursor: rows.length === 0 ? 'not-allowed' : 'pointer', fontSize: 12, opacity: rows.length === 0 ? 0.5 : 1 }}
+          >
+            Export JSON
+          </button>
+          <button onClick={load} disabled={loading} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
@@ -147,6 +165,64 @@ export default function AdminSubscriptions() {
       </div>
     </div>
   )
+}
+
+// Insurance export: dump every row in the current view to a file the
+// admin can save. If Cue ever goes down, this is the single artifact
+// that preserves the founding-member roster with every field the
+// database has today. Zero server call — it works off the already-
+// loaded `rows` state so it's instant and offline-safe.
+function downloadBlob(filename, content, mime) {
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function todayStamp() {
+  const d = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function csvEscape(v) {
+  if (v == null) return ''
+  const s = String(v)
+  // RFC 4180 — quote if the value contains comma, quote or newline;
+  // escape internal quotes by doubling them.
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
+  return s
+}
+
+function exportAsCsv(rows) {
+  if (!rows || rows.length === 0) return
+  // Fixed column order: keep the columns explicit rather than
+  // Object.keys(rows[0]) so future backend changes don't silently
+  // reorder / drop fields.
+  const cols = [
+    'user_id', 'email', 'plan', 'plan_source',
+    'plan_started_at', 'plan_expires_at',
+    'dodo_customer_id', 'dodo_subscription_id',
+    'team_seats',
+  ]
+  const header = cols.join(',')
+  const body = rows.map((r) => cols.map((c) => csvEscape(r[c])).join(',')).join('\n')
+  downloadBlob(`cue-founding-members-${todayStamp()}.csv`, header + '\n' + body + '\n', 'text/csv;charset=utf-8')
+}
+
+function exportAsJson(rows) {
+  if (!rows || rows.length === 0) return
+  const payload = {
+    exported_at: new Date().toISOString(),
+    row_count: rows.length,
+    rows,
+  }
+  downloadBlob(`cue-founding-members-${todayStamp()}.json`, JSON.stringify(payload, null, 2), 'application/json')
 }
 
 function Stat({ label, value, accent }) {
