@@ -866,6 +866,21 @@ const supabaseAdapter = {
       if (m) buyerCountry = m[1]
     } catch { /* fall through to server default */ }
 
+    // Auto-apply CUE49 if the visitor unlocked the founding-hunt coupon
+    // within the last 24 hours. Server-side we only honour codes on our
+    // whitelist, so a spoofed flag can't smuggle in an arbitrary code.
+    let couponCode = ''
+    try {
+      const raw = localStorage.getItem('cue.coupon.unlocked')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        const at = parsed && typeof parsed.at === 'number' ? parsed.at : 0
+        if (at && Date.now() - at < 24 * 60 * 60 * 1000) {
+          couponCode = 'CUE49'
+        }
+      }
+    } catch { /* localStorage blocked or malformed — no coupon, no harm */ }
+
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: {
         plan_type: planType,
@@ -874,6 +889,7 @@ const supabaseAdapter = {
         customerName: name,
         userId: clerkUser.id,
         buyerCountry,
+        ...(couponCode ? { couponCode } : {}),
       },
     })
     if (error) {

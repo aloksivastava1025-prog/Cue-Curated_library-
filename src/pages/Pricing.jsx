@@ -349,6 +349,11 @@ export default function Pricing() {
         </div>
       </div>
 
+      {/* Discreet coupon hint — placed right under the plan cards
+          so anyone thinking "wait, was there a discount?" finds the
+          answer within one screen without hunting. */}
+      <CouponHintPill />
+
       {/* Founding manifesto */}
       <section style={{ padding: '80px 24px 96px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
         <div style={{
@@ -492,6 +497,115 @@ export default function Pricing() {
       <Footer />
 
       <MonthlyWaitlistModal open={monthlyOpen} onClose={() => setMonthlyOpen(false)} />
+    </div>
+  )
+}
+
+function CouponHintPill() {
+  const [open, setOpen] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '18px 24px 4px' }}>
+      <div
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          position: 'relative',
+          display: 'inline-flex', alignItems: 'center',
+          padding: 0,
+          background: 'transparent',
+          border: 'none',
+          cursor: 'help',
+          fontFamily: 'var(--font-sans, system-ui)',
+        }}
+        title="Still haven't found it?"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+          style={{ color: 'rgba(255,255,255,0.35)' }} aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="12" y1="17" x2="12.01" y2="17" strokeLinecap="round" />
+        </svg>
+        <span style={{
+          marginLeft: 8,
+          fontSize: 11.5,
+          color: 'rgba(255,255,255,0.35)',
+          letterSpacing: '0.01em',
+        }}>still looking?</span>
+
+        {/* Pops up above the ? on hover — small black card with the
+            code and a copy icon. Absolute-positioned so page flow
+            below isn't disturbed. */}
+        {open && (
+          <div style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 10px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#0a0a0a',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 10,
+            padding: '10px 12px',
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            boxShadow: '0 12px 28px rgba(0,0,0,0.55)',
+            whiteSpace: 'nowrap',
+            animation: 'cue-coupon-tip-in 180ms ease-out both',
+          }}>
+            <span style={{
+              fontFamily: 'SF Mono, ui-monospace, Menlo, monospace',
+              fontSize: 14, fontWeight: 700, letterSpacing: '0.08em',
+              color: '#fff',
+            }}>CUE49</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                try {
+                  navigator.clipboard?.writeText('CUE49')
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                } catch {}
+              }}
+              title="Copy code"
+              style={{
+                background: 'transparent', border: 'none',
+                color: copied ? '#22c55e' : 'rgba(255,255,255,0.55)',
+                cursor: 'pointer', padding: 2,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {copied ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                </svg>
+              )}
+            </button>
+            {/* Little triangle at bottom of tooltip */}
+            <span style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0, height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid #0a0a0a',
+            }} />
+          </div>
+        )}
+      </div>
+      <style>{`
+        @keyframes cue-coupon-tip-in {
+          from { opacity: 0; transform: translate(-50%, 6px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+      `}</style>
     </div>
   )
 }

@@ -27,6 +27,14 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
   const { isSignedIn } = useUser()
   const [visible, setVisible] = useState(false)
   const [dismissing, setDismissing] = useState(false)
+  // Live-ticking 24h coupon window countdown. Reads the same start
+  // timestamp the hero pill and the CouponTimer component use so
+  // everything shows the same number to the second.
+  const [timeLeft, setTimeLeft] = useState(() => readTimeLeft())
+  useEffect(() => {
+    const id = setInterval(() => setTimeLeft(readTimeLeft()), 1000)
+    return () => clearInterval(id)
+  }, [])
   // IDs of tiles whose image URL failed to load — hidden from render
   // so a stale/404 thumbnail doesn't leave a black square in the mosaic.
   const [brokenIds, setBrokenIds] = useState(() => new Set())
@@ -75,15 +83,16 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
     // sessionStorage clears when the tab closes, so a same-tab refresh
     // won't re-nag them, but a fresh visit tomorrow will still catch
     // returning anon users with a first-impression hit.
-    if (isSignedIn) {
-      let seen = false
-      try { seen = localStorage.getItem(STORAGE_KEY) === '1' } catch {}
-      if (seen) return
-    } else {
-      let seenSession = false
-      try { seenSession = sessionStorage.getItem(SESSION_KEY) === '1' } catch {}
-      if (seenSession) return
-    }
+    // Coupon hunt banner — show once, then wait ~3 hours before
+    // showing again on a return visit. Prevents nagging on refresh
+    // while still catching visitors who come back later in the day.
+    let couponUnlocked = false
+    try { couponUnlocked = !!localStorage.getItem('cue.coupon.unlocked') } catch {}
+    if (couponUnlocked) return
+    const REVISIT_QUIET_MS = 3 * 60 * 60 * 1000 // 3 hours
+    let lastShownAt = 0
+    try { lastShownAt = parseInt(localStorage.getItem('cue.welcome.shown_at') || '0', 10) || 0 } catch {}
+    if (lastShownAt && Date.now() - lastShownAt < REVISIT_QUIET_MS) return
     // Only fire once we have real thumbnails to render — otherwise the
     // mosaic would boot as six empty dark tiles, which was the "small
     // Text-only card" the user reported on first tests.
@@ -103,6 +112,9 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
     // Session flag for anon (refresh-safe), persistent flag for signed-in.
     try { sessionStorage.setItem(SESSION_KEY, '1') } catch {}
     try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
+    // Timestamp so the 3-hour revisit-quiet window on the coupon
+    // banner has something to check against.
+    try { localStorage.setItem('cue.welcome.shown_at', String(Date.now())) } catch {}
   }
 
   const dismiss = () => {
@@ -139,7 +151,7 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
           animation: cue-welcome-back-in 220ms ease-out;
         }
         .cue-welcome-panel {
-          width: 100%; max-width: 480px;
+          width: 100%; max-width: 380px;
           /* Metallic finish — subtle top-highlight → mid-tone body →
              bottom-shadow gradient layered under a hairline gradient
              border. Reads like a brushed chrome slab, not a flat card. */
@@ -187,8 +199,8 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
         .cue-welcome-mosaic {
           display: grid;
           grid-template-columns: 1fr 1fr 1fr;
-          gap: 6px;
-          padding: 16px 16px 8px 16px;
+          gap: 5px;
+          padding: 12px 12px 6px 12px;
           background: #0e0e10;
         }
         .cue-welcome-tile {
@@ -209,20 +221,41 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
           width: 100%; height: 100%; object-fit: cover; display: block;
         }
         .cue-welcome-body {
-          padding: 22px 24px 24px;
+          padding: 16px 20px 18px;
           text-align: left;
         }
         .cue-welcome-title {
           font-family: var(--font-sans);
-          color: #fff; font-size: 20px; font-weight: 600;
+          color: #fff; font-size: 17px; font-weight: 600;
           letter-spacing: -0.015em; line-height: 1.25;
-          margin: 0 0 8px 0;
+          margin: 0 0 6px 0;
         }
         .cue-welcome-title .dot { color: var(--electric); }
         .cue-welcome-sub {
           color: rgba(255,255,255,0.62);
-          font-size: 13.5px; line-height: 1.55;
-          margin: 0 0 20px 0; max-width: 340px;
+          font-size: 12.5px; line-height: 1.5;
+          margin: 0 0 14px 0; max-width: 340px;
+        }
+        .cue-welcome-timer {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(204,255,0,0.08);
+          border: 1px solid rgba(204,255,0,0.30);
+          font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+          font-size: 12px; font-weight: 600;
+          color: #ccff00;
+          letter-spacing: 0.04em;
+          margin-bottom: 14px;
+        }
+        .cue-welcome-timer-dot {
+          width: 6px; height: 6px; border-radius: 999px;
+          background: #ccff00;
+          animation: cue-welcome-timer-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes cue-welcome-timer-pulse {
+          0%, 100% { opacity: 0.35; }
+          50%      { opacity: 1; }
         }
         .cue-welcome-cta {
           display: inline-flex; align-items: center; gap: 8px;
@@ -304,15 +337,22 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
           {/* BODY */}
           <div className="cue-welcome-body">
             <h3 className="cue-welcome-title">
-              Welcome to Cue<span className="dot">.</span>
+              Something is hidden here<span className="dot">.</span>
             </h3>
+            <div className="cue-welcome-timer" aria-live="polite">
+              <span className="cue-welcome-timer-dot" />
+              <span>{formatTimeLeft(timeLeft)}</span>
+            </div>
             <p className="cue-welcome-sub">
-              Awwwards-tier components hand-picked for creatives.
-              Sign in to browse the full library.
+              Cue+ is $99 lifetime. But somewhere on this site, there&apos;s a coupon that drops it to $49.
+              <br /><br />
+              Explore with patience — Cue is known for its micro-interactions and Awwwards-tier components. Hints hide in plain sight.
+              <br /><br />
+              Two tries per browser. One per person. No account needed. Good luck 🎯
             </p>
             <div className="cue-welcome-actions">
               <button className="cue-welcome-cta" onClick={onPrimary}>
-                Explore free
+                Begin the hunt
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14M13 5l7 7-7 7" />
                 </svg>
@@ -340,4 +380,29 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
       </div>
     </>
   )
+}
+
+const COUPON_WINDOW_MS = 24 * 60 * 60 * 1000
+
+function readTimeLeft() {
+  try {
+    let start = parseInt(localStorage.getItem('cue.coupon.window.start') || '0', 10) || 0
+    if (!start) {
+      start = Date.now()
+      localStorage.setItem('cue.coupon.window.start', String(start))
+    }
+    return Math.max(0, start + COUPON_WINDOW_MS - Date.now())
+  } catch {
+    return COUPON_WINDOW_MS
+  }
+}
+
+function formatTimeLeft(ms) {
+  if (ms <= 0) return '00:00:00'
+  const totalSec = Math.floor(ms / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(h)}:${pad(m)}:${pad(s)} left`
 }

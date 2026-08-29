@@ -58,7 +58,17 @@ serve(async (req) => {
   try {
     // ---- §4.5: Validate input ----
     const body = await req.json()
-    const { plan_type, billing_cycle = 'lifetime', customerEmail, customerName, userId: bodyUserId } = body
+    const { plan_type, billing_cycle = 'lifetime', customerEmail, customerName, userId: bodyUserId, couponCode } = body
+
+    // Whitelist of discount codes we honour server-side. Client can ask
+    // for one but only a code in this set is forwarded to Dodo — anything
+    // else is silently dropped so a spoofed body can't slip in a code we
+    // didn't authorise. Dodo enforces the actual expiry / redemption cap.
+    const ALLOWED_COUPONS = new Set(['CUE49'])
+    const normalizedCoupon = typeof couponCode === 'string'
+      ? couponCode.trim().toUpperCase()
+      : ''
+    const discountCode = ALLOWED_COUPONS.has(normalizedCoupon) ? normalizedCoupon : null
 
     // Validate plan_type (the only two products we sell)
     const validPlans = new Set(['cue_plus', 'cue_plus_team'])
@@ -285,8 +295,8 @@ serve(async (req) => {
       },
     }
     const requestBody = isSubscription
-      ? { ...commonFields, product_id: productId, quantity: 1 }
-      : { ...commonFields, product_cart: [{ product_id: productId, quantity: 1 }] }
+      ? { ...commonFields, product_id: productId, quantity: 1, ...(discountCode ? { discount_code: discountCode } : {}) }
+      : { ...commonFields, product_cart: [{ product_id: productId, quantity: 1 }], ...(discountCode ? { discount_code: discountCode } : {}) }
 
     const isLive = Deno.env.get('DODO_ENV') === 'live'
     const baseUrl = isLive ? 'https://live.dodopayments.com' : 'https://test.dodopayments.com'

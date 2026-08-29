@@ -122,6 +122,10 @@ export default function FounderDock() {
           <span className="cue-founder-initials">{INITIALS}</span>
         )}
         <span className="cue-founder-online" aria-hidden="true" />
+        {/* Subtle gold pip — the ambient "there's something here"
+            signal that draws curious visitors to hover the avatar.
+            Sits above the online dot so both remain readable. */}
+        <span className="cue-founder-coupon-pip" aria-hidden="true" />
       </button>
 
       <div className="cue-founder-panel" role="menu" aria-hidden={!expanded}>
@@ -189,6 +193,26 @@ export default function FounderDock() {
               <span>Email</span>
             </a>
           </div>
+          {/* Coupon hint — the founding-rate CUE49 code lives here.
+              A small gold pip on the avatar draws the eye; hovering
+              onto this line reveals the code so users who bother to
+              open the card get rewarded. */}
+          <div className="cue-founder-coupon">
+            <span className="cue-founder-coupon-eyebrow">Founding rate · 24 hrs</span>
+            <button
+              type="button"
+              className="cue-founder-coupon-code"
+              onClick={() => {
+                try {
+                  navigator.clipboard?.writeText('CUE49')
+                } catch {}
+              }}
+              title="Click to copy"
+            >
+              CUE49
+            </button>
+            <span className="cue-founder-coupon-body">Click to copy · one per browser</span>
+          </div>
         </div>
       </div>
 
@@ -230,6 +254,18 @@ export default function FounderDock() {
           background: #22c55e;
           border: 2px solid #141416;
           box-shadow: 0 0 0 2px rgba(34,197,94,0.25);
+        }
+        .cue-founder-coupon-pip {
+          position: absolute; top: 1px; right: 1px;
+          width: 10px; height: 10px; border-radius: 999px;
+          background: #ccff00;
+          border: 2px solid #141416;
+          box-shadow: 0 0 0 2px rgba(204,255,0,0.25);
+          animation: cue-founder-coupon-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes cue-founder-coupon-pulse {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(204,255,0,0.20); }
+          50%      { box-shadow: 0 0 0 6px rgba(204,255,0,0.02); }
         }
 
         .cue-founder-hint {
@@ -373,6 +409,45 @@ export default function FounderDock() {
         .cue-founder-btn-secondary {
           background: #fff; color: #14110E;
           border: 1px solid rgba(20,17,14,0.15);
+        }
+        .cue-founder-coupon {
+          margin-top: 14px;
+          padding: 12px 12px 10px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, rgba(204,255,0,0.12), rgba(204,255,0,0.04));
+          border: 1px solid rgba(204,255,0,0.30);
+          display: flex; flex-direction: column; gap: 4px;
+        }
+        .cue-founder-coupon-eyebrow {
+          font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+          color: #6b8800; font-weight: 700;
+        }
+        .cue-founder-coupon-body {
+          font-size: 11.5px; color: rgba(20,17,14,0.75);
+          line-height: 1.45;
+        }
+        .cue-founder-coupon-body strong {
+          background: #14110E; color: #ccff00;
+          padding: 1px 6px; border-radius: 4px;
+          font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+          font-size: 10.5px; letter-spacing: 0.03em;
+        }
+        .cue-founder-coupon-code {
+          background: #14110E; color: #ccff00;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+          font-size: 15px; font-weight: 700;
+          letter-spacing: 0.08em;
+          cursor: pointer;
+          text-align: center;
+          margin: 4px 0 2px;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .cue-founder-coupon-code:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 14px -4px rgba(0,0,0,0.35);
         }
         .cue-founder-btn-secondary:hover {
           background: #f7f6f2;

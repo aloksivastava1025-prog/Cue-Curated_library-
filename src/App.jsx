@@ -22,6 +22,8 @@ import WaitlistCTA from './components/WaitlistCTA.jsx';
 import WelcomeCard from './components/WelcomeCard.jsx';
 import FounderDock from './components/FounderDock.jsx';
 import FoundingPoll from './components/FoundingPoll.jsx';
+import CouponToast from './components/CouponToast.jsx';
+import CouponTimer from './components/CouponTimer.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
@@ -162,6 +164,11 @@ function MainApp() {
   }, [isSignedIn, user?.id]);
   const isCuePlus = userPlan === 'cue_plus' || userPlan === 'cue_plus_team';
   const spotsLeft = Math.max(FOUNDING_CAP - foundingCount, 0);
+  // Hero pill flips to coupon-hunt copy while the 24-hour founding
+  // window is still open and the visitor hasn't already unlocked
+  // CUE49. The hook re-ticks internally every 30s so the chip
+  // counts down without needing an outer clock.
+  const couponLabel = useCouponHeroLabel();
   const foundingFilled = spotsLeft === 0;
 
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback, filter, updateFilter } = useApp();
@@ -666,16 +673,18 @@ function MainApp() {
                 padding: '2px 8px',                                          /* py-0.5 px-2 */
                 fontFamily: 'var(--font-sans)',
                 lineHeight: 1.4,
-              }}>Early Access</span>
+              }}>{couponLabel ? couponLabel.chip : 'Early Access'}</span>
               <span style={{
                 fontSize: 14, fontWeight: 500,                              /* text-sm font-medium */
                 color: 'rgba(255,255,255,0.90)',                            /* text-white/90 */
                 fontFamily: 'var(--font-sans)',
                 lineHeight: 1.4,
               }}>
-                {foundingFilled
-                  ? 'Founding closed — launch pricing live'
-                  : `${spotsLeft} founding spots left · $99 lifetime`}
+                {couponLabel
+                  ? couponLabel.text
+                  : foundingFilled
+                    ? 'Founding closed — launch pricing live'
+                    : `${spotsLeft} founding spots left · $99 lifetime`}
               </span>
             </a>
           </div>
@@ -737,6 +746,12 @@ function MainApp() {
             The best web interactions — from Awwwards, CollectUI and X — with the code + prompt to recreate them in your own project.
           </p>
           <WaitlistCTA source="newsletter-hero" />
+          {/* Subtle 24-hour founding-rate ticker — muted grey below
+              the CTA. Visible enough to notice, quiet enough to not
+              feel like a carnival banner. */}
+          <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
+            <CouponTimer />
+          </div>
         </div>
       </section>
 
@@ -1062,6 +1077,48 @@ function SortToggle({ value, onChange }) {
   );
 }
 
+// Hero-pill hook — returns { chip, text } while the founding-rate
+// window is live and the visitor hasn't unlocked the code yet.
+// Reads the same localStorage keys the coupon toast / timer /
+// pricing pill do so the whole hunt shares one source of truth.
+function useCouponHeroLabel() {
+  // Tick every second so the chip shows a live HH:MM:SS ticker.
+  // Cost is a single React re-render per second on the home route
+  // only — cheap enough not to matter, and the visual signal it
+  // gives (real countdown) is a stronger nudge than a stale minute.
+  const [tick, setTick] = React.useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => setTick((v) => v + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const WINDOW_MS = 24 * 60 * 60 * 1000;
+  let start = 0;
+  let unlocked = false;
+  try {
+    const raw = localStorage.getItem('cue.coupon.window.start');
+    if (raw) start = parseInt(raw, 10) || 0;
+    if (!start) {
+      start = Date.now();
+      localStorage.setItem('cue.coupon.window.start', String(start));
+    }
+    unlocked = !!localStorage.getItem('cue.coupon.unlocked');
+  } catch {}
+  if (unlocked) return null;
+  const remaining = Math.max(0, start + WINDOW_MS - Date.now());
+  if (remaining <= 0) return null;
+  const totalSec = Math.floor(remaining / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  const chip = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return {
+    chip,
+    text: 'Find the coupon today — $50 off',
+    _tick: tick,
+  };
+}
+
 function AppShell() {
   const { feedbackOpen, feedbackSource, closeFeedback } = useApp();
   const { authOpen, authMode, closeAuth } = useAuth();
@@ -1074,6 +1131,11 @@ function AppShell() {
           the user navigates between /pricing, /account, etc. Its
           own internal state gates when it renders. */}
       <FoundingPoll />
+      {/* Global coupon toast — mounted at the shell so the CUE49
+          discovery works on every route, and the toast surfaces
+          from the same place regardless of which page the user
+          was on when they typed the code. */}
+      <CouponToast />
       {/* Vercel Web Analytics — Vercel dashboard mein 'Enable' toggle
           on karna hai then data flow shuru. Zero-config beyond that,
           no cookies, no consent banner needed. */}
