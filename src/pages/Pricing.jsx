@@ -333,16 +333,19 @@ export default function Pricing() {
                     <>
                       <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
                       {couponEligible && (
-                        <CouponRow
-                          input={couponInput}
-                          applied={couponApplied}
-                          onInputChange={setCouponInput}
-                          onApply={() => {
-                            const code = couponInput.trim().toUpperCase()
-                            if (code) setCouponApplied(code)
-                          }}
-                          onClear={() => { setCouponApplied(''); setCouponInput('') }}
-                        />
+                        <>
+                          <CouponRow
+                            input={couponInput}
+                            applied={couponApplied}
+                            onInputChange={setCouponInput}
+                            onApply={() => {
+                              const code = couponInput.trim().toUpperCase()
+                              if (code) setCouponApplied(code)
+                            }}
+                            onClear={() => { setCouponApplied(''); setCouponInput('') }}
+                          />
+                          {!couponApplied && <CouponHintPill compact />}
+                        </>
                       )}
                     </>
                   )
@@ -393,10 +396,6 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* Discreet coupon hint — placed right under the plan cards
-          so anyone thinking "wait, was there a discount?" finds the
-          answer within one screen without hunting. */}
-      <CouponHintPill />
 
       {/* Founding manifesto */}
       <section style={{ padding: '80px 24px 96px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
@@ -545,7 +544,7 @@ export default function Pricing() {
   )
 }
 
-function CouponHintPill() {
+function CouponHintPill({ compact = false }) {
   const [copied, setCopied] = React.useState(false)
   const copy = () => {
     try {
@@ -555,7 +554,7 @@ function CouponHintPill() {
     } catch {}
   }
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '18px 24px 4px' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', padding: compact ? '8px 0 0' : '18px 24px 4px' }}>
       <button
         type="button"
         onClick={copy}
