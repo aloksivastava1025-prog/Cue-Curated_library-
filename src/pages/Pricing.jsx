@@ -96,13 +96,39 @@ export default function Pricing() {
   // are honoured server-side, so anything else is dropped silently.
   const [couponInput, setCouponInput] = useState('')
   const [couponApplied, setCouponApplied] = useState('')
+
+  // CUE49 is a flat $50-off code created on Dodo in USD. On the INR
+  // storefront Dodo's currency conversion has been producing a broken
+  // final price (~₹229 in testing) instead of a clean ~₹4,000 knock-off,
+  // so we hide the coupon input and reject the code entirely on the INR
+  // view. USD users only for now.
+  const couponEligible = P.sym === '$'
+  const isCue49 = couponEligible && couponApplied === 'CUE49'
+  const foundingNumericForCue49 = Number(String(P.founding).replace(/,/g, '')) || 0
+  const cue49Off = 50
+  const cue49Display = isCue49
+    ? {
+        isCue49: true,
+        price: `${P.sym}${Math.max(0, foundingNumericForCue49 - cue49Off).toLocaleString('en-US')}`,
+        crossed: `${P.sym}${P.founding}`,
+        offLabel: `${P.sym}${cue49Off}`,
+      }
+    : {
+        isCue49: false,
+        price: `${P.sym}${P.founding}`,
+        crossed: `${P.sym}${P.crossed}`,
+        offLabel: `${P.sym}${cue49Off}`,
+      }
+
   async function startFoundingCheckout() {
     if (checkoutBusy) return
     setCheckoutError('')
     setCheckoutBusy(true)
     const attempt = async () => {
       import('../lib/analytics.js').then(({ events }) => events.foundingCheckoutClicked())
-      const url = await backend.createFoundingCheckout(user, { couponCode: couponApplied || couponInput })
+      const url = await backend.createFoundingCheckout(user, {
+        couponCode: couponEligible ? (couponApplied || couponInput) : '',
+      })
       window.location.href = url
     }
     try {
@@ -288,13 +314,15 @@ export default function Pricing() {
               <Col
                 title="Cue+ Founding"
                 description="Everything unlocked. New drops every week. Locked at the founding price for life."
-                crossedPrice={`${P.sym}${P.crossed}`}
-                price={`${P.sym}${P.founding}`}
+                crossedPrice={cue49Display.crossed}
+                price={cue49Display.price}
                 priceSub={`lifetime${P.taxSuffix}`}
-                badge={foundingFilled ? 'Founding closed' : 'Founding pick'}
+                badge={foundingFilled ? 'Founding closed' : (cue49Display.isCue49 ? 'CUE49 applied' : 'Founding pick')}
                 subLine={foundingFilled
                   ? `${P.sym}${P.crossed} lifetime for everyone now`
-                  : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`}
+                  : (cue49Display.isCue49
+                    ? `CUE49 applied — ${cue49Display.offLabel} off at checkout`
+                    : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`)}
                 highlight
                 cta={
                   foundingFilled ? (
@@ -304,16 +332,18 @@ export default function Pricing() {
                   ) : (
                     <>
                       <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
-                      <CouponRow
-                        input={couponInput}
-                        applied={couponApplied}
-                        onInputChange={setCouponInput}
-                        onApply={() => {
-                          const code = couponInput.trim().toUpperCase()
-                          if (code) setCouponApplied(code)
-                        }}
-                        onClear={() => { setCouponApplied(''); setCouponInput('') }}
-                      />
+                      {couponEligible && (
+                        <CouponRow
+                          input={couponInput}
+                          applied={couponApplied}
+                          onInputChange={setCouponInput}
+                          onApply={() => {
+                            const code = couponInput.trim().toUpperCase()
+                            if (code) setCouponApplied(code)
+                          }}
+                          onClear={() => { setCouponApplied(''); setCouponInput('') }}
+                        />
+                      )}
                     </>
                   )
                 }
