@@ -22,7 +22,6 @@ import WaitlistCTA from './components/WaitlistCTA.jsx';
 import WelcomeCard from './components/WelcomeCard.jsx';
 import FounderDock from './components/FounderDock.jsx';
 import FoundingPoll from './components/FoundingPoll.jsx';
-import CouponToast from './components/CouponToast.jsx';
 import CouponTimer from './components/CouponTimer.jsx';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
@@ -1131,11 +1130,6 @@ function AppShell() {
           the user navigates between /pricing, /account, etc. Its
           own internal state gates when it renders. */}
       <FoundingPoll />
-      {/* Global coupon toast — mounted at the shell so the CUE49
-          discovery works on every route, and the toast surfaces
-          from the same place regardless of which page the user
-          was on when they typed the code. */}
-      <CouponToast />
       {/* Vercel Web Analytics — Vercel dashboard mein 'Enable' toggle
           on karna hai then data flow shuru. Zero-config beyond that,
           no cookies, no consent banner needed. */}
