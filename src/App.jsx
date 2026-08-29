@@ -1121,9 +1121,9 @@ function useCouponHeroLabel() {
     chip,
     text: (
       <>
-        Find the coupon today —{' '}
+        Find the coupon —{' '}
         <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
-        $49
+        $49 lifetime
       </>
     ),
     _tick: tick,
