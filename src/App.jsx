@@ -8,6 +8,7 @@ import AdminInbox from './pages/AdminInbox.jsx';
 import AdminPolls from './pages/AdminPolls.jsx';
 import AdminSubscriptions from './pages/AdminSubscriptions.jsx';
 import AdminCustomPacks from './pages/AdminCustomPacks.jsx';
+import HireModal from './components/HireModal.jsx';
 import Pricing from './pages/Pricing.jsx';
 import Legal from './pages/Legal.jsx';
 import Saved from './pages/Saved.jsx';
@@ -103,6 +104,14 @@ function MainApp() {
   const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'paid'
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
   const [tagsFilter, setTagsFilter] = useState([]);    // array of lowercase tags (OR match)
+  const [hireOpen, setHireOpen] = useState(false);
+  // Global event handle so the Footer (or anywhere else out of
+  // MainApp's tree) can request the Hire modal without prop drilling.
+  useEffect(() => {
+    const open = () => setHireOpen(true);
+    window.addEventListener('cue:openHire', open);
+    return () => window.removeEventListener('cue:openHire', open);
+  }, []);
   // Local suggest opener → context (single source of truth for the modal).
   const { user, isSignedIn } = useUser();
   const isAdmin = isSignedIn && ['akashkumar7653099@gmail.com', 'aloksivastava1025@gmail.com', 'aloks.int@teachforindia.org'].includes(user?.primaryEmailAddress?.emailAddress);
@@ -521,6 +530,39 @@ function MainApp() {
               lineHeight: 1, whiteSpace: 'nowrap',
             }}>Beta</span>
           </div>
+          {/* Subtle "Hire me" text next to the logo. Deliberately not
+              a bright pill — the top-right already carries the
+              primary CTAs (Suggest, Menu, avatar) and adding a
+              highlighted button there made the nav feel crowded. */}
+          <button
+            type="button"
+            onClick={() => setHireOpen(true)}
+            className="cue-nav-hire-inline"
+            title="Hire me for a project build"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '4px 10px', borderRadius: 999,
+              background: 'rgba(0,0,255,0.10)',
+              border: '1px solid rgba(0,0,255,0.35)',
+              color: '#9b9bff',
+              fontSize: 11.5, fontFamily: 'var(--font-sans)',
+              letterSpacing: '0.02em', cursor: 'pointer',
+              transition: 'background 120ms ease, border-color 120ms ease, color 120ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,255,0.18)'
+              e.currentTarget.style.borderColor = 'rgba(0,0,255,0.55)'
+              e.currentTarget.style.color = '#c9c9ff'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,255,0.10)'
+              e.currentTarget.style.borderColor = 'rgba(0,0,255,0.35)'
+              e.currentTarget.style.color = '#9b9bff'
+            }}
+          >
+            <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: 999, background: '#9b9bff' }} />
+            Hire me
+          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="cue-nav-count" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)', fontSize: '12px' }}>
@@ -761,6 +803,49 @@ function MainApp() {
           <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
             <CouponTimer />
           </div>
+          {/* Hire-me CTA — highest-ticket offering, sits above the
+              custom-pricing nudge so buyers who want a whole build see
+              the fastest path to talking to Alok. Uses the electric
+              chip style so it reads as a real product, not a
+              secondary link. */}
+          <div style={{
+            marginTop: 18, display: 'flex', justifyContent: 'center',
+            fontFamily: 'var(--font-sans)',
+          }}>
+            <button
+              type="button"
+              onClick={() => setHireOpen(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                padding: '9px 18px',
+                background: 'var(--electric, #0000ff)',
+                border: 'none',
+                borderRadius: 999,
+                color: '#fff',
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.02em',
+                boxShadow: '0 8px 24px rgba(0,0,255,0.28)',
+                transition: 'transform 120ms ease, box-shadow 120ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,255,0.38)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,255,0.28)'
+              }}
+            >
+              <span aria-hidden="true" style={{
+                width: 6, height: 6, borderRadius: 999,
+                background: 'rgba(255,255,255,0.9)',
+              }} />
+              Hire me — Awwwards-tier build
+              <span style={{ opacity: 0.7 }}>→</span>
+            </button>
+          </div>
+
           {/* Custom-pricing nudge — announces the à-la-carte option
               to buyers who don't want the full library. Small, muted,
               opt-in — sits under the coupon timer so anyone hesitating
@@ -1060,6 +1145,8 @@ function MainApp() {
       {selectedItem && (
         <Modal item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
+
+      <HireModal open={hireOpen} onClose={() => setHireOpen(false)} />
 
       <FounderDock />
     </div>

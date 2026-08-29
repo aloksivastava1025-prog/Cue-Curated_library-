@@ -371,16 +371,19 @@ export default function FoundingPoll() {
   }
 
   const submitEmail = () => {
-    // Renamed conceptually to "contact" — accepts email, @handle,
-    // LinkedIn URL, anything the user wants to be reached at.
+    // Compulsory contact step — poll answers are more useful when
+    // Alok can actually reach back with a shipped component or a
+    // follow-up question. Accepts a real email or an X handle only;
+    // anything else (LinkedIn URLs, phone numbers, "nope") is
+    // rejected so the data column stays clean.
     const clean = emailText.trim().slice(0, 120)
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)
+    const isXHandle = /^@?[a-z0-9_]{1,15}$/i.test(clean)
+    if (!isEmail && !isXHandle) return
     setAnswers((a) => ({ ...a, email: clean }))
     recordStep('contact', null, clean || null)
     try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
     try { localStorage.removeItem(PROGRESS_KEY) } catch {}
-    // If they said "yes I'd join" earlier, send them to pricing
-    // AFTER contact info is captured — so a converting lead is
-    // never lost to the redirect.
     if (answers.commit === 'yes') {
       setState('gone')
       window.location.hash = '#/pricing'
@@ -390,12 +393,6 @@ export default function FoundingPoll() {
     setTimeout(() => setState('gone'), 2000)
   }
 
-  const skipEmail = () => {
-    try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
-    try { localStorage.removeItem(PROGRESS_KEY) } catch {}
-    setState('thanks')
-    setTimeout(() => setState('gone'), 1500)
-  }
 
   // Back navigation
   const goBack = () => {
@@ -633,34 +630,43 @@ export default function FoundingPoll() {
               </>
             )}
 
-            {state === 'email' && (
-              <>
-                <div className="cue-notch-title">How can I reach you?</div>
-                <div className="cue-notch-subtitle">
-                  Email, X handle, LinkedIn, whatever you prefer. If what you asked for is genuinely useful, I ship it within 24 hours and ping you when it&apos;s live on Cue.
-                </div>
-                <input
-                  type="text"
-                  className="cue-notch-input"
-                  placeholder="you@email.com  ·  @yourhandle  ·  linkedin.com/in/…"
-                  value={emailText}
-                  onChange={(e) => setEmailText(e.target.value.slice(0, 120))}
-                  autoFocus
-                />
-                <div className="cue-notch-actions">
-                  <button
-                    type="button"
-                    onClick={submitEmail}
-                    disabled={emailText.trim().length < 3}
-                    className="cue-notch-submit"
-                  >
-                    Send to Alok →
-                  </button>
-                  <button type="button" onClick={skipEmail} className="cue-notch-skip">No thanks</button>
-                </div>
-                <div className="cue-notch-foot">One reply. No newsletter spam.</div>
-              </>
-            )}
+            {state === 'email' && (() => {
+              const raw = emailText.trim()
+              const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)
+              const isXHandle = /^@?[a-z0-9_]{1,15}$/i.test(raw)
+              const valid = isEmail || isXHandle
+              return (
+                <>
+                  <div className="cue-notch-title">How can I reach you?</div>
+                  <div className="cue-notch-subtitle">
+                    Email or X handle — required. If what you asked for is genuinely useful, I ship it within 24 hours and ping you when it&apos;s live on Cue.
+                  </div>
+                  <input
+                    type="text"
+                    className="cue-notch-input"
+                    placeholder="you@email.com  or  @yourhandle"
+                    value={emailText}
+                    onChange={(e) => setEmailText(e.target.value.slice(0, 120))}
+                    autoFocus
+                  />
+                  <div className="cue-notch-actions">
+                    <button
+                      type="button"
+                      onClick={submitEmail}
+                      disabled={!valid}
+                      className="cue-notch-submit"
+                    >
+                      Send to Alok →
+                    </button>
+                  </div>
+                  <div className="cue-notch-foot">
+                    {raw && !valid
+                      ? 'Use a real email or an X handle (@username).'
+                      : 'One reply. No newsletter spam.'}
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
 

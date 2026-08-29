@@ -12,6 +12,7 @@ export default function Footer({ onSuggest }) {
 
   const links = [
     { label: 'Pricing',  href: '#/pricing' },
+    { label: 'Hire me',  onClick: () => window.dispatchEvent(new CustomEvent('cue:openHire')), accent: true },
     { label: 'Privacy',  href: '#/legal/privacy' },
     { label: 'Terms',    href: '#/legal/terms' },
     { label: 'Refund',   href: '#/legal/refund' },
@@ -51,14 +52,16 @@ export default function Footer({ onSuggest }) {
         </div>
 
         <nav style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-          {links.map((l, i) => l.onClick ? (
-            <button
-              key={i} type="button" onClick={l.onClick}
-              style={btnStyle}
-            >{l.label}</button>
-          ) : (
-            <a key={i} href={l.href} style={linkStyle}>{l.label}</a>
-          ))}
+          {links.map((l, i) => {
+            const style = l.accent
+              ? { ...(l.onClick ? btnStyle : linkStyle), color: 'var(--electric, #0000ff)', fontWeight: 600 }
+              : (l.onClick ? btnStyle : linkStyle)
+            return l.onClick ? (
+              <button key={i} type="button" onClick={l.onClick} style={style}>{l.label}</button>
+            ) : (
+              <a key={i} href={l.href} style={style}>{l.label}</a>
+            )
+          })}
         </nav>
       </div>
     </footer>

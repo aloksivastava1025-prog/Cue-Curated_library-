@@ -193,6 +193,21 @@ export default function FounderDock() {
               <span>Email</span>
             </a>
           </div>
+          {/* Hire me — full-width blue CTA below the DM/Email row.
+              Dispatches the same custom event the footer uses so the
+              global HireModal opens from wherever the dock is
+              rendered without prop drilling. */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('cue:openHire'))}
+            className="cue-founder-btn cue-founder-btn-hire"
+            role="menuitem"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 20l9-16H3z"/>
+            </svg>
+            <span>Hire me for your project</span>
+          </button>
           {/* Coupon hint — the founding-rate CUE49 code lives here.
               A small gold pip on the avatar draws the eye; hovering
               onto this line reveals the code so users who bother to
@@ -453,6 +468,20 @@ export default function FounderDock() {
           background: #f7f6f2;
           border-color: rgba(20,17,14,0.25);
           transform: translateY(-1px);
+        }
+        .cue-founder-btn-hire {
+          width: 100%;
+          margin-top: 10px;
+          background: #0000ff;
+          color: #fff;
+          border: 1px solid #0000ff;
+          box-shadow: 0 6px 18px -6px rgba(0,0,255,0.55);
+        }
+        .cue-founder-btn-hire:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 22px -6px rgba(0,0,255,0.65);
+          background: #1a1aff;
+          border-color: #1a1aff;
         }
 
         @media (max-width: 480px) {

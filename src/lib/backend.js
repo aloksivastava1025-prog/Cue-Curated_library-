@@ -845,6 +845,61 @@ const supabaseAdapter = {
     return { ok: true, count: ids.length }
   },
 
+  // Hire-me project brief. Same insert-then-notify pattern as
+  // submitCustomPackRequest — anon can insert, admin sees results
+  // via the notify email + a future admin panel.
+  async submitHireRequest({
+    name, contact, contactType, projectDesc,
+    siteType, budget, timeline, message, userId,
+  }) {
+    const cleanContact = String(contact || '').trim()
+    if (!cleanContact) throw new Error('Contact required')
+    const cleanName = String(name || '').trim()
+    if (!cleanName) throw new Error('Name required')
+    const desc = String(projectDesc || '').trim()
+    if (desc.length < 20) throw new Error('Project description too short')
+
+    // Backend column is TEXT so an @-handle stores fine. But if the
+    // user submitted an X handle we normalise: strip leading @, lower
+    // case, keep raw contact for admin visibility in the notify email.
+    const stored = contactType === 'x_handle'
+      ? '@' + cleanContact.replace(/^@/, '').toLowerCase()
+      : cleanContact.toLowerCase()
+
+    const { error } = await supabase
+      .from('hire_requests')
+      .insert({
+        user_id: userId || null,
+        name: cleanName.slice(0, 120),
+        contact: stored.slice(0, 200),
+        contact_type: contactType || 'email',
+        project_desc: desc.slice(0, 4000),
+        site_type: siteType || 'landing',
+        budget: budget || 'flexible',
+        timeline: timeline || 'normal',
+        message: message ? String(message).trim().slice(0, 2000) : null,
+      })
+    if (error) throw new Error(error.message || 'Could not send brief')
+
+    try {
+      await supabase.functions.invoke('hire-notify', {
+        body: {
+          name: cleanName,
+          contact: stored,
+          contactType: contactType || 'email',
+          projectDesc: desc,
+          siteType, budget, timeline,
+          message: message || '',
+          userId: userId || '',
+        },
+      })
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('hire-notify failed (non-blocking):', e?.message)
+    }
+    return { ok: true }
+  },
+
   // Admin: list every custom-pack request.
   async listCustomPackRequests(clerkUser) {
     const adminEmail = clerkUser?.primaryEmailAddress?.emailAddress
