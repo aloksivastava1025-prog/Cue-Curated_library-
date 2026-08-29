@@ -796,6 +796,31 @@ const supabaseAdapter = {
     if (error || !data) return null
     return data.content
   },
+
+  // Bulk export for Cue+ members. Fetches every prompt row + its
+  // full prompt_contents.content, so a paying user can walk away
+  // with everything they paid for as a single CSV/JSON archive.
+  //
+  // Rationale: if Cue ever shuts down, we owe every paid user a
+  // portable copy of the library. This runs client-side against
+  // the anon client, which is fine because RLS + tier gating on
+  // prompt_contents is what actually decides access.
+  async exportEverythingForMe() {
+    const { data: prompts, error: pErr } = await supabase
+      .from('prompts')
+      .select('*')
+      .order('created_at', { ascending: true })
+    if (pErr) throw pErr
+    const { data: contents, error: cErr } = await supabase
+      .from('prompt_contents')
+      .select('prompt_id, content')
+    if (cErr) throw cErr
+    const contentById = new Map((contents || []).map((r) => [r.prompt_id, r.content]))
+    return (prompts || []).map((row) => {
+      const js = toJs(row)
+      return { ...js, prompt: contentById.get(row.id) || '' }
+    })
+  },
   
   async getPurchases() {
     const { data, error } = await supabase

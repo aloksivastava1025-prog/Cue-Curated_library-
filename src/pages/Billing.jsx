@@ -230,6 +230,8 @@ function BillingAccount() {
           </div>
         )}
 
+        {isCuePlus && <ExportLibrarySection />}
+
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12, flexWrap: 'wrap' }}>
           <a href="#/" style={ctaStyle}>Back to library</a>
           <a href="#/contact" style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
@@ -238,6 +240,117 @@ function BillingAccount() {
         </div>
       </div>
     </Shell>
+  )
+}
+
+// ---------- EXPORT LIBRARY ----------------------------------------
+// Your-data-is-yours guarantee: every Cue+ member can walk away with
+// the full library as a spreadsheet (CSV) or a machine-readable
+// archive (JSON). Runs client-side — no server call besides the
+// two Supabase reads, so it works even if we ever go into wind-down.
+
+function csvEscape(v) {
+  if (v == null) return ''
+  const s = String(v)
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
+  return s
+}
+
+function downloadBlob(filename, content, mime) {
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function todayStamp() {
+  const d = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function ExportLibrarySection() {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [lastCount, setLastCount] = useState(null)
+
+  const doExport = async (fmt) => {
+    setBusy(true); setErr('')
+    try {
+      const rows = await backend.exportEverythingForMe()
+      setLastCount(rows.length)
+      if (fmt === 'json') {
+        downloadBlob(
+          `cue-library-${todayStamp()}.json`,
+          JSON.stringify({ exported_at: new Date().toISOString(), row_count: rows.length, rows }, null, 2),
+          'application/json'
+        )
+        return
+      }
+      // CSV — fixed column order so the file is stable across dumps.
+      const cols = [
+        'id', 'title', 'description', 'category', 'tags', 'tier',
+        'thumbSrc', 'hoverSrc', 'sourceCredit', 'viewCount', 'likeCount',
+        'code', 'prompt',
+      ]
+      const header = cols.join(',')
+      const body = rows.map((r) => cols.map((c) => {
+        const v = r[c]
+        if (Array.isArray(v)) return csvEscape(v.join('|'))
+        return csvEscape(v)
+      }).join(',')).join('\n')
+      downloadBlob(`cue-library-${todayStamp()}.csv`, header + '\n' + body + '\n', 'text/csv;charset=utf-8')
+    } catch (e) {
+      setErr(e?.message || 'Export failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <div style={sectionHeadingStyle}>Your library</div>
+      <div style={cardStyle}>
+        <div style={{ padding: '14px 0', fontSize: 13, color: 'var(--text)', lineHeight: 1.55 }}>
+          Every component you have access to, in one file. Includes the prompt text, tags, description, and (where available) React source code.
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '0 0 14px' }}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => doExport('csv')}
+            style={{ ...ctaStyle, padding: '10px 16px', fontSize: 13, opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer' }}
+            title="Download as CSV — open in Excel / Sheets / Numbers"
+          >
+            {busy ? 'Preparing…' : 'Export as CSV'}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => doExport('json')}
+            style={{ ...ctaStyle, padding: '10px 16px', fontSize: 13, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer' }}
+            title="Download as JSON — full field fidelity for AI / code use"
+          >
+            {busy ? 'Preparing…' : 'Export as JSON'}
+          </button>
+        </div>
+        {lastCount != null && !err && (
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', paddingBottom: 14 }}>
+            ✓ Exported {lastCount} components.
+          </div>
+        )}
+        {err && (
+          <div style={{ fontSize: 12, color: '#ff6b6b', paddingBottom: 14 }}>
+            {err}
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
