@@ -90,22 +90,24 @@ export default function Pricing() {
   const [checkoutBusy, setCheckoutBusy] = useState(false)
   const [monthlyBusy, setMonthlyBusy] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
+  // Coupon typed by the user on-page. Dodo's hosted checkout doesn't
+  // reliably surface a discount-code field, so we collect it here and
+  // pre-apply it via the create-checkout body. Only whitelisted codes
+  // are honoured server-side, so anything else is dropped silently.
+  const [couponInput, setCouponInput] = useState('')
+  const [couponApplied, setCouponApplied] = useState('')
   async function startFoundingCheckout() {
     if (checkoutBusy) return
     setCheckoutError('')
     setCheckoutBusy(true)
-    // Auto-retry once on network hiccup — mobile carriers drop
-    // connections often enough that a single retry recovers most
-    // real transient failures.
     const attempt = async () => {
       import('../lib/analytics.js').then(({ events }) => events.foundingCheckoutClicked())
-      const url = await backend.createFoundingCheckout(user)
+      const url = await backend.createFoundingCheckout(user, { couponCode: couponApplied || couponInput })
       window.location.href = url
     }
     try {
       await attempt()
     } catch (err1) {
-      // Wait 800ms + retry once. Network hiccup usually resolves.
       await new Promise((r) => setTimeout(r, 800))
       try {
         await attempt()
@@ -300,7 +302,19 @@ export default function Pricing() {
                   ) : !isSignedIn ? (
                     <button onClick={() => openAuth('sign-up')} style={btnPrimary}>Claim founding spot</button>
                   ) : (
-                    <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
+                    <>
+                      <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
+                      <CouponRow
+                        input={couponInput}
+                        applied={couponApplied}
+                        onInputChange={setCouponInput}
+                        onApply={() => {
+                          const code = couponInput.trim().toUpperCase()
+                          if (code) setCouponApplied(code)
+                        }}
+                        onClear={() => { setCouponApplied(''); setCouponInput('') }}
+                      />
+                    </>
                   )
                 }
                 features={[
@@ -810,4 +824,80 @@ const btnGhost = {
   textDecoration: 'none',
   display: 'inline-block',
   boxSizing: 'border-box',
+}
+
+// Compact coupon input rendered under the founding CTA. Dodo's hosted
+// checkout doesn't reliably surface a discount-code field, so we
+// collect the code here and pass it through create-checkout as
+// `discount_code` — Dodo applies it before rendering the payment page,
+// so the user sees $49 directly.
+function CouponRow({ input, applied, onInputChange, onApply, onClear }) {
+  if (applied) {
+    return (
+      <div style={{
+        marginTop: 10, display: 'flex', alignItems: 'center', gap: 8,
+        fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: INTER,
+        justifyContent: 'center',
+      }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '4px 10px', borderRadius: 999,
+          background: 'rgba(163,230,53,0.14)',
+          border: '1px solid rgba(163,230,53,0.4)',
+          color: '#a3e635', letterSpacing: '0.04em',
+        }}>
+          <span aria-hidden="true">✓</span>
+          <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontWeight: 600 }}>{applied}</span>
+        </span>
+        <button
+          type="button"
+          onClick={onClear}
+          style={{
+            background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)',
+            fontSize: 11, cursor: 'pointer', padding: 4, letterSpacing: '0.02em',
+            textDecoration: 'underline',
+          }}
+        >remove</button>
+      </div>
+    )
+  }
+  return (
+    <div style={{
+      marginTop: 10, display: 'flex', alignItems: 'center', gap: 6,
+      justifyContent: 'center',
+    }}>
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => onInputChange(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onApply() } }}
+        placeholder="Got a coupon?"
+        maxLength={20}
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.14)',
+          color: '#fff',
+          fontSize: 12, letterSpacing: '0.04em',
+          padding: '7px 12px',
+          borderRadius: 8,
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+          width: 130, outline: 'none',
+          textTransform: 'uppercase',
+        }}
+      />
+      <button
+        type="button"
+        onClick={onApply}
+        disabled={!input.trim()}
+        style={{
+          background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.2)',
+          color: input.trim() ? '#fff' : 'rgba(255,255,255,0.35)',
+          fontSize: 12, padding: '7px 12px', borderRadius: 8,
+          cursor: input.trim() ? 'pointer' : 'not-allowed',
+          fontFamily: INTER, letterSpacing: '0.02em',
+        }}
+      >Apply</button>
+    </div>
+  )
 }

@@ -844,7 +844,7 @@ const supabaseAdapter = {
     return data
   },
 
-  async createFoundingCheckout(clerkUser, { billingCycle = 'lifetime', planType = 'cue_plus' } = {}) {
+  async createFoundingCheckout(clerkUser, { billingCycle = 'lifetime', planType = 'cue_plus', couponCode = '' } = {}) {
     if (!clerkUser?.id) throw new Error('Sign in required')
     const email = clerkUser?.primaryEmailAddress?.emailAddress
       || clerkUser?.emailAddresses?.[0]?.emailAddress
@@ -866,6 +866,7 @@ const supabaseAdapter = {
       if (m) buyerCountry = m[1]
     } catch { /* fall through to server default */ }
 
+    const cleanCoupon = typeof couponCode === 'string' ? couponCode.trim().toUpperCase() : ''
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: {
         plan_type: planType,
@@ -874,6 +875,7 @@ const supabaseAdapter = {
         customerName: name,
         userId: clerkUser.id,
         buyerCountry,
+        ...(cleanCoupon ? { couponCode: cleanCoupon } : {}),
       },
     })
     if (error) {
