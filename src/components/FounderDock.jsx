@@ -198,7 +198,7 @@ export default function FounderDock() {
               onto this line reveals the code so users who bother to
               open the card get rewarded. */}
           <div className="cue-founder-coupon">
-            <span className="cue-founder-coupon-eyebrow">Founding rate · 24 hrs</span>
+            <span className="cue-founder-coupon-eyebrow">Coupon code · $49 lifetime</span>
             <button
               type="button"
               className="cue-founder-coupon-code"
@@ -207,11 +207,11 @@ export default function FounderDock() {
                   navigator.clipboard?.writeText('CUE49')
                 } catch {}
               }}
-              title="Click to copy"
+              title="Click to copy CUE49"
             >
               CUE49
             </button>
-            <span className="cue-founder-coupon-body">Click to copy · one per browser</span>
+            <span className="cue-founder-coupon-body">Click to copy · apply at checkout</span>
           </div>
         </div>
       </div>
