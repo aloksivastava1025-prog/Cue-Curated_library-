@@ -286,6 +286,14 @@ serve(async (req) => {
         street:  'NA',
         zipcode: '000000',
       },
+      // Dodo hides the "Have a discount code?" input on the hosted
+      // checkout unless this flag is on. Off by default in the API
+      // even when discount codes exist on the account — we need it
+      // so a user who found CUE49 through a hint can actually enter
+      // it at checkout.
+      feature_flags: {
+        allow_discount_code: true,
+      },
       return_url: `${origin}/#/billing/success`,
       metadata: {
         user_id: userId,
