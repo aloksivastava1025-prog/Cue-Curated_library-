@@ -7,6 +7,7 @@ import Admin from './pages/Admin.jsx';
 import AdminInbox from './pages/AdminInbox.jsx';
 import AdminPolls from './pages/AdminPolls.jsx';
 import AdminSubscriptions from './pages/AdminSubscriptions.jsx';
+import AdminCustomPacks from './pages/AdminCustomPacks.jsx';
 import Pricing from './pages/Pricing.jsx';
 import Legal from './pages/Legal.jsx';
 import Saved from './pages/Saved.jsx';
@@ -362,6 +363,9 @@ function MainApp() {
 
   if (route === '#/admin/subscriptions' && isAdmin) {
     return <AdminSubscriptions />;
+  }
+  if (route === '#/admin/custom-packs' && isAdmin) {
+    return <AdminCustomPacks />;
   }
 
   if (route === '#/admin' && isAdmin) {
@@ -756,6 +760,39 @@ function MainApp() {
               feel like a carnival banner. */}
           <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
             <CouponTimer />
+          </div>
+          {/* Custom-pricing nudge — announces the à-la-carte option
+              to buyers who don't want the full library. Small, muted,
+              opt-in — sits under the coupon timer so anyone hesitating
+              on the founding price sees an escape hatch. */}
+          <div style={{
+            marginTop: 14, display: 'flex', justifyContent: 'center',
+            fontFamily: 'var(--font-sans)', fontSize: 12,
+          }}>
+            <a href="#/pricing" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '5px 12px',
+              border: '1px dashed rgba(255,255,255,0.22)',
+              borderRadius: 999,
+              color: 'rgba(255,255,255,0.72)',
+              textDecoration: 'none',
+              letterSpacing: '0.02em',
+              transition: 'color 120ms ease, border-color 120ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#fff'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.45)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'rgba(255,255,255,0.72)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'
+            }}>
+              <span style={{
+                display: 'inline-block', width: 6, height: 6, borderRadius: 999,
+                background: 'var(--electric, #0000ff)',
+              }} />
+              New — Custom pricing · pay only for the components you pick →
+            </a>
           </div>
         </div>
       </section>

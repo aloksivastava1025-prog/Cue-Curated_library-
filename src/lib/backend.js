@@ -797,6 +797,80 @@ const supabaseAdapter = {
     return data.content
   },
 
+  // Submit a "Custom pack" request — the user picks N components on
+  // the visual picker; admin follows up with a hand-crafted Dodo
+  // link at a custom price. Anon can insert; the admin dashboard
+  // reads via a service-role edge function (RLS blocks direct reads).
+  async submitCustomPackRequest({ email, name, componentIds, message, userId }) {
+    const cleanEmail = String(email || '').trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      throw new Error('Valid email is required')
+    }
+    const ids = Array.isArray(componentIds)
+      ? componentIds.map((s) => String(s).trim()).filter(Boolean)
+      : []
+    if (ids.length === 0) {
+      throw new Error('Pick at least one component')
+    }
+    const { error } = await supabase
+      .from('custom_pack_requests')
+      .insert({
+        user_id: userId || null,
+        email: cleanEmail,
+        name: name ? String(name).trim().slice(0, 120) : null,
+        component_ids: ids,
+        message: message ? String(message).trim().slice(0, 2000) : null,
+      })
+    if (error) throw new Error(error.message || 'Could not send request')
+
+    // Fire the founder-notification email. This is best-effort: if
+    // Resend hiccups we don't want to fail the user's submission —
+    // the row is already saved and the admin can spot it in the
+    // dashboard anyway.
+    try {
+      await supabase.functions.invoke('custom-pack-notify', {
+        body: {
+          email: cleanEmail,
+          name: name || '',
+          componentIds: ids,
+          message: message || '',
+          userId: userId || '',
+        },
+      })
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('custom-pack-notify failed (non-blocking):', e?.message)
+    }
+
+    return { ok: true, count: ids.length }
+  },
+
+  // Admin: list every custom-pack request.
+  async listCustomPackRequests(clerkUser) {
+    const adminEmail = clerkUser?.primaryEmailAddress?.emailAddress
+      || clerkUser?.emailAddresses?.[0]?.emailAddress
+      || ''
+    const { data, error } = await supabase.functions.invoke('admin-custom-packs', {
+      body: { action: 'list', adminEmail },
+    })
+    if (error) throw new Error(error.message || 'Could not load requests')
+    return data?.rows || []
+  },
+
+  // Admin: patch a single custom-pack request. Accepts any subset of
+  // { status, admin_note, quoted_amount_cents, quoted_currency,
+  // quoted_link }; validation happens server-side.
+  async updateCustomPackRequest(clerkUser, id, patch = {}) {
+    const adminEmail = clerkUser?.primaryEmailAddress?.emailAddress
+      || clerkUser?.emailAddresses?.[0]?.emailAddress
+      || ''
+    const { data, error } = await supabase.functions.invoke('admin-custom-packs', {
+      body: { action: 'update', adminEmail, id, ...patch },
+    })
+    if (error) throw new Error(error.message || 'Could not update request')
+    return data?.row
+  },
+
   // Bulk export for Cue+ members. Fetches every prompt row + its
   // full prompt_contents.content, so a paying user can walk away
   // with everything they paid for as a single CSV/JSON archive.

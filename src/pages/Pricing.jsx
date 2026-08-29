@@ -6,6 +6,7 @@ import { friendlyError } from '../lib/friendlyError.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import Footer from '../components/Footer.jsx'
 import MonthlyWaitlistModal from '../components/MonthlyWaitlistModal.jsx'
+import CustomPackModal from '../components/CustomPackModal.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
 import '../styles/overhaul.css'
 
@@ -96,6 +97,7 @@ export default function Pricing() {
   // are honoured server-side, so anything else is dropped silently.
   const [couponInput, setCouponInput] = useState('')
   const [couponApplied, setCouponApplied] = useState('')
+  const [customPackOpen, setCustomPackOpen] = useState(false)
 
   // CUE49 is a 50%-off percentage code on Dodo. Works cleanly across
   // both USD and INR because Dodo applies the percentage on the
@@ -277,21 +279,22 @@ export default function Pricing() {
           background: '#0A0A0A',
           minHeight: 620,
         }}>
-          {/* Vertical dashed grid lines (3-column gutters) */}
+          {/* Vertical dashed grid lines (4-column gutters) */}
           <GridLine v pos="0%" />
-          <GridLine v pos="33.333%" />
-          <GridLine v pos="66.666%" />
+          <GridLine v pos="25%" />
+          <GridLine v pos="50%" />
+          <GridLine v pos="75%" />
           <GridLine v pos="100%" />
 
           {/* Horizontal dashed grid lines — top, mid (col-top / col-bottom split), bottom */}
-          <GridLine h pos="0%" crossPositions={['0%','33.333%','66.666%','100%']} />
-          <GridLine h pos="380px" crossPositions={['0%','33.333%','66.666%','100%']} />
-          <GridLine h pos="100%" crossPositions={['0%','33.333%','66.666%','100%']} />
+          <GridLine h pos="0%" crossPositions={['0%','25%','50%','75%','100%']} />
+          <GridLine h pos="380px" crossPositions={['0%','25%','50%','75%','100%']} />
+          <GridLine h pos="100%" crossPositions={['0%','25%','50%','75%','100%']} />
 
           {/* Content grid */}
           <div style={{ position: 'relative', zIndex: 2 }}>
             {/* Columns area */}
-            <div className="cue-blueprint-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <div className="cue-blueprint-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
 
               {/* FREE */}
               <Col
@@ -307,6 +310,35 @@ export default function Pricing() {
                   '2 AI prompts per day',
                   'Weekly drop newsletter',
                   'Personal use only',
+                ]}
+              />
+
+              {/* CUSTOM PACK — visual-picker escape hatch for the "I
+                  only need 3 things" buyer. No auto payment link:
+                  Alok DMs, agrees a fair price, activates the picked
+                  components directly on the user's account. */}
+              <Col
+                title="Custom pack"
+                description="Pick only what you need. We agree a fair price and activate on your account."
+                price="Fair"
+                priceSub="price"
+                badge="À la carte"
+                subLine="Great if you only need 2–5 components — no full-library commitment."
+                cta={
+                  <button
+                    type="button"
+                    onClick={() => setCustomPackOpen(true)}
+                    style={btnPrimary}
+                  >
+                    Build a custom pack
+                  </button>
+                }
+                features={[
+                  'Pick from the whole library (visual picker)',
+                  'DM within 24 hrs · fair price agreed with you',
+                  'Payment link sent to your registered email',
+                  'Once paid, components activate on your account',
+                  'Great for one landing page or one dashboard',
                 ]}
               />
 
@@ -330,25 +362,25 @@ export default function Pricing() {
                   ) : !isSignedIn ? (
                     <button onClick={() => openAuth('sign-up')} style={btnPrimary}>Claim founding spot</button>
                   ) : (
-                    <>
-                      <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
-                      {couponEligible && (
-                        <>
-                          <CouponRow
-                            input={couponInput}
-                            applied={couponApplied}
-                            onInputChange={setCouponInput}
-                            onApply={() => {
-                              const code = couponInput.trim().toUpperCase()
-                              if (code) setCouponApplied(code)
-                            }}
-                            onClear={() => { setCouponApplied(''); setCouponInput('') }}
-                          />
-                          {!couponApplied && <CouponHintPill compact />}
-                        </>
-                      )}
-                    </>
+                    <button onClick={startFoundingCheckout} disabled={checkoutBusy} style={{ ...btnPrimary, opacity: checkoutBusy ? 0.6 : 1, cursor: checkoutBusy ? 'wait' : 'pointer' }}>{checkoutBusy ? 'Opening checkout…' : 'Claim founding spot'}</button>
                   )
+                }
+                extra={
+                  !foundingFilled && isSignedIn && couponEligible ? (
+                    <>
+                      <CouponRow
+                        input={couponInput}
+                        applied={couponApplied}
+                        onInputChange={setCouponInput}
+                        onApply={() => {
+                          const code = couponInput.trim().toUpperCase()
+                          if (code) setCouponApplied(code)
+                        }}
+                        onClear={() => { setCouponApplied(''); setCouponInput('') }}
+                      />
+                      {!couponApplied && <CouponHintPill compact />}
+                    </>
+                  ) : null
                 }
                 features={[
                   'Full library, unlocked',
@@ -395,7 +427,6 @@ export default function Pricing() {
           </div>
         </div>
       </div>
-
 
       {/* Founding manifesto */}
       <section style={{ padding: '80px 24px 96px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
@@ -540,6 +571,7 @@ export default function Pricing() {
       <Footer />
 
       <MonthlyWaitlistModal open={monthlyOpen} onClose={() => setMonthlyOpen(false)} />
+      <CustomPackModal open={customPackOpen} onClose={() => setCustomPackOpen(false)} />
     </div>
   )
 }
@@ -559,19 +591,20 @@ function CouponHintPill({ compact = false }) {
         type="button"
         onClick={copy}
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 10,
-          padding: '8px 14px',
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '6px 12px',
           background: 'rgba(163,230,53,0.08)',
           border: '1px dashed rgba(163,230,53,0.45)',
           borderRadius: 999,
           cursor: 'pointer',
           fontFamily: 'var(--font-sans, system-ui)',
           color: 'rgba(255,255,255,0.85)',
-          fontSize: 12.5, letterSpacing: '0.01em',
+          fontSize: 11.5, letterSpacing: '0.01em',
+          whiteSpace: 'nowrap',
+          maxWidth: '100%',
         }}
         title="Copy CUE49"
       >
-        <span>Use code</span>
         <span style={{
           fontFamily: 'SF Mono, ui-monospace, Menlo, monospace',
           fontWeight: 700, letterSpacing: '0.08em',
@@ -649,7 +682,7 @@ function Crosshair({ left }) {
 
 function Col({
   title, description, price, priceSub, crossedPrice, subLine,
-  cta, badge, highlight, muted, features = [],
+  cta, extra, badge, highlight, muted, features = [],
 }) {
   return (
     <div style={{
@@ -699,6 +732,17 @@ function Col({
 
         <div style={{ marginTop: 'auto', paddingTop: 20 }}>{cta}</div>
       </div>
+
+      {/* Optional extra slot — sits BELOW the fixed-height top block
+          so the primary CTA button stays aligned horizontally across
+          every card. Founding uses this to hang the coupon input +
+          "Use code CUE49" pill under its button without pushing the
+          button up. */}
+      {extra && (
+        <div style={{ padding: '0 40px 20px', boxSizing: 'border-box' }}>
+          {extra}
+        </div>
+      )}
 
       {/* Bottom block — features list, fixed min height for consistent bottom edge */}
       <div className="cue-col-bottom" style={{ padding: 40, minHeight: 240, borderTop: `1px dashed ${LINE}`, boxSizing: 'border-box' }}>
