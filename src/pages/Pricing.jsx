@@ -341,8 +341,16 @@ export default function Pricing() {
                   'DM within 24 hrs · fair price agreed with you',
                   'Payment link sent to your registered email',
                   'Once paid, components activate on your account',
+                  'Commercial use — no resell / redistribution',
                   'Great for one landing page or one dashboard',
                 ]}
+                termsCopy={
+                  <>
+                    Requesting a pack means you accept our{' '}
+                    <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
+                    <a href="#/legal/license" style={termsLinkStyle}>License</a>.
+                  </>
+                }
               />
 
               {/* CUE+ FOUNDING (highlighted, center) */}
@@ -393,9 +401,17 @@ export default function Pricing() {
                   'Request any component\'s code — I ship it personally',
                   { text: 'MCP support', soon: true },
                   'Unlimited prompts',
-                  'Commercial use',
+                  'Commercial use — no resell / redistribution',
                   'Founding badge in profile',
                 ]}
+                termsCopy={
+                  <>
+                    By claiming your founding spot you agree to our{' '}
+                    <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
+                    <a href="#/legal/license" style={termsLinkStyle}>License</a>.
+                    <br />No resell, no redistribution, no AI-training on Cue content.
+                  </>
+                }
               />
 
               {/* MONTHLY — live subscription. Cancel-at-period-end
@@ -423,8 +439,15 @@ export default function Pricing() {
                   '15 prompt copies per month · need more? DM Alok on X',
                   'New drops every week — while active',
                   'Cancel anytime — access until cycle end',
-                  'Personal use only',
+                  'Personal + client use — no resell / redistribution',
                 ]}
+                termsCopy={
+                  <>
+                    Starting the subscription means you accept our{' '}
+                    <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
+                    <a href="#/legal/license" style={termsLinkStyle}>License</a>.
+                  </>
+                }
               />
             </div>
           </div>
@@ -683,9 +706,16 @@ function Crosshair({ left }) {
 
 // ---------- Column ------------------------------------------------
 
+const termsLinkStyle = {
+  color: 'var(--text)',
+  textDecoration: 'underline',
+  textDecorationColor: 'rgba(255,255,255,0.35)',
+  textUnderlineOffset: 2,
+}
+
 function Col({
   title, description, price, priceSub, crossedPrice, subLine,
-  cta, extra, badge, highlight, muted, features = [],
+  cta, extra, badge, highlight, muted, features = [], termsCopy,
 }) {
   return (
     <div style={{
@@ -734,6 +764,14 @@ function Col({
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: 20 }}>{cta}</div>
+        {termsCopy && (
+          <div style={{
+            marginTop: 10, fontSize: 10.5, lineHeight: 1.5,
+            color: 'var(--text-dim)', textAlign: 'center',
+          }}>
+            {termsCopy}
+          </div>
+        )}
       </div>
 
       {/* Optional extra slot — sits BELOW the fixed-height top block
