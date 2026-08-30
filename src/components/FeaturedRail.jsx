@@ -271,8 +271,19 @@ function FeaturedCard({ item, onOpen }) {
                (user hover or centered on touch) — never on cold
                page-load for off-screen cards. */
             preload="auto"
-            onLoadedData={() => setVideoReady(true)}
-            onCanPlay={() => setVideoReady(true)}
+            /* When the <video> mounts on first hover, the effect that
+               calls play() has already run with videoRef.current === null
+               (mount happens after the effect). Play on the readiness
+               events themselves so the first hover actually starts
+               motion, then the useEffect handles subsequent hovers. */
+            onLoadedData={(e) => {
+              setVideoReady(true)
+              if (hover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}) }
+            }}
+            onCanPlay={(e) => {
+              setVideoReady(true)
+              if (hover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}) }
+            }}
             onError={() => setVideoFailed(true)}
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%',
