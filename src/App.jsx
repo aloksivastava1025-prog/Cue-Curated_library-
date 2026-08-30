@@ -841,7 +841,7 @@ function MainApp() {
                 width: 6, height: 6, borderRadius: 999,
                 background: 'rgba(255,255,255,0.9)',
               }} />
-              Hire me — Awwwards-tier build
+              Hire me — build a site that stands out
               <span style={{ opacity: 0.7 }}>→</span>
             </button>
           </div>
