@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext.jsx'
+import { COUPON_ENABLED } from '../lib/features.js'
 
 /**
  * FounderDock — a small persistent floating avatar of the founder
@@ -125,7 +126,7 @@ export default function FounderDock() {
         {/* Subtle gold pip — the ambient "there's something here"
             signal that draws curious visitors to hover the avatar.
             Sits above the online dot so both remain readable. */}
-        <span className="cue-founder-coupon-pip" aria-hidden="true" />
+        {COUPON_ENABLED && <span className="cue-founder-coupon-pip" aria-hidden="true" />}
       </button>
 
       <div className="cue-founder-panel" role="menu" aria-hidden={!expanded}>
@@ -212,7 +213,7 @@ export default function FounderDock() {
               A small gold pip on the avatar draws the eye; hovering
               onto this line reveals the code so users who bother to
               open the card get rewarded. */}
-          <div className="cue-founder-coupon">
+          {COUPON_ENABLED && <div className="cue-founder-coupon">
             <span className="cue-founder-coupon-eyebrow">Coupon code · $79 lifetime</span>
             <button
               type="button"
@@ -227,7 +228,7 @@ export default function FounderDock() {
               CUE49
             </button>
             <span className="cue-founder-coupon-body">Click to copy · apply at checkout</span>
-          </div>
+          </div>}
         </div>
       </div>
 

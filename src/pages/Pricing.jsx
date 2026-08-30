@@ -8,6 +8,7 @@ import Footer from '../components/Footer.jsx'
 import MonthlyWaitlistModal from '../components/MonthlyWaitlistModal.jsx'
 import CustomPackModal from '../components/CustomPackModal.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
+import { COUPON_ENABLED } from '../lib/features.js'
 import '../styles/overhaul.css'
 
 /**
@@ -102,8 +103,9 @@ export default function Pricing() {
   // CUE49 target: bring the founding price down to $79 (USD) or the
   // INR equivalent. Actual number Dodo applies at checkout depends on
   // the discount configured there — keep both in sync. Amount off is
-  // just the display delta.
-  const couponEligible = true
+  // just the display delta. Gate the whole coupon UI on the feature
+  // flag so the same code path serves campaign-on and campaign-off.
+  const couponEligible = COUPON_ENABLED
   const isCue49 = couponEligible && couponApplied === 'CUE49'
   const foundingNumericForCue49 = Number(String(P.founding).replace(/,/g, '')) || 0
   // CUE49 = 20% off on Dodo. USD $99 → $79, INR ₹4,999 → ₹3,999.

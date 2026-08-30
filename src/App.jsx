@@ -25,6 +25,7 @@ import WelcomeCard from './components/WelcomeCard.jsx';
 import FounderDock from './components/FounderDock.jsx';
 import FoundingPoll from './components/FoundingPoll.jsx';
 import CouponTimer from './components/CouponTimer.jsx';
+import { COUPON_ENABLED } from './lib/features.js';
 import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
@@ -177,7 +178,7 @@ function MainApp() {
   // window is still open and the visitor hasn't already unlocked
   // CUE49. The hook re-ticks internally every 30s so the chip
   // counts down without needing an outer clock.
-  const couponLabel = useCouponHeroLabel();
+  const couponLabel = COUPON_ENABLED ? useCouponHeroLabel() : null;
   const foundingFilled = spotsLeft === 0;
 
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback, filter, updateFilter } = useApp();
@@ -729,12 +730,14 @@ function MainApp() {
                   ? couponLabel.text
                   : foundingFilled
                     ? 'Founding closed — launch pricing live'
-                    : (
+                    : COUPON_ENABLED ? (
                       <>
                         {spotsLeft} founding spots left ·{' '}
                         <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
                         $79 lifetime
                       </>
+                    ) : (
+                      `${spotsLeft} founding spots left · $99 lifetime`
                     )}
               </span>
             </a>
@@ -800,9 +803,11 @@ function MainApp() {
           {/* Subtle 24-hour founding-rate ticker — muted grey below
               the CTA. Visible enough to notice, quiet enough to not
               feel like a carnival banner. */}
-          <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
-            <CouponTimer />
-          </div>
+          {COUPON_ENABLED && (
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
+              <CouponTimer />
+            </div>
+          )}
           {/* Hire-me CTA — highest-ticket offering, sits above the
               custom-pricing nudge so buyers who want a whole build see
               the fastest path to talking to Alok. Uses the electric

@@ -337,18 +337,12 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
           {/* BODY */}
           <div className="cue-welcome-body">
             <h3 className="cue-welcome-title">
-              Something is hidden here<span className="dot">.</span>
+              Welcome to Cue<span className="dot">.</span>
             </h3>
-            <div className="cue-welcome-timer" aria-live="polite">
-              <span className="cue-welcome-timer-dot" />
-              <span>{formatTimeLeft(timeLeft)}</span>
-            </div>
             <p className="cue-welcome-sub">
-              Cue+ is $99 lifetime. But somewhere on this site, there&apos;s a coupon that drops it to $79.
+              A curated library of Awwwards-tier UI components. Every card ships with the copy-paste prompt for Cursor / v0 / Bolt, plus React source for the ones that need it.
               <br /><br />
-              Explore with patience — Cue is known for its micro-interactions and Awwwards-tier components. Hints hide in plain sight.
-              <br /><br />
-              Two tries per browser. One per person. No account needed. Good luck 🎯
+              Browse the collection, hover any card to preview the motion, and grab whatever fits your build.
             </p>
             <div className="cue-welcome-actions">
               <button className="cue-welcome-cta" onClick={onPrimary}>
