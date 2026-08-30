@@ -93,13 +93,16 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (!ref.current) return;
     const noHover = typeof window !== 'undefined'
       && window.matchMedia && window.matchMedia('(hover: none)').matches;
-    // Lower threshold on desktop (0.25) so ambient motion kicks in
-    // as soon as the card meaningfully enters the viewport, not
-    // when it's already centred. Touch stays at 0.8 — one at a time.
-    const threshold = noHover ? 0.8 : 0.25;
+    // Lower thresholds so ambient motion kicks in as soon as a card
+    // meaningfully enters the viewport. Mobile used to require 0.8
+    // (fully centred) which meant only one card ever played at a
+    // time; users saw a screen full of frozen posters with just one
+    // moving card. Both platforms now let up to ~3 cards be "in view
+    // enough" to autoplay.
+    const threshold = noHover ? 0.4 : 0.25;
     const io = new IntersectionObserver(([entry]) => {
       setMouseHover(entry.isIntersecting && entry.intersectionRatio >= threshold);
-    }, { threshold: [0, 0.25, 0.5, 0.8, 1] });
+    }, { threshold: [0, 0.25, 0.4, 0.6, 1] });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);

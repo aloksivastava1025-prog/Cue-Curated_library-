@@ -814,7 +814,7 @@ export default function Admin() {
     showToast('Applied AI suggestions');
   };
 
-  const onSubmit = async () => {
+  const onSubmit = async (opts = {}) => {
     setSaveError(null);
     if (!form.title) { showToast('Add a title'); setSaveError('Add a title'); return; }
     if (!form.category) { showToast('Pick a category'); setSaveError('Pick a category'); return; }
@@ -826,7 +826,12 @@ export default function Admin() {
     // mount before drafts finished fetching) can collide with an existing
     // row and turn our INSERT into a silent UPDATE.
     const safeId = isEditing ? form.id : nextId(allPrompts);
-    const payload = { ...form, id: safeId, createdAt: isEditing ? undefined : new Date().toISOString() };
+    // Force the row to be published unless the caller passed
+    // { asDraft: true } — the previous default read form.status which
+    // silently defaulted to 'draft' if the toggle was mis-clicked,
+    // causing brand-new rows to not appear in the library.
+    const finalStatus = opts.asDraft ? 'draft' : 'published';
+    const payload = { ...form, status: finalStatus, id: safeId, createdAt: isEditing ? undefined : new Date().toISOString() };
     try {
       // Pass isUpdate on edits — otherwise backend.create picks a fresh
       // id and INSERTs, creating a duplicate row.
@@ -1237,7 +1242,8 @@ export default function Admin() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-              <button onClick={onSubmit} disabled={saving} style={{ flex: 1, padding: '14px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px -8px rgba(0,0,255,0.5)', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving...' : isEditing ? 'Save changes' : 'Add to library'}</button>
+              <button onClick={() => onSubmit()} disabled={saving} style={{ flex: 1, padding: '14px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px -8px rgba(0,0,255,0.5)', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving...' : isEditing ? 'Save & publish' : 'Publish to library'}</button>
+              <button onClick={() => onSubmit({ asDraft: true })} disabled={saving} style={{ padding: '14px', background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px', fontSize: '14px', cursor: 'pointer' }}>Save as draft</button>
               <button onClick={cancelEdit} style={{ padding: '14px', background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px', fontSize: '14px', cursor: 'pointer' }}>{isEditing ? 'Cancel edit' : 'Clear'}</button>
             </div>
 
