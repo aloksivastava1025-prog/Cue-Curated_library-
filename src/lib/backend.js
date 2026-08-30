@@ -502,14 +502,18 @@ const supabaseAdapter = {
     if (!clerkUserId || !file) throw new Error('Missing file')
     if (file.size > 5 * 1024 * 1024) throw new Error('Image must be under 5MB')
     if (!/^image\//.test(file.type)) throw new Error('Only images (PNG / JPEG / WebP) allowed')
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-    const path = `avatars/${clerkUserId}-${Date.now()}.${ext}`
-    const { error } = await supabase.storage
-      .from('cue-media')
-      .upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: true })
-    if (error) throw error
-    const { data } = supabase.storage.from('cue-media').getPublicUrl(path)
-    return data.publicUrl
+    // Post-Aug-2026 (R2 migration): uploads now route through the
+    // upload-to-r2 edge function so all media lives on Cloudflare R2
+    // with unlimited free egress. Old Supabase-hosted avatars keep
+    // working — their URLs point at Supabase Storage and are still
+    // reachable there.
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('prefix', `avatars/${clerkUserId}`)
+    const { data, error } = await supabase.functions.invoke('upload-to-r2', { body: fd })
+    if (error) throw new Error(error.message || 'Upload failed')
+    if (!data?.url) throw new Error('No URL returned from upload')
+    return data.url
   },
 
   // Founding counter — how many paying Cue+ users so far.
@@ -1082,14 +1086,16 @@ const supabaseAdapter = {
   },
   
   async uploadMedia(file) {
-    const ext = (file.name.split('.').pop() || 'bin').toLowerCase()
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const { error } = await supabase.storage
-      .from('cue-media')
-      .upload(path, file, { contentType: file.type, cacheControl: '31536000' })
-    if (error) throw error
-    const { data } = supabase.storage.from('cue-media').getPublicUrl(path)
-    return { url: data.publicUrl, kind: file.type.startsWith('video/') ? 'video' : 'image' }
+    // Post-Aug-2026 (R2 migration): admin uploads now route through
+    // the upload-to-r2 edge function so every new thumb/video lives
+    // on Cloudflare R2 (unlimited free egress). Pre-migration files
+    // still on Supabase Storage keep working from their old URLs.
+    const fd = new FormData()
+    fd.append('file', file)
+    const { data, error } = await supabase.functions.invoke('upload-to-r2', { body: fd })
+    if (error) throw new Error(error.message || 'Upload failed')
+    if (!data?.url) throw new Error('No URL returned from upload')
+    return { url: data.url, kind: data.kind || (file.type.startsWith('video/') ? 'video' : 'image') }
   },
 
   // §4.6 — Admin audit log. Call this from admin UI after mutations.
