@@ -292,6 +292,52 @@ function ExportLibrarySection() {
         )
         return
       }
+      if (fmt === 'zip') {
+        // Per-component folders with README.md + prompt.md + code.tsx.
+        // Devs drop this into their AI IDE (Cursor / Claude Code /
+        // Windsurf) and start shipping immediately. Media thumbnails
+        // are referenced as URLs (not embedded) to keep the archive
+        // small — text/code, which is what matters, ships fully.
+        const JSZipModule = await import('jszip')
+        const JSZip = JSZipModule.default || JSZipModule
+        const zip = new JSZip()
+        const root = zip.folder(`cue-library-${todayStamp()}`)
+        for (const r of rows) {
+          const slug = (r.id || 'component').replace(/[^a-z0-9-]+/gi, '-').toLowerCase()
+          const titleSlug = (r.title || '').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40).replace(/^-|-$/g, '')
+          const dir = root.folder(titleSlug ? `${slug}-${titleSlug}` : slug)
+          const tags = Array.isArray(r.tags) ? r.tags.join(', ') : ''
+          const readme = [
+            `# ${r.title || r.id}`,
+            '',
+            r.description || '',
+            '',
+            `- **ID:** ${r.id}`,
+            `- **Category:** ${r.category || '—'}`,
+            `- **Tier:** ${r.tier}`,
+            `- **Tags:** ${tags || '—'}`,
+            r.sourceCredit ? `- **Source:** ${r.sourceCredit}` : null,
+            '',
+            '## Preview',
+            '',
+            r.thumbSrc ? `![${r.title || r.id}](${r.thumbSrc})` : '_No thumbnail_',
+            '',
+            r.hoverSrc ? `Live preview / hover: ${r.hoverSrc}` : '',
+          ].filter(Boolean).join('\n')
+          dir.file('README.md', readme)
+          if (r.prompt) dir.file('prompt.md', String(r.prompt))
+          if (r.code)   dir.file('code.tsx',  String(r.code))
+        }
+        // Top-level manifest so users can grep by title/id quickly.
+        root.file('MANIFEST.json', JSON.stringify({
+          exported_at: new Date().toISOString(),
+          row_count: rows.length,
+          components: rows.map((r) => ({ id: r.id, title: r.title, category: r.category, tier: r.tier, tags: r.tags })),
+        }, null, 2))
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
+        downloadBlob(`cue-library-${todayStamp()}.zip`, blob, 'application/zip')
+        return
+      }
       // CSV — fixed column order so the file is stable across dumps.
       const cols = [
         'id', 'title', 'description', 'category', 'tags', 'tier',
@@ -317,14 +363,23 @@ function ExportLibrarySection() {
       <div style={sectionHeadingStyle}>Your library</div>
       <div style={cardStyle}>
         <div style={{ padding: '14px 0', fontSize: 13, color: 'var(--text)', lineHeight: 1.55 }}>
-          Every component you have access to, in one file. Includes the prompt text, tags, description, and (where available) React source code.
+          Every component you have access to, in one download. Includes the prompt text, tags, description, and (where available) React source code — pick the format that fits how you build.
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '0 0 14px' }}>
           <button
             type="button"
             disabled={busy}
-            onClick={() => doExport('csv')}
+            onClick={() => doExport('zip')}
             style={{ ...ctaStyle, padding: '10px 16px', fontSize: 13, opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer' }}
+            title="Download as ZIP — one folder per component with README + prompt + code. Drop into Cursor / Claude Code."
+          >
+            {busy ? 'Preparing…' : 'Export as ZIP'}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => doExport('csv')}
+            style={{ ...ctaStyle, padding: '10px 16px', fontSize: 13, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', opacity: busy ? 0.6 : 1, cursor: busy ? 'wait' : 'pointer' }}
             title="Download as CSV — open in Excel / Sheets / Numbers"
           >
             {busy ? 'Preparing…' : 'Export as CSV'}
@@ -338,6 +393,9 @@ function ExportLibrarySection() {
           >
             {busy ? 'Preparing…' : 'Export as JSON'}
           </button>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', paddingBottom: 12, lineHeight: 1.5 }}>
+          <strong style={{ color: 'var(--text)' }}>ZIP</strong> — one folder per component with <code>README.md</code>, <code>prompt.md</code>, and <code>code.tsx</code>. Best for Cursor / Claude Code / Windsurf. &nbsp;·&nbsp; <strong style={{ color: 'var(--text)' }}>CSV</strong> — spreadsheet view. &nbsp;·&nbsp; <strong style={{ color: 'var(--text)' }}>JSON</strong> — full field fidelity.
         </div>
         {lastCount != null && !err && (
           <div style={{ fontSize: 12, color: 'var(--text-dim)', paddingBottom: 14 }}>
