@@ -491,6 +491,24 @@ const supabaseAdapter = {
         .maybeSingle()
       if (byEmail) return byEmail
     }
+
+    // Last-resort fallback: RLS may block anon reads for this user.
+    // Route through the JWT-verified `get-user-plan` edge fn — that
+    // service-role-reads the row and returns { plan, plan_source,
+    // plan_started_at, plan_expires_at } for the authenticated caller.
+    // Paying customers whose row is blocked by RLS still see cue_plus.
+    try {
+      const planFallback = await this.getUserPlan(clerkUserId)
+      if (planFallback && planFallback.plan && planFallback.plan !== 'free') {
+        return {
+          user_id: clerkUserId,
+          plan: planFallback.plan,
+          plan_source: planFallback.plan_source || 'edge_fallback',
+          plan_started_at: planFallback.plan_started_at || null,
+          plan_expires_at: planFallback.plan_expires_at || null,
+        }
+      }
+    } catch (_) { /* fall through — genuinely not found */ }
     return null
   },
 
