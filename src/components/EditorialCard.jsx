@@ -256,7 +256,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
           <img
             src={item.thumbSrc}
             alt={item.title}
-            loading="lazy"
+            /* Was loading="lazy" — that added a perceptible delay on
+               mobile where cards enter the viewport and users saw a
+               beat of empty card before the poster painted. Media is
+               on Cloudflare R2 (30-day CDN cache), so eager-loading
+               is basically free after the first request. */
+            loading="eager"
             decoding="async"
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
             style={{
