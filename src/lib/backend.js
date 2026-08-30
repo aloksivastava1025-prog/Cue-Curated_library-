@@ -502,16 +502,24 @@ const supabaseAdapter = {
     if (!clerkUserId || !file) throw new Error('Missing file')
     if (file.size > 5 * 1024 * 1024) throw new Error('Image must be under 5MB')
     if (!/^image\//.test(file.type)) throw new Error('Only images (PNG / JPEG / WebP) allowed')
-    // Post-Aug-2026 (R2 migration): uploads now route through the
-    // upload-to-r2 edge function so all media lives on Cloudflare R2
-    // with unlimited free egress. Old Supabase-hosted avatars keep
-    // working — their URLs point at Supabase Storage and are still
-    // reachable there.
+    // Direct fetch — supabase.functions.invoke does not stream
+    // multipart FormData through cleanly for larger binary payloads,
+    // which showed up as multi-minute stalls on 5 MB videos. Skip
+    // the wrapper and post the FormData ourselves.
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-to-r2`
     const fd = new FormData()
     fd.append('file', file)
     fd.append('prefix', `avatars/${clerkUserId}`)
-    const { data, error } = await supabase.functions.invoke('upload-to-r2', { body: fd })
-    if (error) throw new Error(error.message || 'Upload failed')
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+      body: fd,
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`Upload failed (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    const data = await resp.json()
     if (!data?.url) throw new Error('No URL returned from upload')
     return data.url
   },
@@ -1086,14 +1094,22 @@ const supabaseAdapter = {
   },
   
   async uploadMedia(file) {
-    // Post-Aug-2026 (R2 migration): admin uploads now route through
-    // the upload-to-r2 edge function so every new thumb/video lives
-    // on Cloudflare R2 (unlimited free egress). Pre-migration files
-    // still on Supabase Storage keep working from their old URLs.
+    // Direct fetch (not supabase.functions.invoke) — the wrapper does
+    // not stream FormData bodies well and stalls out on multi-MB
+    // uploads. Fetch straight to the function URL and post the form.
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-to-r2`
     const fd = new FormData()
     fd.append('file', file)
-    const { data, error } = await supabase.functions.invoke('upload-to-r2', { body: fd })
-    if (error) throw new Error(error.message || 'Upload failed')
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+      body: fd,
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`Upload failed (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    const data = await resp.json()
     if (!data?.url) throw new Error('No URL returned from upload')
     return { url: data.url, kind: data.kind || (file.type.startsWith('video/') ? 'video' : 'image') }
   },
