@@ -22,11 +22,14 @@
 
 import { useEffect, useState } from 'react'
 
-// Empirically 20 active hover clips is far past what any real user
-// interacts with simultaneously — hovering more than a few is
-// physically impossible. Bumping this ceiling should require a
-// clear reason.
-const MAX_ACTIVE = 20
+// Ceiling raised (Aug 2026) after R2 migration: media is served
+// from Cloudflare with free unlimited egress, so the bandwidth
+// concern that motivated a hard 20 is gone. everHovered is sticky,
+// so as a user scrolls, earlier cards stay mounted — 20 filled up
+// fast on long grids and later cards couldn't play. 500 covers any
+// real page while still acting as a defence against pathological
+// mount storms (e.g. a component regression that mounts thousands).
+const MAX_ACTIVE = 500
 
 // { owner: string, id: string } — dedup by (owner, id) so a
 // component re-rendering doesn't burn multiple slots.
