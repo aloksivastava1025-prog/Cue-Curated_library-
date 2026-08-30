@@ -62,20 +62,28 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (mouseHover && !everHovered) setEverHovered(true);
   }, [mouseHover, everHovered]);
 
-  // Touch / no-hover devices: mobile users cannot hover, so without a
-  // fallback every card would sit frozen on its poster. Bring back a
-  // viewport-triggered "play" for touch devices only — but with a
-  // very high visibility threshold (0.8) so at most 1 card at a time
-  // qualifies. Combined with useVideoSlot's 20-slot cap, this
-  // reintroduces motion on mobile without blowing egress back up.
+  // Viewport-triggered auto-play for ALL devices (desktop + touch).
+  // Original ambient-motion behaviour: as a card scrolls into view,
+  // its hover video plays; as it leaves, it pauses. Was disabled
+  // during the Supabase egress incident, but since all media now
+  // lives on Cloudflare R2 with unlimited free egress, the cost
+  // concern is gone. The video governor still caps total mounted
+  // <video> elements at 20 as a defence-in-depth safety net.
+  //
+  // Threshold reasoning:
+  //   - Touch (no hover): 0.8 — most-centered card only, at most 1
+  //     playing at a time on mobile so overlapping audio-off videos
+  //     don't create visual chaos on a narrow screen.
+  //   - Desktop: 0.4 — matches the original ambient-motion feel
+  //     where any card meaningfully in view is playing.
   useEffect(() => {
     if (!ref.current) return;
     const noHover = typeof window !== 'undefined'
       && window.matchMedia && window.matchMedia('(hover: none)').matches;
-    if (!noHover) return;
+    const threshold = noHover ? 0.8 : 0.4;
     const io = new IntersectionObserver(([entry]) => {
-      setMouseHover(entry.isIntersecting && entry.intersectionRatio >= 0.8);
-    }, { threshold: [0, 0.5, 0.8, 1] });
+      setMouseHover(entry.isIntersecting && entry.intersectionRatio >= threshold);
+    }, { threshold: [0, 0.4, 0.6, 0.8, 1] });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);
