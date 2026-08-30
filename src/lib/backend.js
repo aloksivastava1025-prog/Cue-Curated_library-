@@ -933,6 +933,27 @@ const supabaseAdapter = {
     return { ok: true }
   },
 
+  // Admin: run the autofill-metadata edge fn against a raw prompt.
+  // Sends Clerk session token so the fn's admin JWT check passes.
+  async autofillMetadata(promptText) {
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/autofill-metadata`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: promptText }),
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`autofill (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    return await resp.json()
+  },
+
   // Admin: list every custom-pack request. Requires a Clerk-signed
   // JWT — the edge function verifies it, so trusting body.adminEmail
   // (the old shape) is no longer possible.

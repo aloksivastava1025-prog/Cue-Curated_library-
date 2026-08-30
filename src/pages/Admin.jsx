@@ -680,10 +680,7 @@ export default function Admin() {
         if (!promptText || !promptText.trim()) {
           throw new Error('no prompt content stored');
         }
-        const { data, error } = await supabase.functions.invoke('autofill-metadata', {
-          body: { prompt: promptText },
-        });
-        if (error) throw new Error(error.message || 'autofill failed');
+        const data = await backend.autofillMetadata(promptText);
         const suggested = data?.metadata?.tags;
         if (!Array.isArray(suggested)) throw new Error('no tags returned');
         // Normalize + dedupe.
@@ -762,30 +759,7 @@ export default function Admin() {
       // which is buggy on Node 16 and randomly returns 'fetch failed'
       // against api.anthropic.com. Dev usage bills Anthropic the same
       // as prod either way, so the single path is simpler.
-      const { data, error } = await supabase.functions.invoke('autofill-metadata', {
-        body: { prompt: form.prompt },
-      });
-      if (error) {
-        // Supabase JS wraps non-2xx with a generic "Edge Function returned
-        // a non-2xx status code" — dig the real body out so admin sees why.
-        let detail = ''
-        try {
-          const ctx = error.context
-          if (ctx && typeof ctx.json === 'function') {
-            const body = await ctx.clone().json().catch(() => null)
-            detail = body?.error || body?.message || ''
-          }
-          if (!detail && ctx && typeof ctx.text === 'function') {
-            const t = await ctx.clone().text().catch(() => '')
-            if (t) detail = t.slice(0, 200)
-          }
-          if (!detail && ctx?.status) {
-            detail = `HTTP ${ctx.status}`
-          }
-        } catch { /* fall through */ }
-        console.error('[autofill] raw error:', error, 'context:', error?.context)
-        throw new Error(detail || error.message || 'AI request failed');
-      }
+      const data = await backend.autofillMetadata(form.prompt);
       if (!data?.metadata) throw new Error('No metadata returned');
       // AI response is strictly limited to metadata fields. Even so, whitelist
       // once more on the client before showing the preview.
