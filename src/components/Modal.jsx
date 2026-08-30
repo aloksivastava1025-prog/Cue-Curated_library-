@@ -391,10 +391,13 @@ export default function Modal({ item, onClose, showToast }) {
             }
             setModalVideoFailed(true);
           }}
-          /* preload="auto" starts fetching the full clip immediately
-             when the modal opens (instead of metadata-only), and we
-             flip opacity as soon as ANY of loadeddata / canplay /
-             playing fires — whichever comes first paints the video
+          /* preload="metadata" (post-Aug-2026 egress fix) means the
+             browser only fetches container headers on open. Full
+             fetch begins as autoPlay + canplay hand off to segment
+             streaming, so a modal-open-then-close costs kilobytes
+             instead of megabytes. We flip opacity as soon as ANY of
+             loadeddata / canplay / playing fires — whichever comes
+             first paints the video
              on screen. Cuts the perceived delay from ~2s to under 500ms
              when the video isn't already cached from grid hover. */
           style={{

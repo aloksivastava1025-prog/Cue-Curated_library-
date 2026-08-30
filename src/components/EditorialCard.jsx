@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
 import { optimizeCloudinaryUrl } from '../lib/media.js';
+import { useVideoSlot } from '../lib/videoGovernor.js';
 
 function formatCount(n) {
   const x = Number(n) || 0;
@@ -122,7 +123,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
   // (everHovered is sticky) so the browser buffer survives a
   // mouseleave — subsequent hovers play instantly with zero extra
   // egress.
-  const shouldMountHoverVideo = hoverIsVideo && everHovered;
+  //
+  // Additional guard: even if a future regression re-mounts videos
+  // on scroll, the useVideoSlot governor caps total mounted clips
+  // at MAX_ACTIVE (20). Beyond that, cards fall back to the poster.
+  const slot = useVideoSlot('editorial-card', item.id, hoverIsVideo && everHovered)
+  const shouldMountHoverVideo = hoverIsVideo && everHovered && slot.granted;
 
   const pillBase = {
     // Bumped from 10px / 5px×11px — real-user feedback (Ibrahim, Aug 24)

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { isPremium as isPremiumItem } from '../lib/promptHelpers.js'
+import { useVideoSlot } from '../lib/videoGovernor.js'
 
 /**
  * Awwwards-style horizontal "Design of the Day" rail.
@@ -155,6 +156,11 @@ function FeaturedCard({ item, onOpen }) {
   const videoRef = useRef(null)
   const cardRef = useRef(null)
 
+  const media = item.hoverSrc
+  const isImage = media && /\.(jpe?g|gif|png|webp|svg|heic)$/i.test(media)
+  const hoverIsVideo = media && !isImage
+  const slot = useVideoSlot('featured-rail', item.id, hoverIsVideo && everActive)
+
   useEffect(() => {
     if (hover && !everActive) setEverActive(true)
   }, [hover, everActive])
@@ -182,8 +188,6 @@ function FeaturedCard({ item, onOpen }) {
 
   const isPaid = isPremiumItem(item)
   const primaryCategory = String(item.category || '').split(',')[0].trim()
-  const media = item.hoverSrc
-  const isImage = media && /\.(jpe?g|gif|png|webp|svg|heic)$/i.test(media)
 
   return (
     <article
@@ -256,7 +260,7 @@ function FeaturedCard({ item, onOpen }) {
           />
         )}
 
-        {media && !isImage && !videoFailed && everActive && (
+        {media && !isImage && !videoFailed && everActive && slot.granted && (
           <video
             ref={videoRef}
             src={media}

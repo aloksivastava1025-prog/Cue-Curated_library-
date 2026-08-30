@@ -6,8 +6,9 @@
   "description": "Copy-paste prompts for landing pages. Black + electric blue premium theme.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run check-video && vite build",
     "preview": "vite preview",
+    "check-video": "node scripts/check-video-conventions.js",
     "import": "node scripts/import-partner-data.js"
   },
   "dependencies": {
