@@ -253,12 +253,14 @@ export default function EditorialCard({ item, setSelectedItem }) {
               background: '#000',
               transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-              /* Only hide the image once the video is *actually
-                 playing* — previously we hid it as soon as the card
-                 entered the viewport, but the video was still buffering
-                 so users saw the poster (same image) with no motion and
-                 assumed the animation never fired. */
-              opacity: (isHovered && (videoReady || readyTimeout) && !videoFailed) ? 0 : 1,
+              /* Never hide the thumbnail — the video overlay layers
+                 on top of it. When the video is playing, the opaque
+                 video hides the thumb visually; when the video is
+                 still buffering (or the mp4 lives on a slow origin),
+                 the thumb keeps showing so we never fall into a
+                 black-rectangle state. Also drops the readyTimeout
+                 race with viewport-play. */
+              opacity: 1,
               zIndex: 1,
             }}
           />
