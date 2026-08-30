@@ -62,15 +62,18 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (mouseHover && !everHovered) setEverHovered(true);
   }, [mouseHover, everHovered]);
 
-  // Also mount + preload the <video> for any card within 200px of
-  // the viewport, not only after the user hovers. R2 egress is free,
-  // so pre-warming buffers means the first hover kicks off with a
-  // fully-loaded clip — zero perceptible delay.
+  // Aggressive prefetch: mount + preload the <video> for any card
+  // within ~2 screen-heights of the viewport, not only after the
+  // user hovers. R2 egress is free, so by the time the user has
+  // scrolled the card into actual view, the clip is already
+  // buffered and play() is instant. Also runs on cold page-load
+  // for the first cards above the fold, so ambient motion kicks in
+  // immediately without a beat of frozen poster.
   useEffect(() => {
     if (!ref.current) return;
     const io = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !everHovered) setEverHovered(true);
-    }, { rootMargin: '200px' });
+    }, { rootMargin: '1200px' });
     io.observe(ref.current);
     return () => io.disconnect();
   }, [everHovered]);
