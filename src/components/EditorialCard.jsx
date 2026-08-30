@@ -26,13 +26,17 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const isBookmarked = bookmarkedIds?.has(item.id);
   const isLiked = likedIds?.has(item.id);
   const [likeAnim, setLikeAnim] = useState(false);
-  const [inView, setInView] = useState(false);
   const [mouseHover, setMouseHover] = useState(false);
-  const [inViewportPlay, setInViewportPlay] = useState(false);
-  // Effective active state — either the mouse is over the card OR it
-  // is centered enough in the viewport to auto-play. Separating the
-  // two prevents mouse-leave from pausing a card that's still on-screen.
-  const isHovered = mouseHover || inViewportPlay;
+  // Bandwidth fix (Aug 2026): the previous behaviour auto-played
+  // every card ≥40% in viewport, which downloaded the full clip for
+  // every visible card as the user scrolled. Egress hit 213 GB in
+  // days. New behaviour: video only mounts + downloads when the
+  // user *intentionally* hovers over the card. Once mounted, it
+  // stays mounted for the rest of the session (see everHovered),
+  // so a second hover plays instantly from the browser buffer with
+  // no re-download.
+  const [everHovered, setEverHovered] = useState(false);
+  const isHovered = mouseHover;
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   // Safety net — if the video hasn't emitted onLoadedData/onPlaying
@@ -49,59 +53,38 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const ref = useRef(null);
   const videoRef = useRef(null);
 
+  // Once the user hovers a card, mark it "everHovered" so the <video>
+  // stays mounted for the rest of the session. Prevents the second
+  // hover from re-downloading (video would unmount on mouseleave
+  // otherwise, drop its buffer, and re-fetch on next hover).
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      setInView(entry.isIntersecting);
-    }, { rootMargin: '200px' });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
+    if (mouseHover && !everHovered) setEverHovered(true);
+  }, [mouseHover, everHovered]);
 
-  // Auto-play videos for any card that's genuinely in view — desktop
-  // and mobile. Whichever row the user is looking at, its videos play
-  // silently as ambient motion (matches Awwwards / motionsites.ai).
-  // Cards that leave the viewport pause automatically so the browser
-  // doesn't burn cycles on off-screen video decode.
+  // Grace timer — after 600ms we treat "ready" as done even if the
+  // media events never fired, so the crossfade still happens.
   useEffect(() => {
-    if (!ref.current) return;
-    const io = new IntersectionObserver(([entry]) => {
-      setInViewportPlay(entry.isIntersecting && entry.intersectionRatio >= 0.4);
-    }, { threshold: [0, 0.4, 0.8, 1] });
-    io.observe(ref.current);
-    return () => io.disconnect();
-  }, []);
-
-  // 3-second grace timer once the card is in view — after this,
-  // treat "ready" as done even if the media events never fired.
-  useEffect(() => {
-    if (!(isHovered && inView)) { setReadyTimeout(false); return; }
+    if (!mouseHover) { setReadyTimeout(false); return; }
     if (videoReady) return;
-    // 600ms grace — user complained the thumbnail limbo felt broken.
-    // Force the crossfade this soon; worst case the poster shows for
-    // a heartbeat before frames catch up.
     const t = setTimeout(() => setReadyTimeout(true), 600);
     return () => clearTimeout(t);
-  }, [isHovered, inView, videoReady]);
+  }, [mouseHover, videoReady]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (isHovered && inView) {
-      // Browsers don't auto-refetch when the preload attribute flips
-      // metadata -> auto on an already-mounted element, so a card
-      // that mounted off-screen never actually starts buffering when
-      // it scrolls into view. Force it: load() drops the current
-      // network state and honours the *current* preload attribute
-      // (now "auto"), then play() rides on top of the fresh buffer.
-      // readyState < HAVE_FUTURE_DATA (3) means we don't have enough
-      // bytes to play yet — safe to reload.
-      try { if (v.readyState < 3) v.load(); } catch {}
+    if (mouseHover) {
+      // Do NOT call v.load() here — that force-refetches the file
+      // and was one of the reasons egress blew up. Trust the buffer
+      // the browser already has. If the video was just mounted this
+      // hover, preload="auto" is already fetching; play() will start
+      // as soon as canplay fires.
       const p = v.play();
       if (p && typeof p.catch === 'function') p.catch(() => {});
     } else {
       v.pause();
     }
-  }, [isHovered, inView]);
+  }, [mouseHover]);
 
   const formatAgo = (iso) => {
     if (!iso) return '';
@@ -133,13 +116,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
 
   const hoverIsImage = item.hoverSrc && /\.(jpeg|jpg|gif|png|webp|svg|heic)$/i.test(item.hoverSrc);
   const hoverIsVideo = item.hoverSrc && !hoverIsImage;
-  // Only mount the <video> when the card is near the viewport (200px
-  // rootMargin on the IntersectionObserver). Mounting all 70+ videos
-  // at once was pinning the main thread on scroll — each element
-  // reserves a GPU decoder slot even at preload="metadata". Thumbnail
-  // stays visible for out-of-viewport cards, so scroll stays smooth
-  // and the video hydrates just in time before the card is on screen.
-  const shouldMountHoverVideo = hoverIsVideo && inView;
+  // Mount the <video> only after the user has hovered the card at
+  // least once this session. Cards the user never touches never
+  // download the clip. Once mounted, we keep the element around
+  // (everHovered is sticky) so the browser buffer survives a
+  // mouseleave — subsequent hovers play instantly with zero extra
+  // egress.
+  const shouldMountHoverVideo = hoverIsVideo && everHovered;
 
   const pillBase = {
     // Bumped from 10px / 5px×11px — real-user feedback (Ibrahim, Aug 24)
@@ -268,12 +251,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
             loop
             muted
             playsInline
-            // Once the card is within 200px of the viewport we start
-            // buffering so hover → play is instant (was 3-5s with
-            // preload="metadata" — user thought cards were static and
-            // bounced). Off-screen cards stay on metadata so we don't
-            // burn bandwidth on the entire grid.
-            preload={inView ? 'auto' : 'metadata'}
+            // The video only mounts on first hover (everHovered gate
+            // above), so preload="auto" here aligns with real user
+            // intent — download the clip only when someone is
+            // actually asking to see it. Never fires on off-screen
+            // or non-interacted cards.
+            preload="auto"
             // Multiple readiness signals — some codecs fire only one
             // of these reliably. Any of them flips videoReady, which
             // is what actually reveals the video overlay + hides the
@@ -281,10 +264,10 @@ export default function EditorialCard({ item, setSelectedItem }) {
             // effect's play() call raced ahead of the buffer.
             onLoadedData={(e) => {
               setVideoReady(true);
-              if (isHovered && inView) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
+              if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onCanPlay={(e) => {
-              if (isHovered && inView) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
+              if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onPlaying={() => setVideoReady(true)}
             onError={() => {

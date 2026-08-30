@@ -372,7 +372,12 @@ export default function Modal({ item, onClose, showToast }) {
           src={modalVideoSrcFallback ? item.hoverSrc : optimizeCloudinaryUrl(item.hoverSrc)}
           poster={item.thumbSrc || undefined}
           autoPlay loop muted playsInline
-          preload="auto"
+          // Bandwidth fix (Aug 2026): dropped from "auto" to
+          // "metadata" so a modal-open doesn't force-download the
+          // full clip even when the user immediately closes. The
+          // <video> still autoPlays as soon as canplay fires — the
+          // browser fetches segments on demand.
+          preload="metadata"
           onLoadedData={(e) => { setModalVideoReady(true); const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }}
           onPlaying={() => setModalVideoReady(true)}
           onCanPlay={(e) => { setModalVideoReady(true); const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }}

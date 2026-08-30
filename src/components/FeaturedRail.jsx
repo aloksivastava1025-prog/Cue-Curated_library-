@@ -144,8 +144,20 @@ function FeaturedCard({ item, onOpen }) {
   const [hover, setHover] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
+  // Bandwidth fix (Aug 2026): the rail used to mount every <video>
+  // on page load even when the card was off-screen and never
+  // hovered. Now we only mount after the user has expressed intent
+  // — either they hovered (desktop) or the card is genuinely
+  // centered in the viewport on touch. Once mounted, we keep the
+  // element for the rest of the session so second-interaction is
+  // instant with no extra egress.
+  const [everActive, setEverActive] = useState(false)
   const videoRef = useRef(null)
   const cardRef = useRef(null)
+
+  useEffect(() => {
+    if (hover && !everActive) setEverActive(true)
+  }, [hover, everActive])
 
   useEffect(() => {
     const v = videoRef.current
@@ -244,13 +256,19 @@ function FeaturedCard({ item, onOpen }) {
           />
         )}
 
-        {media && !isImage && !videoFailed && (
+        {media && !isImage && !videoFailed && everActive && (
           <video
             ref={videoRef}
             src={media}
             poster={item.thumbSrc || undefined}
             loop muted playsInline
-            preload="metadata"
+            /* preload="auto" is safe here because we only mount the
+               element once the card has genuinely become active
+               (user hover or centered on touch) — never on cold
+               page-load for off-screen cards. */
+            preload="auto"
+            onLoadedData={() => setVideoReady(true)}
+            onCanPlay={() => setVideoReady(true)}
             onError={() => setVideoFailed(true)}
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%',
