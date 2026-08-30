@@ -213,7 +213,7 @@ export default function FounderDock() {
               onto this line reveals the code so users who bother to
               open the card get rewarded. */}
           <div className="cue-founder-coupon">
-            <span className="cue-founder-coupon-eyebrow">Coupon code · $49 lifetime</span>
+            <span className="cue-founder-coupon-eyebrow">Coupon code · $79 lifetime</span>
             <button
               type="button"
               className="cue-founder-coupon-code"

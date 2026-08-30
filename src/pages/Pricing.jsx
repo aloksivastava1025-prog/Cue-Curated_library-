@@ -99,27 +99,28 @@ export default function Pricing() {
   const [couponApplied, setCouponApplied] = useState('')
   const [customPackOpen, setCustomPackOpen] = useState(false)
 
-  // CUE49 is a 50%-off percentage code on Dodo. Works cleanly across
-  // both USD and INR because Dodo applies the percentage on the
-  // localised price, so we can render the discount natively in either
-  // currency without a broken FX conversion.
+  // CUE49 target: bring the founding price down to $79 (USD) or the
+  // INR equivalent. Actual number Dodo applies at checkout depends on
+  // the discount configured there — keep both in sync. Amount off is
+  // just the display delta.
   const couponEligible = true
   const isCue49 = couponEligible && couponApplied === 'CUE49'
   const foundingNumericForCue49 = Number(String(P.founding).replace(/,/g, '')) || 0
-  const cue49Pct = 50
-  const cue49AmountOff = Math.round((foundingNumericForCue49 * cue49Pct) / 100)
+  // CUE49 = 20% off on Dodo. USD $99 → $79, INR ₹4,999 → ₹3,999.
+  const cue49FinalPrice = P.sym === '$' ? 79 : 3999
+  const cue49AmountOff = Math.max(0, foundingNumericForCue49 - cue49FinalPrice)
   const cue49Display = isCue49
     ? {
         isCue49: true,
-        price: `${P.sym}${Math.max(0, foundingNumericForCue49 - cue49AmountOff).toLocaleString('en-US')}`,
+        price: `${P.sym}${cue49FinalPrice.toLocaleString('en-US')}`,
         crossed: `${P.sym}${P.founding}`,
-        offLabel: `${cue49Pct}%`,
+        offLabel: `${P.sym}${cue49AmountOff.toLocaleString('en-US')}`,
       }
     : {
         isCue49: false,
         price: `${P.sym}${P.founding}`,
         crossed: `${P.sym}${P.crossed}`,
-        offLabel: `${cue49Pct}%`,
+        offLabel: `${P.sym}${Math.max(0, foundingNumericForCue49 - cue49FinalPrice).toLocaleString('en-US')}`,
       }
 
   async function startFoundingCheckout() {
@@ -610,7 +611,7 @@ function CouponHintPill({ compact = false }) {
           fontWeight: 700, letterSpacing: '0.08em',
           color: '#a3e635',
         }}>CUE49</span>
-        <span style={{ color: 'rgba(255,255,255,0.55)' }}>· 50% off</span>
+        <span style={{ color: 'rgba(255,255,255,0.55)' }}>· 20% off</span>
         <span style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           color: copied ? '#22c55e' : 'rgba(255,255,255,0.55)',

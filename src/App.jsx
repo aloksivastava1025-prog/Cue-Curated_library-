@@ -733,7 +733,7 @@ function MainApp() {
                       <>
                         {spotsLeft} founding spots left ·{' '}
                         <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
-                        $49 lifetime
+                        $79 lifetime
                       </>
                     )}
               </span>
@@ -1247,7 +1247,7 @@ function useCouponHeroLabel() {
       <>
         Find the coupon —{' '}
         <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
-        $49 lifetime
+        $79 lifetime
       </>
     ),
     _tick: tick,

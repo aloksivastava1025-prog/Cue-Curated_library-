@@ -344,7 +344,7 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
               <span>{formatTimeLeft(timeLeft)}</span>
             </div>
             <p className="cue-welcome-sub">
-              Cue+ is $99 lifetime. But somewhere on this site, there&apos;s a coupon that drops it to $49.
+              Cue+ is $99 lifetime. But somewhere on this site, there&apos;s a coupon that drops it to $79.
               <br /><br />
               Explore with patience — Cue is known for its micro-interactions and Awwwards-tier components. Hints hide in plain sight.
               <br /><br />
