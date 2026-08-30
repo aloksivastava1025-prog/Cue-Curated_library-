@@ -253,14 +253,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
               background: '#000',
               transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-              /* Never hide the thumbnail — the video overlay layers
-                 on top of it. When the video is playing, the opaque
-                 video hides the thumb visually; when the video is
-                 still buffering (or the mp4 lives on a slow origin),
-                 the thumb keeps showing so we never fall into a
-                 black-rectangle state. Also drops the readyTimeout
-                 race with viewport-play. */
-              opacity: 1,
+              /* Crossfade: thumbnail visible until the video actually
+                 emits onPlaying (not just canPlay / loadedData — those
+                 fire while the video is still stalling on the network,
+                 which used to leave a black gap when the buffer was
+                 slow). Once real playback starts, the thumb fades out
+                 and the video takes over. */
+              opacity: (isHovered && videoReady && !videoFailed) ? 0 : 1,
               zIndex: 1,
             }}
           />
@@ -296,8 +295,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
             // is what actually reveals the video overlay + hides the
             // thumbnail beneath. Also re-tries play() here in case the
             // effect's play() call raced ahead of the buffer.
+            /* onLoadedData / onCanPlay only trigger playback — they
+               do NOT flip videoReady. The thumbnail must remain
+               visible until pixels are actually rendering, which is
+               what onPlaying signals. Prevents the "black frame"
+               state where the video was decoded but not yet drawn. */
             onLoadedData={(e) => {
-              setVideoReady(true);
               if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onCanPlay={(e) => {
