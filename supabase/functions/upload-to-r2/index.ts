@@ -76,13 +76,19 @@ serve(async (req) => {
       region: 'auto',
     });
 
+    // Buffer the file into memory rather than streaming — aws4fetch
+    // reads the body to compute the SHA-256 for the Sig V4 signature,
+    // which locks a ReadableStream and errors out on the second read
+    // ("ReadableStream is locked or disturbed"). ArrayBuffer is
+    // re-readable and safe up to Supabase Edge Functions' 256 MB
+    // memory ceiling; 20 MB uploads sit comfortably inside that.
+    const buf = new Uint8Array(await file.arrayBuffer());
     const putUrl = `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`;
     const putResp = await aws.fetch(putUrl, {
       method: 'PUT',
-      body: file.stream(),
+      body: buf,
       headers: {
         'Content-Type': file.type || 'application/octet-stream',
-        'Content-Length': String(file.size),
         'Cache-Control': CACHE_CONTROL,
       },
     });
