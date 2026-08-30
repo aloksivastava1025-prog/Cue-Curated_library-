@@ -80,10 +80,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (!ref.current) return;
     const noHover = typeof window !== 'undefined'
       && window.matchMedia && window.matchMedia('(hover: none)').matches;
-    const threshold = noHover ? 0.8 : 0.4;
+    // Lower threshold on desktop (0.25) so ambient motion kicks in
+    // as soon as the card meaningfully enters the viewport, not
+    // when it's already centred. Touch stays at 0.8 — one at a time.
+    const threshold = noHover ? 0.8 : 0.25;
     const io = new IntersectionObserver(([entry]) => {
       setMouseHover(entry.isIntersecting && entry.intersectionRatio >= threshold);
-    }, { threshold: [0, 0.4, 0.6, 0.8, 1] });
+    }, { threshold: [0, 0.25, 0.5, 0.8, 1] });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);
@@ -295,15 +298,21 @@ export default function EditorialCard({ item, setSelectedItem }) {
             // is what actually reveals the video overlay + hides the
             // thumbnail beneath. Also re-tries play() here in case the
             // effect's play() call raced ahead of the buffer.
-            /* onLoadedData / onCanPlay only trigger playback — they
-               do NOT flip videoReady. The thumbnail must remain
-               visible until pixels are actually rendering, which is
-               what onPlaying signals. Prevents the "black frame"
-               state where the video was decoded but not yet drawn. */
+            /* Crossfade fires ASAP:
+                 - onLoadedData: metadata + first frame available.
+                   Flip videoReady so the thumb starts fading. The
+                   video's own poster attribute is the same image,
+                   so even if the actual play is a beat away, the
+                   picture stays identical — no black frame possible.
+                 - onCanPlay: enough buffered to start; kick play().
+                 - onPlaying: extra safety, in case earlier events
+                   were skipped by the codec pipeline. */
             onLoadedData={(e) => {
+              setVideoReady(true);
               if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onCanPlay={(e) => {
+              setVideoReady(true);
               if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onPlaying={() => setVideoReady(true)}
