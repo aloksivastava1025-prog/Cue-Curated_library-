@@ -1,11 +1,12 @@
 // ============================================================
-// Cue — R2 upload proxy (S3-compatible)
+// Cue — R2 upload proxy (S3-compatible, direct fetch)
 // ============================================================
-// Browsers can't ship R2 API credentials, so admin uploads route
-// through this edge function. It receives a multipart file, signs
-// an S3-compatible PUT against Cloudflare R2, and returns the
-// public URL. Same shape as backend.uploadMedia's old return
-// (Supabase getPublicUrl → { url, kind }).
+// Admin uploads land here; the function signs an AWS Sig V4 PUT
+// request against Cloudflare R2 and streams the bytes through.
+// Avoids @aws-sdk/client-s3 entirely because it cold-starts slowly
+// on Supabase Edge Functions (esm.sh has to pull a huge bundle),
+// which was causing 60-second timeouts on 5MB uploads.
+// aws4fetch is 4 KB, self-contained, and Cloudflare-friendly.
 //
 // Env vars required (Supabase → Functions → Secrets):
 //   R2_ACCESS_KEY_ID
@@ -13,17 +14,10 @@
 //   R2_ENDPOINT             (e.g. https://<accountid>.r2.cloudflarestorage.com)
 //   R2_BUCKET               (cue-media)
 //   R2_PUBLIC_URL           (https://pub-XXXX.r2.dev)
-//
-// Callers: any signed-in user (Clerk-authenticated request). Admin
-// gating happens in the client — this proxy stays permissive so
-// non-admin flows (avatar uploads by regular users) also work.
 // ============================================================
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  S3Client,
-  PutObjectCommand,
-} from 'https://esm.sh/@aws-sdk/client-s3@3.658.0';
+import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -70,30 +64,36 @@ serve(async (req) => {
         status: 400, headers: { ...headers, 'Content-Type': 'application/json' },
       });
     }
-    // Optional path prefix — e.g. 'avatars/user-123-'. Falls back to
-    // just a timestamped random name in bucket root (matches the old
-    // Supabase upload key shape so pre-migration URLs and post-
-    // migration URLs are structurally identical).
     const prefix = String(form.get('prefix') || '').replace(/[^a-z0-9/_-]/gi, '');
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/gi, '');
     const randPart = crypto.randomUUID().slice(0, 6);
     const key = `${prefix ? prefix + '/' : ''}${Date.now()}-${randPart}.${ext}`;
 
-    const buf = new Uint8Array(await file.arrayBuffer());
-
-    const client = new S3Client({
+    const aws = new AwsClient({
+      accessKeyId: accessKey,
+      secretAccessKey: secret,
+      service: 's3',
       region: 'auto',
-      endpoint,
-      credentials: { accessKeyId: accessKey, secretAccessKey: secret },
     });
 
-    await client.send(new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buf,
-      ContentType: file.type || 'application/octet-stream',
-      CacheControl: CACHE_CONTROL,
-    }));
+    const putUrl = `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`;
+    const putResp = await aws.fetch(putUrl, {
+      method: 'PUT',
+      body: file.stream(),
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+        'Content-Length': String(file.size),
+        'Cache-Control': CACHE_CONTROL,
+      },
+    });
+
+    if (!putResp.ok) {
+      const t = await putResp.text().catch(() => '');
+      console.error('R2 PUT failed', putResp.status, t.slice(0, 200));
+      return new Response(JSON.stringify({ error: `R2 PUT ${putResp.status}: ${t.slice(0, 200)}` }), {
+        status: 502, headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
 
     const url = `${publicUrl.replace(/\/$/, '')}/${key}`;
     const kind = (file.type || '').startsWith('video/') ? 'video' : 'image';

@@ -512,7 +512,10 @@ const supabaseAdapter = {
     fd.append('prefix', `avatars/${clerkUserId}`)
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
       body: fd,
     })
     if (!resp.ok) {
@@ -1102,7 +1105,10 @@ const supabaseAdapter = {
     fd.append('file', file)
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY },
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
       body: fd,
     })
     if (!resp.ok) {
