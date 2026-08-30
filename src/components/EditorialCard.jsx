@@ -62,6 +62,19 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (mouseHover && !everHovered) setEverHovered(true);
   }, [mouseHover, everHovered]);
 
+  // Also mount + preload the <video> for any card within 200px of
+  // the viewport, not only after the user hovers. R2 egress is free,
+  // so pre-warming buffers means the first hover kicks off with a
+  // fully-loaded clip — zero perceptible delay.
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !everHovered) setEverHovered(true);
+    }, { rootMargin: '200px' });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [everHovered]);
+
   // Viewport-triggered auto-play for ALL devices (desktop + touch).
   // Original ambient-motion behaviour: as a card scrolls into view,
   // its hover video plays; as it leaves, it pauses. Was disabled
