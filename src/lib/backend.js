@@ -1232,17 +1232,30 @@ const supabaseAdapter = {
   // Get user's plan from user_profiles (for entitlement checks).
   async getUserPlan(userId) {
     if (!userId) return { plan: 'free' }
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('plan, plan_source, plan_started_at, plan_expires_at')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (error || !data) return { plan: 'free' }
-    // Check if plan has expired (null = lifetime, never expires).
-    if (data.plan_expires_at && new Date(data.plan_expires_at) < new Date()) {
+    // Route through the edge fn so RLS on user_profiles doesn't
+    // return an empty result for the very user who owns the row.
+    // The fn verifies the Clerk JWT and reads via service-role,
+    // then falls back to email match so paying customers with a
+    // secondary Clerk account still see cue_plus.
+    try {
+      const token = await _getClerkSessionToken()
+      if (!token) return { plan: 'free' }
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-user-plan`
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      })
+      if (!resp.ok) return { plan: 'free' }
+      const data = await resp.json()
+      return data || { plan: 'free' }
+    } catch (_) {
       return { plan: 'free' }
     }
-    return data
   },
   
   // Legacy no-ops kept for AppContext compatibility. Auth is done via Clerk;
