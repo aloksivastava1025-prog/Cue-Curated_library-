@@ -9,6 +9,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
+import { verifyClerkJwt, authErrorResponse } from '../_shared/clerk.ts'
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -37,17 +38,32 @@ serve(async (req) => {
     return new Response('ok', { headers })
   }
 
+  // AUTH: pre-launch audit — trusting body.userId let any signed-in
+  // attacker fetch anyone else's billing details (plan expiry, Dodo
+  // customer id, next billing date, subscription id). Now we verify
+  // the caller's Clerk JWT and use the verified sub.
+  let verifiedSub = ''
+  let verifiedEmail = ''
+  try {
+    const claims = await verifyClerkJwt(req)
+    verifiedSub = claims.sub
+    verifiedEmail = (claims.email || '').toLowerCase()
+  } catch (err) {
+    return authErrorResponse(err, headers)
+  }
+
   try {
     const body = await req.json().catch(() => ({}))
-    const userId: string | null = body?.userId || null
-    const email: string | null = body?.email ? String(body.email).toLowerCase() : null
+    const bodyUserId: string | null = body?.userId || null
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing userId' }), {
-        status: 400,
+    if (bodyUserId && bodyUserId !== verifiedSub) {
+      return new Response(JSON.stringify({ error: 'userId does not match token' }), {
+        status: 403,
         headers: { ...headers, 'Content-Type': 'application/json' },
       })
     }
+    const userId = verifiedSub
+    const email: string | null = verifiedEmail || null
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

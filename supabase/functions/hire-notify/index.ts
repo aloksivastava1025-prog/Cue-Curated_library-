@@ -6,6 +6,7 @@
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { enforceIpRateLimit } from '../_shared/rateLimit.ts';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -72,6 +73,12 @@ const TYPE_LABEL: Record<string, string> = {
 serve(async (req) => {
   const headers = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
+
+  // Rate-limit: 5 briefs per IP per hour. A serious buyer never
+  // submits 5+ briefs in an hour; anything above that is a bot
+  // trying to spam Alok's inbox + burn Resend quota.
+  const limited = await enforceIpRateLimit(req, 'hire-notify', 5, 60 * 60 * 1000, headers);
+  if (limited) return limited;
 
   try {
     const body = await req.json();

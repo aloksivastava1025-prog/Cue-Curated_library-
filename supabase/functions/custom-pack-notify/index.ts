@@ -10,6 +10,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { enforceIpRateLimit } from '../_shared/rateLimit.ts';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -62,6 +63,11 @@ async function sendViaResend(payload: {
 serve(async (req) => {
   const headers = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
+
+  // Rate-limit: 5 requests per IP per hour. Prevents a bot from
+  // spam-filling custom_pack_requests + email-bombing the founder.
+  const limited = await enforceIpRateLimit(req, 'custom-pack-notify', 5, 60 * 60 * 1000, headers);
+  if (limited) return limited;
 
   try {
     const body = await req.json();

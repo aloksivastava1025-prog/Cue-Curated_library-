@@ -18,6 +18,18 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
+import { verifyClerkJwt, authErrorResponse } from '../_shared/clerk.ts';
+
+// Cap per-file bytes at 25 MB. Anything larger is either an
+// accidentally-heavy asset or an abuse attempt.
+const MAX_BYTES = 25 * 1024 * 1024;
+// Whitelist mime types. R2 will still store whatever we send, but
+// gating here means the bucket cannot be turned into a phishing
+// host / malware relay via arbitrary Content-Types.
+const ALLOWED_MIME = new Set<string>([
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic',
+  'video/mp4', 'video/webm', 'video/quicktime',
+]);
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -45,6 +57,17 @@ serve(async (req) => {
   const headers = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
 
+  // AUTH: only signed-in Clerk users can upload. Pre-launch audit
+  // flagged the previous "no auth, no size cap, no MIME check"
+  // shape as a free R2 filler + phishing-host relay.
+  let clerkSub = '';
+  try {
+    const claims = await verifyClerkJwt(req);
+    clerkSub = claims.sub;
+  } catch (err) {
+    return authErrorResponse(err, headers);
+  }
+
   try {
     const accessKey = Deno.env.get('R2_ACCESS_KEY_ID');
     const secret = Deno.env.get('R2_SECRET_ACCESS_KEY');
@@ -64,10 +87,32 @@ serve(async (req) => {
         status: 400, headers: { ...headers, 'Content-Type': 'application/json' },
       });
     }
-    const prefix = String(form.get('prefix') || '').replace(/[^a-z0-9/_-]/gi, '');
+    if (file.size > MAX_BYTES) {
+      return new Response(JSON.stringify({ error: `file too large (${file.size} bytes, max ${MAX_BYTES})` }), {
+        status: 413, headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+    const mime = (file.type || '').toLowerCase();
+    if (!ALLOWED_MIME.has(mime)) {
+      return new Response(JSON.stringify({ error: `mime not allowed: ${mime}` }), {
+        status: 415, headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+    // Strip `..` and absolute paths from prefix. Only allow simple
+    // safe path segments (letters, digits, underscore, hyphen).
+    const rawPrefix = String(form.get('prefix') || '');
+    const prefix = rawPrefix
+      .split('/')
+      .map((seg) => seg.replace(/[^a-z0-9_-]/gi, ''))
+      .filter(Boolean)
+      .join('/');
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/gi, '');
-    const randPart = crypto.randomUUID().slice(0, 6);
+    // Full UUID (32 hex) instead of 6-char slice — pre-audit key
+    // shape was enumerable within a ~16M window.
+    const randPart = crypto.randomUUID().replace(/-/g, '');
     const key = `${prefix ? prefix + '/' : ''}${Date.now()}-${randPart}.${ext}`;
+    // Log the uploader for post-hoc abuse auditing.
+    console.log(JSON.stringify({ evt: 'upload-to-r2', sub: clerkSub, key, size: file.size, mime }));
 
     const aws = new AwsClient({
       accessKeyId: accessKey,

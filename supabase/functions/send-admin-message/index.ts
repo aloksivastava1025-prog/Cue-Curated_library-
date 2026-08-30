@@ -9,6 +9,7 @@
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { verifyClerkAdmin, authErrorResponse } from '../_shared/clerk.ts'
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -37,6 +38,16 @@ const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => (
 serve(async (req) => {
   const headers = corsHeaders(req)
   if (req.method === 'OPTIONS') return new Response('ok', { headers })
+
+  // AUTH: this function sends DKIM-signed mail from @cuedesign.space
+  // — a pre-launch audit flagged it as an open phishing relay because
+  // it accepted any POST. Verify the caller is a Clerk-authenticated
+  // admin before doing anything else.
+  try {
+    await verifyClerkAdmin(req)
+  } catch (err) {
+    return authErrorResponse(err, headers)
+  }
 
   try {
     const body = await req.json().catch(() => ({}))

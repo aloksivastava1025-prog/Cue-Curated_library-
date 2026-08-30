@@ -15,6 +15,7 @@
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { verifyClerkAdmin, authErrorResponse } from '../_shared/clerk.ts';
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.44.2';
 
@@ -157,6 +158,15 @@ serve(async (req) => {
 
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
+  }
+
+  // AUTH: pre-launch audit — this function spends Anthropic tokens
+  // per call. Without a gate, a bot could rack up API costs quickly.
+  // Restrict to Clerk-authenticated admins.
+  try {
+    await verifyClerkAdmin(req);
+  } catch (err) {
+    return authErrorResponse(err, cors);
   }
 
   try {

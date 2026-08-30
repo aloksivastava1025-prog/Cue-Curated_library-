@@ -1,5 +1,22 @@
 import { supabase } from './supabase.js'
 
+// Grab a fresh Clerk session token so admin edge-function calls can
+// be authenticated via `Authorization: Bearer …`. Clerk's React SDK
+// exposes the session on `window.Clerk`; falls back gracefully if
+// the SDK hasn't hydrated yet (returns empty string, which the
+// server rejects — surfaced to the user via the fetch error).
+async function _getClerkSessionToken() {
+  try {
+    if (typeof window === 'undefined') return ''
+    const clerk = window.Clerk
+    if (!clerk) return ''
+    if (typeof clerk.session?.getToken === 'function') {
+      return (await clerk.session.getToken()) || ''
+    }
+  } catch (_) { /* swallow — edge fn will 401 */ }
+  return ''
+}
+
 // ============================================================
 // CUE v2.0 — Hardened Backend Adapter
 // ============================================================
@@ -510,11 +527,12 @@ const supabaseAdapter = {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('prefix', `avatars/${clerkUserId}`)
+    const token = await _getClerkSessionToken()
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: fd,
     })
@@ -915,29 +933,49 @@ const supabaseAdapter = {
     return { ok: true }
   },
 
-  // Admin: list every custom-pack request.
-  async listCustomPackRequests(clerkUser) {
-    const adminEmail = clerkUser?.primaryEmailAddress?.emailAddress
-      || clerkUser?.emailAddresses?.[0]?.emailAddress
-      || ''
-    const { data, error } = await supabase.functions.invoke('admin-custom-packs', {
-      body: { action: 'list', adminEmail },
+  // Admin: list every custom-pack request. Requires a Clerk-signed
+  // JWT — the edge function verifies it, so trusting body.adminEmail
+  // (the old shape) is no longer possible.
+  async listCustomPackRequests(_clerkUser) {
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-custom-packs`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'list' }),
     })
-    if (error) throw new Error(error.message || 'Could not load requests')
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`list failed (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    const data = await resp.json()
     return data?.rows || []
   },
 
   // Admin: patch a single custom-pack request. Accepts any subset of
   // { status, admin_note, quoted_amount_cents, quoted_currency,
   // quoted_link }; validation happens server-side.
-  async updateCustomPackRequest(clerkUser, id, patch = {}) {
-    const adminEmail = clerkUser?.primaryEmailAddress?.emailAddress
-      || clerkUser?.emailAddresses?.[0]?.emailAddress
-      || ''
-    const { data, error } = await supabase.functions.invoke('admin-custom-packs', {
-      body: { action: 'update', adminEmail, id, ...patch },
+  async updateCustomPackRequest(_clerkUser, id, patch = {}) {
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-custom-packs`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'update', id, ...patch }),
     })
-    if (error) throw new Error(error.message || 'Could not update request')
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`update failed (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    const data = await resp.json()
     return data?.row
   },
 
@@ -1006,9 +1044,26 @@ const supabaseAdapter = {
     const email = clerkUser?.primaryEmailAddress?.emailAddress
       || clerkUser?.emailAddresses?.[0]?.emailAddress
       || null
-    const { data, error } = await supabase.functions.invoke('get-my-billing', {
-      body: { userId: clerkUser.id, email },
+    // Send Clerk session token so the edge fn can verify sub — see
+    // security lockdown 2. Falls back to anon-key only if Clerk
+    // hasn't hydrated, in which case the fn will 401 (safe deny).
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-my-billing`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: clerkUser.id, email }),
     })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`billing (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    const data = await resp.json()
+    const error = null
     if (error) throw new Error(error.message || 'Could not load billing')
     return data
   },
@@ -1070,9 +1125,23 @@ const supabaseAdapter = {
   // returns { already_cancelled: true } without hitting Dodo again.
   async cancelSubscription(clerkUserId) {
     if (!clerkUserId) throw new Error('Sign in required')
-    const { data, error } = await supabase.functions.invoke('cancel-subscription', {
-      body: { userId: clerkUserId },
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: clerkUserId }),
     })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`cancel (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    const data = await resp.json()
+    const error = null
     if (error) {
       let msg = error.message || 'Cancellation failed'
       try {
@@ -1103,11 +1172,12 @@ const supabaseAdapter = {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-to-r2`
     const fd = new FormData()
     fd.append('file', file)
+    const token = await _getClerkSessionToken()
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: fd,
     })

@@ -21,6 +21,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
+import { verifyClerkJwt, authErrorResponse } from '../_shared/clerk.ts'
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -70,16 +71,29 @@ serve(async (req) => {
     })
   }
 
+  // AUTH: pre-launch audit found this trusted body.userId — attackers
+  // could cancel any Cue+ user's subscription by guessing/enumerating
+  // Clerk user ids. Now we verify the caller's Clerk JWT and use the
+  // verified `sub` — the body id (if present) must match.
+  let verifiedSub = ''
   try {
-    const body = await req.json()
-    const userId: string | undefined = body?.userId
+    const claims = await verifyClerkJwt(req)
+    verifiedSub = claims.sub
+  } catch (err) {
+    return authErrorResponse(err, headers)
+  }
 
-    if (!userId || typeof userId !== 'string' || userId.length > 100) {
-      return new Response(JSON.stringify({ error: 'Missing or invalid userId' }), {
-        status: 400,
+  try {
+    const body = await req.json().catch(() => ({}))
+    const bodyUserId: string | undefined = body?.userId
+
+    if (bodyUserId && bodyUserId !== verifiedSub) {
+      return new Response(JSON.stringify({ error: 'userId does not match token' }), {
+        status: 403,
         headers: { ...headers, 'Content-Type': 'application/json' },
       })
     }
+    const userId = verifiedSub
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
     const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''

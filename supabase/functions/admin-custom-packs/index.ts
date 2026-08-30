@@ -10,6 +10,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { verifyClerkAdmin, authErrorResponse } from '../_shared/clerk.ts';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -42,20 +43,20 @@ serve(async (req) => {
   const headers = corsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
 
+  // AUTH: verify Clerk JWT (not body). Prior behaviour trusted
+  // body.adminEmail — pre-launch audit showed anyone could dump
+  // every custom pack request or mark packs 'paid' by spoofing
+  // that string. Now we require a signed token whose email is on
+  // the admin allowlist.
+  try {
+    await verifyClerkAdmin(req);
+  } catch (err) {
+    return authErrorResponse(err, headers);
+  }
+
   try {
     const body = await req.json();
-    const { action, adminEmail } = body || {};
-
-    // Authorise the caller. adminEmail is a Clerk-supplied user
-    // email string; we don't need it to be JWT-verified because
-    // the worst a spoofer can do is list custom-pack requests
-    // (no PII beyond emails they've likely already sold) and
-    // update a status field. Financial state doesn't live here.
-    if (!adminEmail || !ADMIN_EMAILS.has(String(adminEmail).toLowerCase())) {
-      return new Response(JSON.stringify({ error: 'not authorised' }), {
-        status: 403, headers: { ...headers, 'Content-Type': 'application/json' },
-      });
-    }
+    const { action } = body || {};
 
     const url = Deno.env.get('SUPABASE_URL') || '';
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';

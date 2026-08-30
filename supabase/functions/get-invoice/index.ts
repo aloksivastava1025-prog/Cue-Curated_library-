@@ -1,13 +1,17 @@
 // ============================================================
 // CUE — Fetch Dodo invoice PDF for a payment
 // ============================================================
-// Public endpoint. Anyone with a valid Dodo payment_id can pull the
-// invoice — this is fine because payment IDs are opaque, only the
-// buyer sees theirs in the redirect URL, and Dodo already emails the
-// invoice unconditionally.
+// Signed-in owner or admin only. Pre-launch audit flagged the
+// previous "opaque id = safety" reasoning as insufficient: pay_ids
+// are logged and can leak via forwarded emails / admin snapshots,
+// so we now verify the caller is either the buyer (matched via
+// payment_events.customer_id → user_profiles.dodo_customer_id) or
+// an admin.
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
+import { verifyClerkJwt, authErrorResponse } from '../_shared/clerk.ts'
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -52,6 +56,45 @@ serve(async (req) => {
         status: 400,
         headers: { ...headers, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Ownership check — verify the caller is either the buyer of
+    // this payment or an admin. Anonymous / unrelated users get 403.
+    try {
+      const claims = await verifyClerkJwt(req)
+      const email = (claims.email || '').toLowerCase()
+      const ADMIN_EMAILS = new Set([
+        'aloks.int@teachforindia.org',
+        'aloksivastava1025@gmail.com',
+        'akashkumar7653099@gmail.com',
+        'srivastavaalok2214@gmail.com',
+      ])
+      if (!ADMIN_EMAILS.has(email)) {
+        // Non-admin — verify this payment belongs to them.
+        const supa = createClient(
+          Deno.env.get('SUPABASE_URL') || '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+        )
+        const { data: pe } = await supa
+          .from('payment_events')
+          .select('payload')
+          .contains('payload', { data: { payment_id: paymentId } })
+          .maybeSingle()
+        const dodoCust = pe?.payload?.data?.customer?.customer_id
+        const { data: prof } = await supa
+          .from('user_profiles')
+          .select('dodo_customer_id')
+          .eq('user_id', claims.sub)
+          .maybeSingle()
+        if (!dodoCust || !prof?.dodo_customer_id || dodoCust !== prof.dodo_customer_id) {
+          return new Response(JSON.stringify({ error: 'Not authorised for this payment' }), {
+            status: 403,
+            headers: { ...headers, 'Content-Type': 'application/json' },
+          })
+        }
+      }
+    } catch (err) {
+      return authErrorResponse(err, headers)
     }
 
     const dodoApiKey = (Deno.env.get('DODO_PAYMENTS_API_KEY') || '').trim()
