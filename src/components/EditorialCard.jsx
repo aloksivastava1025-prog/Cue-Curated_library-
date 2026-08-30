@@ -62,6 +62,24 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (mouseHover && !everHovered) setEverHovered(true);
   }, [mouseHover, everHovered]);
 
+  // Touch / no-hover devices: mobile users cannot hover, so without a
+  // fallback every card would sit frozen on its poster. Bring back a
+  // viewport-triggered "play" for touch devices only — but with a
+  // very high visibility threshold (0.8) so at most 1 card at a time
+  // qualifies. Combined with useVideoSlot's 20-slot cap, this
+  // reintroduces motion on mobile without blowing egress back up.
+  useEffect(() => {
+    if (!ref.current) return;
+    const noHover = typeof window !== 'undefined'
+      && window.matchMedia && window.matchMedia('(hover: none)').matches;
+    if (!noHover) return;
+    const io = new IntersectionObserver(([entry]) => {
+      setMouseHover(entry.isIntersecting && entry.intersectionRatio >= 0.8);
+    }, { threshold: [0, 0.5, 0.8, 1] });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+
   // Grace timer — after 600ms we treat "ready" as done even if the
   // media events never fired, so the crossfade still happens.
   useEffect(() => {
