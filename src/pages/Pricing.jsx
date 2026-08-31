@@ -346,7 +346,7 @@ export default function Pricing() {
                 ]}
                 termsCopy={
                   <>
-                    Requesting a pack means you accept our{' '}
+                    By requesting you accept our{' '}
                     <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
                     <a href="#/legal/license" style={termsLinkStyle}>License</a>.
                   </>
@@ -406,10 +406,10 @@ export default function Pricing() {
                 ]}
                 termsCopy={
                   <>
-                    By claiming your founding spot you agree to our{' '}
+                    By claiming you agree to our{' '}
                     <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
-                    <a href="#/legal/license" style={termsLinkStyle}>License</a>.
-                    <br />No resell, no redistribution, no AI-training on Cue content.
+                    <a href="#/legal/license" style={termsLinkStyle}>License</a>{' '}
+                    — commercial use, no resell.
                   </>
                 }
               />
@@ -443,7 +443,7 @@ export default function Pricing() {
                 ]}
                 termsCopy={
                   <>
-                    Starting the subscription means you accept our{' '}
+                    By subscribing you accept our{' '}
                     <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
                     <a href="#/legal/license" style={termsLinkStyle}>License</a>.
                   </>
@@ -764,14 +764,6 @@ function Col({
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: 20 }}>{cta}</div>
-        {termsCopy && (
-          <div style={{
-            marginTop: 10, fontSize: 10.5, lineHeight: 1.5,
-            color: 'var(--text-dim)', textAlign: 'center',
-          }}>
-            {termsCopy}
-          </div>
-        )}
       </div>
 
       {/* Optional extra slot — sits BELOW the fixed-height top block
@@ -782,6 +774,20 @@ function Col({
       {extra && (
         <div style={{ padding: '0 40px 20px', boxSizing: 'border-box' }}>
           {extra}
+        </div>
+      )}
+
+      {/* Click-wrap terms microcopy — its own slot outside the
+          fixed-height top block so the copy never bleeds into the
+          features list below. */}
+      {termsCopy && (
+        <div style={{
+          padding: '0 40px 16px',
+          fontSize: 10.5, lineHeight: 1.5,
+          color: 'var(--text-dim)', textAlign: 'center',
+          boxSizing: 'border-box',
+        }}>
+          {termsCopy}
         </div>
       )}
 
