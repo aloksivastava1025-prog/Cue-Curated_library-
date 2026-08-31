@@ -62,21 +62,30 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (mouseHover && !everHovered) setEverHovered(true);
   }, [mouseHover, everHovered]);
 
-  // Aggressive prefetch: mount + preload the <video> for any card
-  // within ~2 screen-heights of the viewport, not only after the
-  // user hovers. R2 egress is free, so by the time the user has
-  // scrolled the card into actual view, the clip is already
-  // buffered and play() is instant. Also runs on cold page-load
-  // for the first cards above the fold, so ambient motion kicks in
-  // immediately without a beat of frozen poster.
+  // Two-tier prefetch: warm the HTTP cache for cards ~1.5 screen
+  // heights away WITHOUT mounting a <video> element. Bytes land in
+  // the browser cache; no decoder slot is used and no governor
+  // pressure is created. When the card actually enters the viewport
+  // and mounts its <video>, the source pulls from cache — play() is
+  // instant instead of waiting on a fresh HTTP round-trip. Runs once
+  // per card via the disconnect-on-hit pattern.
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || !hoverIsVideo) return;
+    const url = optimizeCloudinaryUrl(item.hoverSrc);
+    if (!url) return;
     const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !everHovered) setEverHovered(true);
+      if (entry.isIntersecting) {
+        // Fire-and-forget fetch — browser stores response in the
+        // shared HTTP cache. no-cors keeps R2 URLs from tripping
+        // CORS since we only care about cache warming, not the
+        // response body.
+        try { fetch(url, { mode: 'no-cors', credentials: 'omit' }).catch(() => {}); } catch {}
+        io.disconnect();
+      }
     }, { rootMargin: '1200px' });
     io.observe(ref.current);
     return () => io.disconnect();
-  }, [everHovered]);
+  }, [item.id, item.hoverSrc]);
 
   // Viewport-triggered auto-play for ALL devices (desktop + touch).
   // Original ambient-motion behaviour: as a card scrolls into view,
