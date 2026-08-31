@@ -17,6 +17,52 @@ async function _getClerkSessionToken() {
   return ''
 }
 
+// Presigned R2 upload — one hop from browser directly to R2 with a
+// short-lived signed URL from the r2-presign edge function. Prior
+// path was browser → upload-to-r2 → R2, which buffered the whole
+// file in the edge fn and timed out on 15+ MB videos. This path has
+// no bandwidth cost on Supabase and no timeout since R2 owns the
+// PUT. Returns { url: publicUrl, kind: 'video' | 'image' }.
+async function _presignedUpload(file, prefix) {
+  const token = await _getClerkSessionToken()
+  const presignUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-presign`
+  const presignResp = await fetch(presignUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type,
+      size: file.size,
+      prefix: prefix || '',
+    }),
+  })
+  if (!presignResp.ok) {
+    const t = await presignResp.text().catch(() => '')
+    throw new Error(`Presign failed (${presignResp.status}): ${t.slice(0, 200)}`)
+  }
+  const { putUrl, publicUrl, contentType } = await presignResp.json()
+  if (!putUrl || !publicUrl) throw new Error('Presign returned no URL')
+
+  // Direct browser → R2 PUT. Content-Type must match what we signed
+  // with (r2-presign echoes back the exact value) or R2 rejects the
+  // signature.
+  const putResp = await fetch(putUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType || file.type || 'application/octet-stream' },
+    body: file,
+  })
+  if (!putResp.ok) {
+    const t = await putResp.text().catch(() => '')
+    throw new Error(`R2 upload failed (${putResp.status}): ${t.slice(0, 200)}`)
+  }
+  const kind = (file.type || '').startsWith('video/') ? 'video' : 'image'
+  return { url: publicUrl, kind }
+}
+
 // ============================================================
 // CUE v2.0 — Hardened Backend Adapter
 // ============================================================
@@ -537,30 +583,8 @@ const supabaseAdapter = {
     if (!clerkUserId || !file) throw new Error('Missing file')
     if (file.size > 5 * 1024 * 1024) throw new Error('Image must be under 5MB')
     if (!/^image\//.test(file.type)) throw new Error('Only images (PNG / JPEG / WebP) allowed')
-    // Direct fetch — supabase.functions.invoke does not stream
-    // multipart FormData through cleanly for larger binary payloads,
-    // which showed up as multi-minute stalls on 5 MB videos. Skip
-    // the wrapper and post the FormData ourselves.
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-to-r2`
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('prefix', `avatars/${clerkUserId}`)
-    const token = await _getClerkSessionToken()
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: fd,
-    })
-    if (!resp.ok) {
-      const t = await resp.text().catch(() => '')
-      throw new Error(`Upload failed (${resp.status}): ${t.slice(0, 200)}`)
-    }
-    const data = await resp.json()
-    if (!data?.url) throw new Error('No URL returned from upload')
-    return data.url
+    const { url } = await _presignedUpload(file, `avatars/${clerkUserId}`)
+    return url
   },
 
   // Founding counter — how many paying Cue+ users so far.
@@ -1205,28 +1229,14 @@ const supabaseAdapter = {
   },
   
   async uploadMedia(file) {
-    // Direct fetch (not supabase.functions.invoke) — the wrapper does
-    // not stream FormData bodies well and stalls out on multi-MB
-    // uploads. Fetch straight to the function URL and post the form.
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-to-r2`
-    const fd = new FormData()
-    fd.append('file', file)
-    const token = await _getClerkSessionToken()
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: fd,
-    })
-    if (!resp.ok) {
-      const t = await resp.text().catch(() => '')
-      throw new Error(`Upload failed (${resp.status}): ${t.slice(0, 200)}`)
-    }
-    const data = await resp.json()
-    if (!data?.url) throw new Error('No URL returned from upload')
-    return { url: data.url, kind: data.kind || (file.type.startsWith('video/') ? 'video' : 'image') }
+    // Presigned URL flow — browser talks to R2 directly. Prior flow
+    // posted multipart to the upload-to-r2 edge fn, which buffered
+    // the whole file to memory before uploading to R2; on 15+ MB
+    // videos that hit Supabase's timeout and surfaced as
+    // "Failed to fetch". Presigned PUT is a single hop from browser
+    // to R2 with no Supabase bandwidth cost.
+    const { url, kind } = await _presignedUpload(file, '')
+    return { url, kind }
   },
 
   // §4.6 — Admin audit log. Call this from admin UI after mutations.
