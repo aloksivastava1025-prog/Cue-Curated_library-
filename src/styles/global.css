@@ -1,6 +1,19 @@
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Homepage grid perf — content-visibility lets the browser skip
+   layout + paint + IntersectionObserver work for cards that are
+   comfortably off-screen. The intrinsic size hint reserves the right
+   amount of vertical space so scrollbars stay stable and native
+   scroll-restoration works. Only kicks in for browsers that support
+   it (Chrome/Edge/Firefox/Safari 18+); older ones ignore silently
+   with zero fallback cost. Biggest wins on the 100+ card grid,
+   especially on mid-range phones where per-card work adds up. */
+.resource-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 380px 460px;
+}
+
 html, body {
   background: var(--cue-bg);
   color: var(--cue-text-1);
