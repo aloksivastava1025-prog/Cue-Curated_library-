@@ -164,24 +164,26 @@ export default function FloatingNav({
             alignItems: 'center',
             gap: 4,
             padding: 5,
-            // Reference-matched CTA glass. Vibrant blue base with a
-            // radial hotspot near the top-center, wrapped by a thick
-            // white inset rim on all four sides — reads as a frosted
-            // pill with a glowing blue core.
+            // Frosted-white glass pill — quieter on the dark theme
+            // than the previous electric blue base, still reads as a
+            // "lit-from-within" chip because of the layered white
+            // insets. Backdrop blur picks up whatever's behind it so
+            // the pill feels part of the page instead of a stamp.
             background:
-              'radial-gradient(120% 140% at 50% 20%, #1674F7 0%, rgba(22,116,247,0) 70%), #2581FF',
-            border: '1px solid rgba(255,255,255,0.6)',
+              'radial-gradient(120% 140% at 50% 20%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.72) 70%)',
+            backdropFilter: 'blur(14px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+            border: '1px solid rgba(255,255,255,0.55)',
             borderRadius: 5,
             boxShadow: [
-              // Frosted white rim on all four sides — creates the
-              // ethereal "lit-from-within" look
-              'inset 0 -14px 20px rgba(255,255,255,0.95)',
-              'inset 0 6px 16px rgba(255,255,255,0.80)',
-              'inset 8px 0 16px rgba(255,255,255,0.70)',
-              'inset -8px 0 16px rgba(255,255,255,0.70)',
-              // Outer depth + brand halo
-              '0 10px 20px rgba(0,0,0,0.30)',
-              '0 4px 16px rgba(37,129,255,0.35)',
+              // Soft inner rim to keep the "frosted glass" cue
+              'inset 0 -14px 20px rgba(255,255,255,0.55)',
+              'inset 0 6px 16px rgba(255,255,255,0.65)',
+              'inset 8px 0 16px rgba(255,255,255,0.45)',
+              'inset -8px 0 16px rgba(255,255,255,0.45)',
+              // Outer depth — neutral shadow, no coloured halo
+              '0 10px 24px rgba(0,0,0,0.28)',
+              '0 2px 6px rgba(0,0,0,0.10)',
             ].join(', '),
             fontFamily: 'var(--font-sans)',
           }}
