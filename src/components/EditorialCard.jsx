@@ -305,13 +305,19 @@ export default function EditorialCard({ item, setSelectedItem }) {
               background: '#000',
               transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
               transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-              /* Crossfade: thumbnail visible until the video actually
-                 emits onPlaying (not just canPlay / loadedData — those
-                 fire while the video is still stalling on the network,
-                 which used to leave a black gap when the buffer was
-                 slow). Once real playback starts, the thumb fades out
-                 and the video takes over. */
-              opacity: (isHovered && videoReady && !videoFailed) ? 0 : 1,
+              /* Crossfade: hide the thumbnail as soon as EITHER the
+                 real video paints (videoReady) OR the 600ms grace
+                 timer fires (readyTimeout). The old check used
+                 `videoReady` alone; on mobile the ready events fire
+                 slowly and the thumb stayed visible for 3–5s even
+                 though the <video> below had already faded in — the
+                 z-index ordering meant users saw a static image the
+                 whole time. Trusting the grace timer is safe because
+                 the <video>'s poster attribute is this same thumbnail,
+                 so hiding the img just reveals an identical picture
+                 painted by the video element until the first real
+                 frame arrives. */
+              opacity: (isHovered && (videoReady || readyTimeout) && !videoFailed) ? 0 : 1,
               zIndex: 1,
             }}
           />
