@@ -22,14 +22,33 @@
 
 import { useEffect, useState } from 'react'
 
-// Ceiling raised (Aug 2026) after R2 migration: media is served
-// from Cloudflare with free unlimited egress, so the bandwidth
-// concern that motivated a hard 20 is gone. everHovered is sticky,
-// so as a user scrolls, earlier cards stay mounted — 20 filled up
-// fast on long grids and later cards couldn't play. 500 covers any
-// real page while still acting as a defence against pathological
-// mount storms (e.g. a component regression that mounts thousands).
-const MAX_ACTIVE = 500
+// Device-aware ceiling. R2 removed the bandwidth pressure, but on
+// laptops the client-side H.264 / VP9 decode is what hurts — 20+
+// concurrent <video> mounts saturate the GPU decoder and thermal
+// throttle the whole page. Mobile stays snappy at 6 (small viewport
+// = fewer visible cards anyway). Desktop caps at 10 — generous
+// enough that ambient motion feels alive as you scroll, tight
+// enough that decode never chokes.
+function detectCap() {
+  if (typeof window === 'undefined') return 5
+  // Both platforms: only the ~5 cards currently in view should play.
+  // Enough for ambient motion, tight enough that decode never chokes
+  // a laptop or a mid-range phone.
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches
+  const narrow = window.innerWidth < 768
+  return (coarse || narrow) ? 5 : 5
+}
+let MAX_ACTIVE = detectCap()
+if (typeof window !== 'undefined') {
+  // Re-detect on viewport rotate / resize (mobile <-> tablet).
+  window.addEventListener('resize', () => {
+    const next = detectCap()
+    if (next !== MAX_ACTIVE) {
+      MAX_ACTIVE = next
+      notify() // wake any parked slot-waiters so they can retry.
+    }
+  })
+}
 
 // { owner: string, id: string } — dedup by (owner, id) so a
 // component re-rendering doesn't burn multiple slots.

@@ -159,7 +159,10 @@ function FeaturedCard({ item, onOpen }) {
   const media = item.hoverSrc
   const isImage = media && /\.(jpe?g|gif|png|webp|svg|heic)$/i.test(media)
   const hoverIsVideo = media && !isImage
-  const slot = useVideoSlot('featured-rail', item.id, hoverIsVideo && everActive)
+  // Slot tied to CURRENT hover / in-view state, not sticky. Prevents
+  // the first N featured cards from hoarding the shared decode pool
+  // and starving the grid below.
+  const slot = useVideoSlot('featured-rail', item.id, hoverIsVideo && hover)
 
   useEffect(() => {
     if (hover && !everActive) setEverActive(true)
@@ -260,7 +263,7 @@ function FeaturedCard({ item, onOpen }) {
           />
         )}
 
-        {media && !isImage && !videoFailed && everActive && slot.granted && (
+        {media && !isImage && !videoFailed && hover && slot.granted && (
           <video
             ref={videoRef}
             src={media}

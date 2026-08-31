@@ -175,8 +175,21 @@ export default function EditorialCard({ item, setSelectedItem }) {
   // Additional guard: even if a future regression re-mounts videos
   // on scroll, the useVideoSlot governor caps total mounted clips
   // at MAX_ACTIVE (20). Beyond that, cards fall back to the poster.
-  const slot = useVideoSlot('editorial-card', item.id, hoverIsVideo && everHovered)
-  const shouldMountHoverVideo = hoverIsVideo && everHovered && slot.granted;
+  // Slot is claimed ONLY while the card is currently in view or
+  // being actively hovered. Sticky `everHovered` used to hold the
+  // slot forever after first mount, which meant the first N cards
+  // hoarded the pool and later cards showed frozen posters. Tying
+  // it to `mouseHover` (which is set by both the viewport
+  // IntersectionObserver and real mouse enter/leave) means the
+  // moving cards are always the ones the user is actually looking
+  // at. Free bandwidth on R2 makes re-mounting on scroll-back cheap.
+  const slot = useVideoSlot('editorial-card', item.id, hoverIsVideo && mouseHover)
+  // Mount the <video> only for cards that are ACTIVELY in view or
+  // being hovered — mirrors the slot claim above. Free R2 bandwidth
+  // means a re-mount on scroll-back is cheap; the win is that the
+  // grid keeps only ~5 videos alive at any moment, so decode never
+  // overloads a laptop GPU.
+  const shouldMountHoverVideo = hoverIsVideo && mouseHover && slot.granted;
 
   const pillBase = {
     // Bumped from 10px / 5px×11px — real-user feedback (Ibrahim, Aug 24)
