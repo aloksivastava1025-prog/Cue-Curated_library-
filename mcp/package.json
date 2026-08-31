@@ -1,0 +1,30 @@
+{
+  "name": "@cue/mcp",
+  "version": "0.1.0",
+  "description": "Cue MCP server — Awwwards-tier components with prompts + React source, callable from Cursor / Claude Desktop / Windsurf.",
+  "type": "module",
+  "bin": {
+    "cue-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsc -p . --watch",
+    "start": "node ./dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["mcp", "cue", "components", "ai", "cursor", "claude"],
+  "author": "Alok — Cue",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@supabase/supabase-js": "^2.38.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^22.0.0"
+  }
+}
