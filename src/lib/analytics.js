@@ -69,9 +69,18 @@ export function resetAnalytics() {
 
 // Named events — call these at critical funnel points. Wrapped so
 // callers don't need to null-check `ready`.
+//
+// Dual-fires to PostHog (product analytics) AND Google Analytics 4
+// (traffic + marketing analytics). GA4 gtag is loaded from index.html
+// with measurement id G-DCG766G2YT; we call `window.gtag('event', ...)`
+// only when it's available so the fire is silent in tests / SSR.
 export function track(event, props = {}) {
-  if (!ready) return
-  try { posthog.capture(event, props) } catch { /* noop */ }
+  if (ready) {
+    try { posthog.capture(event, props) } catch { /* noop */ }
+  }
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    try { window.gtag('event', event, props) } catch { /* noop */ }
+  }
 }
 
 // Common event shorthands so call sites read cleanly.

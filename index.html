@@ -160,6 +160,18 @@
     }
     </script>
 
+    <!-- Google Analytics 4 — property "Cue" (GA4 web stream).
+         PostHog covers product analytics (session recordings, funnels).
+         GA4 covers traffic + acquisition analytics (sources, geo,
+         real-time, search terms) so both audiences are served. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DCG766G2YT"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-DCG766G2YT');
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
