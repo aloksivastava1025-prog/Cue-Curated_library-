@@ -122,12 +122,16 @@ export default function EditorialCard({ item, setSelectedItem }) {
     return () => io.disconnect();
   }, []);
 
-  // Grace timer — after 600ms we treat "ready" as done even if the
-  // media events never fired, so the crossfade still happens.
+  // Grace timer — pulled down from 600ms to 120ms. The <video>
+  // element's poster attribute IS this same thumbnail, so hiding the
+  // <img> immediately just reveals an identical picture painted by
+  // the video element until the first real frame arrives. No gap,
+  // no flicker. 120ms is short enough that users perceive the fade
+  // as "instant" rather than a visible fallback state.
   useEffect(() => {
     if (!mouseHover) { setReadyTimeout(false); return; }
     if (videoReady) return;
-    const t = setTimeout(() => setReadyTimeout(true), 600);
+    const t = setTimeout(() => setReadyTimeout(true), 120);
     return () => clearTimeout(t);
   }, [mouseHover, videoReady]);
 

@@ -30,13 +30,16 @@ import { useEffect, useState } from 'react'
 // enough that ambient motion feels alive as you scroll, tight
 // enough that decode never chokes.
 function detectCap() {
-  if (typeof window === 'undefined') return 5
-  // Both platforms: only the ~5 cards currently in view should play.
-  // Enough for ambient motion, tight enough that decode never chokes
-  // a laptop or a mid-range phone.
+  if (typeof window === 'undefined') return 8
+  // Cap raised to 8 so every card currently in the viewport can
+  // autoplay simultaneously (even on wide desktops where 4 columns
+  // × 2 rows = 8 cards are visible at once). 5 was leaving the
+  // bottom row frozen on larger screens. Mobile still holds at 6
+  // because 3–4 cards fit at once and the decode budget on
+  // mid-range phones is tighter.
   const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches
   const narrow = window.innerWidth < 768
-  return (coarse || narrow) ? 5 : 5
+  return (coarse || narrow) ? 6 : 8
 }
 let MAX_ACTIVE = detectCap()
 if (typeof window !== 'undefined') {
