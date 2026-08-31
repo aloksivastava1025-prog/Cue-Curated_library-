@@ -1,0 +1,60 @@
+# Cue — auto-optimize newly uploaded R2 videos
+#
+# Runs every 30 minutes. Scans the R2 bucket for MP4 videos that
+# don't yet carry the `cue-optimized` metadata tag, and re-encodes
+# each one in place with faststart + 720p cap + 1.5 Mbps target.
+# Already-optimized files are skipped (idempotent), so this is
+# safe to run frequently. New admin uploads become fast-loading
+# within ~30 min of upload without any manual step.
+#
+# Setup — one time only:
+#   1. Repo settings > Secrets and variables > Actions
+#   2. Add these 4 repository secrets (copy from .env.local):
+#      - R2_ACCESS_KEY_ID
+#      - R2_SECRET_ACCESS_KEY
+#      - R2_ENDPOINT
+#      - R2_BUCKET
+#   3. Enable Actions on the repo (if not already on)
+#
+# The workflow can also be triggered manually from the Actions tab
+# via "Run workflow" — useful right after a batch upload session
+# instead of waiting for the cron slot.
+
+name: Optimize R2 videos
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub cron uses UTC; 30-min cadence has
+    # no timezone dependency.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}  # manual trigger from the Actions UI
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45  # single run bounded — cron will pick up any tail next slot
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        # Only need @aws-sdk/client-s3 + dotenv for the script.
+        # Skip full npm ci — faster + smaller runner surface.
+        run: npm install --no-save @aws-sdk/client-s3@3 dotenv@16
+
+      - name: Run optimizer (idempotent)
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: node scripts/optimize-r2-videos.js --run
