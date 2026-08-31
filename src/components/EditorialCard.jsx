@@ -105,16 +105,19 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (!ref.current) return;
     const noHover = typeof window !== 'undefined'
       && window.matchMedia && window.matchMedia('(hover: none)').matches;
-    // Lower thresholds so ambient motion kicks in as soon as a card
-    // meaningfully enters the viewport. Mobile used to require 0.8
-    // (fully centred) which meant only one card ever played at a
-    // time; users saw a screen full of frozen posters with just one
-    // moving card. Both platforms now let up to ~3 cards be "in view
-    // enough" to autoplay.
-    const threshold = noHover ? 0.4 : 0.25;
+    // Mobile threshold pulled down to 0.15 — on a narrow phone
+    // screen the cards fill most of the viewport, so requiring 40%
+    // visibility meant playback only kicked in when a card was
+    // almost fully centred (users had to "hover-like" scroll into
+    // one card and wait). 15% lets the video start as soon as the
+    // card is meaningfully on screen. Desktop stays at 0.25 —
+    // multiple cards fit at once, so a low threshold there would
+    // trigger 6+ playbacks per scroll (the 5-cap governor would
+    // still clamp, but this is friendlier to the pool).
+    const threshold = noHover ? 0.15 : 0.25;
     const io = new IntersectionObserver(([entry]) => {
       setMouseHover(entry.isIntersecting && entry.intersectionRatio >= threshold);
-    }, { threshold: [0, 0.25, 0.4, 0.6, 1] });
+    }, { threshold: [0, 0.15, 0.25, 0.4, 0.6, 1] });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);
