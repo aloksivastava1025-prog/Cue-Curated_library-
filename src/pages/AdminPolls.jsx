@@ -320,11 +320,13 @@ function buildDraft(s) {
       break
     case 'need_more_proof':
       opener = q2 === 'preview' || q2 === 'trial'
-        ? `you asked for a free preview / trial on the poll. it's already there — every card on cuedesign.space that isn't tagged premium opens the full prompt and code, no signup. treat those as the trial.`
-        : `you asked for more value proof on the poll${q2 ? ` (you said "${q2}")` : ''}. all the free-tier components are open with full prompt + code on cuedesign.space — that's the real preview.`
+        ? `you asked for a free trial on the poll. honest answer: i don't do a time-limited trial because the moment i unlock everything, all the prompts get copied and the whole library is gone in one session. instead — you already have 30+ premium components fully open on cuedesign.space with prompt + code. no signup. that IS the trial. go use them.`
+        : `you asked for more value proof on the poll${q2 ? ` (you said "${q2}")` : ''}. 30+ premium components are already open on cuedesign.space with full prompt + code — no signup, no paywall. use them, ship one, then decide.`
       break
     case 'price_high':
-      opener = q2 && /^\d+$/.test(q2)
+      opener = q2 === 'trial'
+        ? `you said on the poll $99 felt steep and you'd want a trial first. straight up: i can't unlock everything for a time-limited trial — one session and the whole library gets copied. but 30+ premium components are already open with full prompt + code on cuedesign.space. no signup. use those as the trial, then i can do a private discount if you're still on the fence.`
+        : q2 && /^\d+$/.test(q2)
         ? `you said on the poll $99 felt steep and $${q2} would feel fair. straight up: $${q2} doesn't work on my end — i'm one person and every add is free forever. but i can meet you closer to that number, privately.`
         : `you said $99 felt steep on the poll${q2 ? ` (you picked "${q2}")` : ''}. i can't drop the public price but i can do something for you privately.`
       break
