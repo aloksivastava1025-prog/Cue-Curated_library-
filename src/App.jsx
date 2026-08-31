@@ -71,6 +71,19 @@ const SECTION_KEYWORDS = [
   'section', 'layout', 'nav', 'form', 'gallery',
   'slider', 'marquee', 'page transition',
 ];
+// Bucket the raw resource count to the nearest lower round marker
+// (25, 50, 100, 150, 200, 300, 500, 1000). Under 25 we still show
+// the exact number so the very first days of the library don't lie
+// about scale — everything above 25 gets a "+" suffix.
+function bucketCount(n) {
+  const x = Number(n) || 0
+  if (x < 25) return String(x)
+  const marks = [25, 50, 100, 150, 200, 300, 500, 750, 1000]
+  let bucket = marks[0]
+  for (const m of marks) { if (x >= m) bucket = m; else break }
+  return `${bucket}+`
+}
+
 function itemType(item) {
   const explicit = item?.component_type;
   if (explicit === 'section' || explicit === 'interaction') return explicit;
@@ -568,7 +581,11 @@ function MainApp() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="cue-nav-count" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)', fontSize: '12px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--electric)', boxShadow: '0 0 8px var(--electric)' }}></div>
-            <span>{allPrompts.length}</span>
+            {/* Bucketed count — "100+" reads as a real library at
+                a glance and stops looking like a slow-growing counter
+                once we cross each rounded milestone. Exact number
+                stayed brittle: 87, 92, 111 all felt "still ramping". */}
+            <span>{bucketCount(allPrompts.length)}</span>
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
           <a href="#/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
