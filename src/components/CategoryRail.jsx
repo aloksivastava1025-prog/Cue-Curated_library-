@@ -301,6 +301,14 @@ function CategoryCard({ item, onOpen }) {
             src={media}
             poster={item.thumbSrc || undefined}
             loop muted playsInline preload="auto"
+            // The useEffect hook can fire before the <video> element
+            // is actually attached to the DOM on the first mount, so
+            // its `v.play()` call becomes a no-op. Kicking play() from
+            // the media-ready events guarantees playback starts the
+            // moment the browser has enough data — even on cards that
+            // just entered the viewport for the first time.
+            onLoadedData={(e) => { if (hover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}) } }}
+            onCanPlay={(e) => { if (hover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}) } }}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
         )}
