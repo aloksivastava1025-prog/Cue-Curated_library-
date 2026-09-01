@@ -412,7 +412,7 @@ export default function Pricing() {
                 subLine={foundingFilled
                   ? `${P.sym}${P.crossed} lifetime for everyone now`
                   : (couponMode && !promoExpired
-                    ? `CUE49 auto-applied · $20 off · no MCP included`
+                    ? `CUE49 auto-applied · ${P.sym}${cue49AmountOff.toLocaleString('en-US')} off · no MCP included`
                     : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`)}
                 highlight
                 cta={
@@ -430,7 +430,8 @@ export default function Pricing() {
                       couponMode={couponMode}
                       onChange={setCouponMode}
                       timerLabel={timerLabel}
-                      currencySym={P.sym}
+                      fullPriceLabel={`${P.sym}${P.founding}`}
+                      promoPriceLabel={`${P.sym}${cue49FinalPrice.toLocaleString('en-US')}`}
                     />
                   ) : null
                 }
@@ -752,7 +753,7 @@ function Crosshair({ left }) {
 
 // ---------- Column ------------------------------------------------
 
-function PromoToggle({ couponMode, onChange, timerLabel, currencySym }) {
+function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPriceLabel }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'stretch',
@@ -781,7 +782,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, currencySym }) {
             letterSpacing: '-0.005em', lineHeight: 1.3,
           }}
         >
-          <div>{currencySym}99 · with MCP</div>
+          <div>{fullPriceLabel} · with MCP</div>
           <div style={{ fontSize: 9.5, opacity: 0.65, marginTop: 2, letterSpacing: '0.04em' }}>Full lifetime</div>
         </button>
         <button
@@ -797,7 +798,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, currencySym }) {
             letterSpacing: '-0.005em', lineHeight: 1.3,
           }}
         >
-          <div>{currencySym}79 · no MCP</div>
+          <div>{promoPriceLabel} · no MCP</div>
           <div style={{ fontSize: 9.5, opacity: 0.75, marginTop: 2, letterSpacing: '0.04em' }}>24-hr special</div>
         </button>
       </div>
