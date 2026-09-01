@@ -40,6 +40,10 @@ const FORBIDDEN = [
       'src/components/EditorialCard.jsx',
       // FeaturedRail — mounts only after everActive (first hover/centered)
       'src/components/FeaturedRail.jsx',
+      // CategoryRail — same shape as FeaturedRail: <video> element
+      // renders only when hover is true, so preload="auto" fires on
+      // user intent, never on cold mount.
+      'src/components/CategoryRail.jsx',
       // Admin — frame extraction, only fires on user-triggered upload
       // or window.confirm backfill
       'src/pages/Admin.jsx',
