@@ -412,7 +412,7 @@ export default function Pricing() {
                 subLine={foundingFilled
                   ? `${P.sym}${P.crossed} lifetime for everyone now`
                   : (couponMode && !promoExpired
-                    ? `CUE49 auto-applied · ${P.sym}${cue49AmountOff.toLocaleString('en-US')} off · no MCP included`
+                    ? `CUE49 auto-applied · 20% off · no MCP included`
                     : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`)}
                 highlight
                 cta={
