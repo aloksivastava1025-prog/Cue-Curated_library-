@@ -719,6 +719,10 @@ function MainApp() {
                 boxShadow: '0 0 6px rgba(204,255,0,0.6)',
               }} />
               MCP support · coming soon
+              {/* Mirror spacer — same width as the left dot + gap so
+                  the visible text stays visually centered instead of
+                  drifting left because the dot only exists on one side. */}
+              <span aria-hidden="true" style={{ width: 5, height: 5, opacity: 0 }} />
             </span>
           </div>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
