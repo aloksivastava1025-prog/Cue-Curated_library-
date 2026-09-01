@@ -582,11 +582,12 @@ function MainApp() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="cue-nav-count" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)', fontSize: '12px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--electric)', boxShadow: '0 0 8px var(--electric)' }}></div>
-            {/* Bucketed count — "100+" reads as a real library at
-                a glance and stops looking like a slow-growing counter
-                once we cross each rounded milestone. Exact number
-                stayed brittle: 87, 92, 111 all felt "still ramping". */}
-            <span>{bucketCount(allPrompts.length)}</span>
+            {/* Admins see the exact live count (117, 119, ...) so
+                they can spot new drops at a glance. Everyone else
+                sees a bucketed "100+" — reads as a real library at
+                any milestone, avoids the "87 / 92 / 111 = still
+                ramping" perception problem. */}
+            <span>{isAdmin ? allPrompts.length : bucketCount(allPrompts.length)}</span>
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
           <a href="#/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
