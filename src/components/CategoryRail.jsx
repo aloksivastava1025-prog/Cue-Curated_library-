@@ -228,10 +228,28 @@ function GateCard({ hiddenCount, onOpenAuth }) {
 function CategoryCard({ item, onOpen }) {
   const [hover, setHover] = useState(false)
   const videoRef = useRef(null)
+  const cardRef = useRef(null)
   const media = item.hoverSrc
   const isImage = media && /\.(jpe?g|gif|png|webp|svg|heic)$/i.test(media)
   const hoverIsVideo = media && !isImage
   const slot = useVideoSlot('category-rail', item.id, hoverIsVideo && hover)
+
+  // Viewport autoplay (matches EditorialCard): flip `hover` true
+  // when the card is meaningfully in view. Threshold is lower on
+  // touch since horizontal-scroll rails rarely fill the viewport
+  // to 40%, and higher-than-mobile on desktop to keep only the
+  // handful of cards a user is actually looking at active.
+  useEffect(() => {
+    if (!cardRef.current || !hoverIsVideo) return
+    const noHover = typeof window !== 'undefined'
+      && window.matchMedia && window.matchMedia('(hover: none)').matches
+    const threshold = noHover ? 0.15 : 0.4
+    const io = new IntersectionObserver(([entry]) => {
+      setHover(entry.isIntersecting && entry.intersectionRatio >= threshold)
+    }, { threshold: [0, 0.15, 0.25, 0.4, 0.6, 1] })
+    io.observe(cardRef.current)
+    return () => io.disconnect()
+  }, [hoverIsVideo])
 
   useEffect(() => {
     const v = videoRef.current
@@ -245,6 +263,7 @@ function CategoryCard({ item, onOpen }) {
 
   return (
     <article
+      ref={cardRef}
       onClick={() => onOpen(item)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
