@@ -342,11 +342,18 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
             <p className="cue-welcome-sub">
               A curated library of Awwwards-tier UI components. Every card ships with the copy-paste prompt for Cursor / v0 / Bolt, plus React source for the ones that need it.
               <br /><br />
-              Browse the collection, hover any card to preview the motion, and grab whatever fits your build.
+              <strong style={{ color: '#ccff00', fontWeight: 600 }}>New month special:</strong>{' '}
+              use code <strong style={{ color: '#fff' }}>CUE49</strong> for <strong style={{ color: '#fff' }}>$79 lifetime</strong> (was $99). First 20 seats only.
             </p>
+            {timeLeft > 0 && (
+              <div className="cue-welcome-timer" aria-label="Time left on CUE49 promo">
+                <span className="cue-welcome-timer-dot" />
+                <span>CUE49 · {formatTimeLeft(timeLeft)}</span>
+              </div>
+            )}
             <div className="cue-welcome-actions">
               <button className="cue-welcome-cta" onClick={onPrimary}>
-                Begin the hunt
+                {timeLeft > 0 ? 'Grab CUE49' : 'Begin the hunt'}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14M13 5l7 7-7 7" />
                 </svg>
@@ -379,13 +386,19 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
 const COUPON_WINDOW_MS = 24 * 60 * 60 * 1000
 
 function readTimeLeft() {
+  // Unified promo expiry key — same one Pricing.jsx PromoToggle and
+  // App.jsx useCouponHeroLabel write. Every surface (hero pill,
+  // pricing toggle, welcome modal) shows the same second-accurate
+  // countdown so the promise feels consistent across the site.
   try {
-    let start = parseInt(localStorage.getItem('cue.coupon.window.start') || '0', 10) || 0
-    if (!start) {
-      start = Date.now()
-      localStorage.setItem('cue.coupon.window.start', String(start))
+    const raw = localStorage.getItem('cue.promo.newmonth.expiry')
+    const parsed = raw ? parseInt(raw, 10) : NaN
+    let expiry = Number.isFinite(parsed) && parsed > Date.now() ? parsed : 0
+    if (!expiry) {
+      expiry = Date.now() + COUPON_WINDOW_MS
+      localStorage.setItem('cue.promo.newmonth.expiry', String(expiry))
     }
-    return Math.max(0, start + COUPON_WINDOW_MS - Date.now())
+    return Math.max(0, expiry - Date.now())
   } catch {
     return COUPON_WINDOW_MS
   }
