@@ -16,4 +16,4 @@
 // it into the bundle — no runtime env fetch, no bundle bloat.
 // ============================================================
 
-export const COUPON_ENABLED = false
+export const COUPON_ENABLED = true

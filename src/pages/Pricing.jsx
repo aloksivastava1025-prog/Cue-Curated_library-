@@ -125,6 +125,52 @@ export default function Pricing() {
         offLabel: `${P.sym}${Math.max(0, foundingNumericForCue49 - cue49FinalPrice).toLocaleString('en-US')}`,
       }
 
+  // ---------- 24-hour "new-month special" mode ----------
+  // Toggle inside the founding card switches between the full $99
+  // (all features, MCP included) and the $79 promo (auto-applies
+  // CUE49, strikes MCP). The timer counts down 24 hrs from when
+  // the user first sees the pricing page; expiry lives in
+  // localStorage so refreshes don't reset it. Cross tab reads the
+  // same key so the countdown feels honest instead of resettable.
+  const [couponMode, setCouponMode] = useState(false)
+  const [promoExpiry] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = localStorage.getItem('cue.promo.newmonth.expiry')
+      const parsed = raw ? parseInt(raw, 10) : NaN
+      if (Number.isFinite(parsed) && parsed > Date.now()) return parsed
+      const next = Date.now() + 24 * 60 * 60 * 1000
+      localStorage.setItem('cue.promo.newmonth.expiry', String(next))
+      return next
+    } catch { return Date.now() + 24 * 60 * 60 * 1000 }
+  })
+  const [nowTick, setNowTick] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const promoMsLeft = Math.max(0, (promoExpiry || 0) - nowTick)
+  const promoExpired = promoMsLeft <= 0
+  const timerLabel = (() => {
+    const s = Math.floor(promoMsLeft / 1000)
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const ss = s % 60
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${pad(h)}h ${pad(m)}m ${pad(ss)}s`
+  })()
+  // Auto-apply / unapply CUE49 when the toggle flips
+  useEffect(() => {
+    if (!couponEligible) return
+    if (couponMode && !promoExpired) {
+      if (couponApplied !== 'CUE49') setCouponApplied('CUE49')
+    } else if (couponApplied === 'CUE49') {
+      setCouponApplied('')
+      setCouponInput('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponMode, promoExpired])
+
   async function startFoundingCheckout() {
     if (checkoutBusy) return
     setCheckoutError('')
@@ -360,11 +406,13 @@ export default function Pricing() {
                 crossedPrice={cue49Display.crossed}
                 price={cue49Display.price}
                 priceSub={`lifetime${P.taxSuffix}`}
-                badge={foundingFilled ? 'Founding closed' : (cue49Display.isCue49 ? 'CUE49 applied' : 'Founding pick')}
+                badge={foundingFilled
+                  ? 'Founding closed'
+                  : (couponMode && !promoExpired ? `NEW MONTH · ${timerLabel}` : 'Founding pick')}
                 subLine={foundingFilled
                   ? `${P.sym}${P.crossed} lifetime for everyone now`
-                  : (cue49Display.isCue49
-                    ? `CUE49 applied — ${cue49Display.offLabel} off at checkout`
+                  : (couponMode && !promoExpired
+                    ? `CUE49 auto-applied · $20 off · no MCP included`
                     : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`)}
                 highlight
                 cta={
@@ -377,20 +425,13 @@ export default function Pricing() {
                   )
                 }
                 extra={
-                  !foundingFilled && isSignedIn && couponEligible ? (
-                    <>
-                      <CouponRow
-                        input={couponInput}
-                        applied={couponApplied}
-                        onInputChange={setCouponInput}
-                        onApply={() => {
-                          const code = couponInput.trim().toUpperCase()
-                          if (code) setCouponApplied(code)
-                        }}
-                        onClear={() => { setCouponApplied(''); setCouponInput('') }}
-                      />
-                      {!couponApplied && <CouponHintPill compact />}
-                    </>
+                  !foundingFilled && couponEligible && !promoExpired ? (
+                    <PromoToggle
+                      couponMode={couponMode}
+                      onChange={setCouponMode}
+                      timerLabel={timerLabel}
+                      currencySym={P.sym}
+                    />
                   ) : null
                 }
                 features={[
@@ -399,7 +440,12 @@ export default function Pricing() {
                   'New drops every week — forever',
                   'React source code',
                   'Request any component\'s code — I ship it personally',
-                  { text: 'MCP support', soon: true },
+                  // MCP is only in the $99 lane; strike when the user
+                  // flips into the $79 / CUE49 promo mode so the trade
+                  // is visible on the card without a footnote.
+                  (couponMode && !promoExpired)
+                    ? { text: 'MCP support', strike: true }
+                    : { text: 'MCP support', soon: true },
                   'Unlimited prompts',
                   'Commercial use — no resell / redistribution',
                   'Founding badge in profile',
@@ -706,6 +752,78 @@ function Crosshair({ left }) {
 
 // ---------- Column ------------------------------------------------
 
+function PromoToggle({ couponMode, onChange, timerLabel, currencySym }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'stretch',
+    }}>
+      {/* Toggle row — Standard $99 (with MCP)  |  $79 24hr special (no MCP) */}
+      <div
+        role="radiogroup"
+        aria-label="Choose founding rate"
+        style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          padding: 3, gap: 3,
+        }}
+      >
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!couponMode}
+          onClick={() => onChange(false)}
+          style={{
+            padding: '9px 8px', borderRadius: 6, border: 'none', cursor: 'pointer',
+            background: !couponMode ? 'var(--text)' : 'transparent',
+            color: !couponMode ? 'var(--bg)' : 'var(--text)',
+            fontFamily: 'inherit', fontSize: 11.5, fontWeight: 600,
+            letterSpacing: '-0.005em', lineHeight: 1.3,
+          }}
+        >
+          <div>{currencySym}99 · with MCP</div>
+          <div style={{ fontSize: 9.5, opacity: 0.65, marginTop: 2, letterSpacing: '0.04em' }}>Full lifetime</div>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={couponMode}
+          onClick={() => onChange(true)}
+          style={{
+            padding: '9px 8px', borderRadius: 6, border: 'none', cursor: 'pointer',
+            background: couponMode ? 'var(--electric)' : 'transparent',
+            color: couponMode ? '#fff' : 'var(--text)',
+            fontFamily: 'inherit', fontSize: 11.5, fontWeight: 600,
+            letterSpacing: '-0.005em', lineHeight: 1.3,
+          }}
+        >
+          <div>{currencySym}79 · no MCP</div>
+          <div style={{ fontSize: 9.5, opacity: 0.75, marginTop: 2, letterSpacing: '0.04em' }}>24-hr special</div>
+        </button>
+      </div>
+
+      {/* Live countdown only when the promo is picked */}
+      {couponMode && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 8, padding: '6px 10px',
+          background: 'rgba(0,0,255,0.08)', border: '1px solid rgba(0,0,255,0.24)',
+          borderRadius: 999,
+          fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'var(--text)', fontWeight: 500,
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: 999,
+            background: 'var(--electric)',
+            boxShadow: '0 0 6px rgba(0,0,255,0.55)',
+          }} />
+          <span>CUE49 · ends in {timerLabel}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const termsLinkStyle = {
   color: 'var(--text)',
   textDecoration: 'underline',
@@ -798,19 +916,37 @@ function Col({
             const isObj = typeof f === 'object'
             const text = isObj ? f.text : f
             const soon = isObj && f.soon
+            const strike = isObj && f.strike
             return (
-              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: 'var(--text)', lineHeight: 1.2 }}>
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={highlight ? 'var(--electric)' : 'var(--text-dim)'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <span>
+              <li key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                fontSize: 13, color: strike ? 'var(--text-dim)' : 'var(--text)',
+                lineHeight: 1.2, opacity: strike ? 0.5 : 1,
+              }}>
+                {strike ? (
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--text-dim)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke={highlight ? 'var(--electric)' : 'var(--text-dim)'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                <span style={{ textDecoration: strike ? 'line-through' : 'none' }}>
                   {text}
-                  {soon && (
+                  {soon && !strike && (
                     <span style={{
                       marginLeft: 6, padding: '1px 6px',
                       background: 'rgba(204,255,0,0.10)', border: '1px solid rgba(204,255,0,0.28)',
                       color: '#ccff00', fontSize: 9, fontWeight: 500, letterSpacing: '0.08em',
                     }}>SOON</span>
+                  )}
+                  {strike && (
+                    <span style={{
+                      marginLeft: 6, padding: '1px 6px',
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                      color: 'var(--text-dim)', fontSize: 9, fontWeight: 500, letterSpacing: '0.08em',
+                    }}>$99 ONLY</span>
                   )}
                 </span>
               </li>
