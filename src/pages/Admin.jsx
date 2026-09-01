@@ -173,6 +173,112 @@ const STACK_SUGGESTIONS = ['CSS', 'JavaScript', 'React', 'GSAP', 'Framer Motion'
 // A single uploaded-resource row: real thumbnail (video first-frame OR image),
 // clean labels, type + tier badges, and edit / delete actions.
 const IMG_EXT_RE = /\.(jpe?g|gif|png|webp|svg|heic|avif)$/i;
+// Admin-only wrapper around the resource list. Adds a search input
+// and shows the exact live count so the founder can find any card in
+// seconds without scrolling — the public site still shows the
+// bucketed "100+" version to visitors via bucketCount() in App.jsx.
+function UploadedResources({ allPrompts, isEditing, form, onEdit, onDelete, onToggleFeatured, backfilledIds, retaggedIds }) {
+  const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? allPrompts.filter((p) => {
+        const hay = [
+          p.id, p.title, p.description, p.category,
+          Array.isArray(p.tags) ? p.tags.join(' ') : '',
+          p.source_credit,
+        ].filter(Boolean).join(' ').toLowerCase()
+        return hay.includes(q)
+      })
+    : allPrompts
+
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px' }}>
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        gap: 16, marginBottom: 20, flexWrap: 'wrap',
+      }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 400, fontStyle: 'italic', margin: 0 }}>
+          Uploaded resources
+        </h2>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)', letterSpacing: '0.06em' }}>
+          {q
+            ? `${filtered.length} of ${allPrompts.length} match "${query}"`
+            : `${allPrompts.length} total`}
+        </div>
+      </div>
+
+      <div style={{ position: 'relative', marginBottom: 20 }}>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by id, title, description, category, tag, or credit…"
+          style={{
+            width: '100%',
+            padding: '11px 14px 11px 40px',
+            fontSize: 13, fontFamily: 'inherit',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid var(--border)',
+            color: 'var(--text)',
+            borderRadius: 10, outline: 'none',
+            transition: 'border-color 150ms ease, background 150ms ease',
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--electric)' }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+        />
+        <svg
+          viewBox="0 0 24 24" width="14" height="14"
+          fill="none" stroke="var(--text-dim)" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round"
+          style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Clear search"
+            style={{
+              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+              width: 26, height: 26, borderRadius: 999,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--text-dim)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: '40px 0', textAlign: 'center' }}>
+          No matches for "{query}".
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {filtered.map((p) => (
+            <ResourceRow
+              key={p.id}
+              p={p}
+              isActive={isEditing && form.id === p.id}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleFeatured={onToggleFeatured}
+              justBackfilled={backfilledIds.has(p.id)}
+              justRetagged={retaggedIds.has(p.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBackfilled, justRetagged }) {
   const isPaid = p.tier === 'paid' || p.price === 'premium';
   const isDraft = p.status === 'draft';
@@ -1242,12 +1348,16 @@ export default function Admin() {
       </div>
 
       {/* Uploaded List */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 400, fontStyle: 'italic', marginBottom: '24px' }}>Uploaded resources</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {allPrompts.map(p => <ResourceRow key={p.id} p={p} isActive={isEditing && form.id === p.id} onEdit={beginEdit} onDelete={onDelete} onToggleFeatured={onToggleFeatured} justBackfilled={backfilledIds.has(p.id)} justRetagged={retaggedIds.has(p.id)} />)}
-        </div>
-      </div>
+      <UploadedResources
+        allPrompts={allPrompts}
+        isEditing={isEditing}
+        form={form}
+        onEdit={beginEdit}
+        onDelete={onDelete}
+        onToggleFeatured={onToggleFeatured}
+        backfilledIds={backfilledIds}
+        retaggedIds={retaggedIds}
+      />
 
       {/* Autofill preview modal */}
       {autofillPreview && (
