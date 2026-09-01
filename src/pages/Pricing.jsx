@@ -417,7 +417,7 @@ export default function Pricing() {
                 subLine={foundingFilled
                   ? `${P.sym}${P.crossed} lifetime for everyone now`
                   : (couponMode && !promoExpired
-                    ? `CUE49 auto-applied · 20% off · same lifetime access`
+                    ? `CUE49 auto-applied · 20% off · no MCP included`
                     : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`)}
                 highlight
                 cta={
@@ -446,10 +446,13 @@ export default function Pricing() {
                   'New drops every week — forever',
                   'React source code',
                   'Request any component\'s code — I ship it personally',
-                  // MCP row removed for launch — kept teasing it as
-                  // SOON felt like padding the card. Bring it back
-                  // as a real feature line the moment the MCP
-                  // server actually ships to npm.
+                  // MCP is the $99-only upsell. In CUE49 promo mode
+                  // it's struck through with a "$99 ONLY" chip so the
+                  // trade-off is visible on the card without a
+                  // footnote. Standard mode shows it as SOON.
+                  (couponMode && !promoExpired)
+                    ? { text: 'MCP support', strike: true }
+                    : { text: 'MCP support', soon: true },
                   'Unlimited prompts',
                   'Commercial use — no resell / redistribution',
                   'Founding badge in profile',
@@ -785,7 +788,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPr
             letterSpacing: '-0.005em', lineHeight: 1.3,
           }}
         >
-          <div>{fullPriceLabel}</div>
+          <div>{fullPriceLabel} · with MCP</div>
           <div style={{ fontSize: 9.5, opacity: 0.65, marginTop: 2, letterSpacing: '0.04em' }}>Full lifetime</div>
         </button>
         <button
@@ -801,7 +804,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPr
             letterSpacing: '-0.005em', lineHeight: 1.3,
           }}
         >
-          <div>{promoPriceLabel}</div>
+          <div>{promoPriceLabel} · no MCP</div>
           <div style={{ fontSize: 9.5, opacity: 0.75, marginTop: 2, letterSpacing: '0.04em' }}>24-hr special</div>
         </button>
       </div>
