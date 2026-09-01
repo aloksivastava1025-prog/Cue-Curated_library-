@@ -291,12 +291,16 @@ export default function EditorialCard({ item, setSelectedItem }) {
           <img
             src={item.thumbSrc}
             alt={item.title}
-            /* Was loading="lazy" — that added a perceptible delay on
-               mobile where cards enter the viewport and users saw a
-               beat of empty card before the poster painted. Media is
-               on Cloudflare R2 (30-day CDN cache), so eager-loading
-               is basically free after the first request. */
-            loading="eager"
+            width={640}
+            height={480}
+            /* Lazy again — combined with `content-visibility: auto`
+               on the parent card, off-screen thumbs don't fetch
+               until the browser needs them. Explicit width/height
+               above stops the layout from shifting when the image
+               lands (fixes the 46-image "missing dimensions"
+               finding on the perf audit). Aspect-ratio 4:3 matches
+               how the card renders, so no visual distortion. */
+            loading="lazy"
             decoding="async"
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
             style={{
