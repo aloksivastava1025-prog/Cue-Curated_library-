@@ -74,8 +74,12 @@ export default function Pricing() {
   useEffect(() => {
     try { localStorage.setItem('cue.pricing.currency', currency) } catch {}
   }, [currency])
+  // INR values are the direct USD equivalent at ~₹84/$ so an Indian
+  // buyer pays the same real cost as a US buyer — no PPP discount
+  // baked into the display. Dodo still localises at checkout, but
+  // the sticker matches for both markets.
   const P = currency === 'INR'
-    ? { sym: '₹', founding: '4,999', crossed: '12,499', monthly: '2,499', yearlyCost: '29,988', taxSuffix: '' }
+    ? { sym: '₹', founding: '8,299', crossed: '20,899', monthly: '4,099', yearlyCost: '49,188', taxSuffix: '' }
     : { sym: '$', founding: '99',    crossed: '249',    monthly: '49',    yearlyCost: '588',    taxSuffix: '' }
 
   useEffect(() => {

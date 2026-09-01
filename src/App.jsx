@@ -1243,19 +1243,22 @@ function useCouponHeroLabel() {
     return () => clearInterval(id);
   }, []);
   const WINDOW_MS = 24 * 60 * 60 * 1000;
-  let start = 0;
-  let unlocked = false;
+  // Unified promo expiry — same localStorage key the Pricing page's
+  // PromoToggle writes so the hero pill and the founding card always
+  // show the same countdown. First read wins; if nothing is set yet
+  // (fresh visitor), start the 24-hour window from now.
+  let expiry = 0;
   try {
-    const raw = localStorage.getItem('cue.coupon.window.start');
-    if (raw) start = parseInt(raw, 10) || 0;
-    if (!start) {
-      start = Date.now();
-      localStorage.setItem('cue.coupon.window.start', String(start));
+    const raw = localStorage.getItem('cue.promo.newmonth.expiry');
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    if (Number.isFinite(parsed) && parsed > Date.now()) {
+      expiry = parsed;
+    } else {
+      expiry = Date.now() + WINDOW_MS;
+      localStorage.setItem('cue.promo.newmonth.expiry', String(expiry));
     }
-    unlocked = !!localStorage.getItem('cue.coupon.unlocked');
   } catch {}
-  if (unlocked) return null;
-  const remaining = Math.max(0, start + WINDOW_MS - Date.now());
+  const remaining = Math.max(0, expiry - Date.now());
   if (remaining <= 0) return null;
   const totalSec = Math.floor(remaining / 1000);
   const h = Math.floor(totalSec / 3600);
