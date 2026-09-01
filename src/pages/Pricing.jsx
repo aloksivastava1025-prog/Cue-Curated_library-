@@ -74,12 +74,13 @@ export default function Pricing() {
   useEffect(() => {
     try { localStorage.setItem('cue.pricing.currency', currency) } catch {}
   }, [currency])
-  // INR values are the direct USD equivalent at ~₹84/$ so an Indian
-  // buyer pays the same real cost as a US buyer — no PPP discount
-  // baked into the display. Dodo still localises at checkout, but
-  // the sticker matches for both markets.
+  // INR values match the Dodo dashboard exactly. Any drift here
+  // creates checkout-vs-site pricing mismatch, which we hit once —
+  // a real customer (Sarang, Sep 1 2026) saw ₹8,299 on-site but
+  // ₹4,999+GST at checkout and lost trust. Keep these two locked
+  // in sync: change on Dodo first, then here, in the same session.
   const P = currency === 'INR'
-    ? { sym: '₹', founding: '8,299', crossed: '20,899', monthly: '4,099', yearlyCost: '49,188', taxSuffix: '' }
+    ? { sym: '₹', founding: '4,999', crossed: '12,499', monthly: '2,499', yearlyCost: '29,988', taxSuffix: '' }
     : { sym: '$', founding: '99',    crossed: '249',    monthly: '49',    yearlyCost: '588',    taxSuffix: '' }
 
   useEffect(() => {
@@ -416,7 +417,7 @@ export default function Pricing() {
                 subLine={foundingFilled
                   ? `${P.sym}${P.crossed} lifetime for everyone now`
                   : (couponMode && !promoExpired
-                    ? `CUE49 auto-applied · 20% off · no MCP included`
+                    ? `CUE49 auto-applied · 20% off · same lifetime access`
                     : `${foundingCount} of ${FOUNDING_CAP} spots claimed · After 50, ${P.sym}${P.founding} is gone forever`)}
                 highlight
                 cta={
@@ -445,12 +446,11 @@ export default function Pricing() {
                   'New drops every week — forever',
                   'React source code',
                   'Request any component\'s code — I ship it personally',
-                  // MCP is only in the $99 lane; strike when the user
-                  // flips into the $79 / CUE49 promo mode so the trade
-                  // is visible on the card without a footnote.
-                  (couponMode && !promoExpired)
-                    ? { text: 'MCP support', strike: true }
-                    : { text: 'MCP support', soon: true },
+                  // MCP included at both price points. Kept out of
+                  // the promo trade-off after a customer confusion
+                  // incident (Sep 1 2026) — cleaner messaging wins
+                  // over the marginal upsell.
+                  { text: 'MCP support', soon: true },
                   'Unlimited prompts',
                   'Commercial use — no resell / redistribution',
                   'Founding badge in profile',
@@ -762,7 +762,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPr
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'stretch',
     }}>
-      {/* Toggle row — Standard $99 (with MCP)  |  $79 24hr special (no MCP) */}
+      {/* Toggle row — Standard $99  |  $79 24hr special (same access) */}
       <div
         role="radiogroup"
         aria-label="Choose founding rate"
@@ -786,7 +786,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPr
             letterSpacing: '-0.005em', lineHeight: 1.3,
           }}
         >
-          <div>{fullPriceLabel} · with MCP</div>
+          <div>{fullPriceLabel}</div>
           <div style={{ fontSize: 9.5, opacity: 0.65, marginTop: 2, letterSpacing: '0.04em' }}>Full lifetime</div>
         </button>
         <button
@@ -802,7 +802,7 @@ function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPr
             letterSpacing: '-0.005em', lineHeight: 1.3,
           }}
         >
-          <div>{promoPriceLabel} · no MCP</div>
+          <div>{promoPriceLabel}</div>
           <div style={{ fontSize: 9.5, opacity: 0.75, marginTop: 2, letterSpacing: '0.04em' }}>24-hr special</div>
         </button>
       </div>
