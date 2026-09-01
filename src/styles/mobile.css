@@ -109,6 +109,32 @@
     display: inline-flex !important;
   }
 
+  /* Category rail — mirror the featured rail treatment: narrower
+     cards with a 15% peek so it reads as horizontally scrollable,
+     mandatory snap for confident touch swipes, right-edge fade so
+     the eye knows there is more to the right, and hide the chevron
+     buttons because they are hard to hit on touch. */
+  .cue-category-scroller {
+    grid-auto-columns: min(80vw, 300px) !important;
+    gap: 12px !important;
+    scroll-snap-type: x mandatory !important;
+    mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - 32px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - 32px),
+      transparent 100%
+    );
+  }
+  .cue-category-controls {
+    display: none !important;
+  }
+
   /* Type toggle — smaller text, tight padding */
   .cue-type-toggle button {
     padding: 6px 12px !important;

@@ -934,43 +934,24 @@ function MainApp() {
       {/* Design of the Day rail — only rendered if there are featured items */}
       <FeaturedRail items={featured} onOpen={openItem} />
 
-      {/* Category rails — driven by the same deriveItemTags logic
-          the filter bar uses, so counts match the visitor's mental
-          model. Order matches the "biggest categories first" pitch;
-          each rail auto-hides if the bucket has <3 items. Tag list
-          is intentionally short — 3–4 rails avoid making the home
-          page feel like a full second grid. */}
+      {/* Single WebGL "Signature" rail — the one category that most
+          differentiates Cue from every other component library on
+          the market. Kept as the sole category rail; the filter bar
+          below is where visitors browse everything else. Uses the
+          same deriveItemTags logic the filter bar uses so the count
+          matches the number visitors see in the filter chip. */}
       {(() => {
-        const RAILS = [
-          { key: '3d & webgl',        title: 'WebGL',                eyebrow: 'Signature category' },
-          { key: 'sections & layouts',title: 'Sections & Layouts',   eyebrow: 'Landing-page essentials' },
-          { key: 'text animations',   title: 'Text Animations',      eyebrow: 'Motion typography' },
-          { key: 'navigation',        title: 'Navigation',           eyebrow: 'Nav & menus' },
-          { key: 'sliders & marquees',title: 'Sliders & Marquees',   eyebrow: 'Motion carousels' },
-          { key: 'scroll animations', title: 'Scroll Animations',    eyebrow: 'Scroll-driven motion' },
-          { key: 'buttons',           title: 'Buttons',              eyebrow: 'Interactive controls' },
-          { key: 'forms',             title: 'Forms',                eyebrow: 'Inputs & flows' },
-        ]
-        // Build the bucket for each rail once, using deriveItemTags
-        // (canonicalised) so counts match the FilterBar visibly.
-        const buckets = new Map()
-        for (const p of (allPrompts || [])) {
-          const tags = deriveItemTags(p) || []
-          for (const t of tags) {
-            const k = String(t).toLowerCase()
-            if (!buckets.has(k)) buckets.set(k, [])
-            buckets.get(k).push(p)
-          }
-        }
-        return RAILS.map((r) => (
+        const items = (allPrompts || []).filter((p) =>
+          (deriveItemTags(p) || []).some((t) => String(t).toLowerCase() === '3d & webgl')
+        )
+        return (
           <CategoryRail
-            key={r.key}
-            eyebrow={r.eyebrow}
-            title={r.title}
-            items={buckets.get(r.key) || []}
+            eyebrow="Signature category"
+            title="WebGL"
+            items={items}
             onOpen={openItem}
           />
-        ))
+        )
       })()}
 
       {/* Filter bar — 3-column grid so the center toggle is TRULY centered
