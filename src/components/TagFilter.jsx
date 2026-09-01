@@ -56,7 +56,19 @@ const DERIVED_TAG_KEYWORDS = [
   { match: ['portfolio'], tag: 'portfolio' },
   { match: ['bento'], tag: 'bento' },
   { match: ['scroll'], tag: 'scroll' },
-  { match: ['webgl', 'three.js', 'three-js', 'shader', 'glsl', '3d', 'cinematic'], tag: '3d & webgl' },
+  // WebGL / 3D bucket — broadened. Anything that reads as
+  // shader / raytraced / GPU-driven visual belongs here even if the
+  // title doesn't say "webgl". Physical / optical vocab (chromatic,
+  // fisheye, refraction, coin, mercury, orbit) almost always ships
+  // as a canvas or three.js scene on the sites this library curates.
+  { match: [
+    'webgl', 'three.js', 'three-js', 'threejs', 'webgpu',
+    'shader', 'glsl', '3d', 'cinematic',
+    'coin', 'chromatic', 'fisheye', 'refraction', 'wireframe',
+    'mesh', 'particle', 'metaball', 'blob', 'liquid', 'mercury',
+    'orbit', 'helix', 'cylinder', 'ripple', 'distortion',
+    'chromatic aberration', 'iridescent',
+  ], tag: '3d & webgl' },
   { match: ['glass'], tag: 'glass' },
   { match: ['button', 'cta'], tag: 'button' },
   { match: ['toggle'], tag: 'toggle' },
