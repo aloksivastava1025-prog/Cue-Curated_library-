@@ -446,11 +446,10 @@ export default function Pricing() {
                   'New drops every week — forever',
                   'React source code',
                   'Request any component\'s code — I ship it personally',
-                  // MCP included at both price points. Kept out of
-                  // the promo trade-off after a customer confusion
-                  // incident (Sep 1 2026) — cleaner messaging wins
-                  // over the marginal upsell.
-                  { text: 'MCP support', soon: true },
+                  // MCP row removed for launch — kept teasing it as
+                  // SOON felt like padding the card. Bring it back
+                  // as a real feature line the moment the MCP
+                  // server actually ships to npm.
                   'Unlimited prompts',
                   'Commercial use — no resell / redistribution',
                   'Founding badge in profile',
