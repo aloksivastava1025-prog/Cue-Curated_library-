@@ -10,10 +10,18 @@
 // ============================================================
 
 import { writeFileSync } from 'node:fs'
-import { config as loadEnv } from 'dotenv'
 
-loadEnv({ path: '.env' })
-loadEnv({ path: '.env.local', override: true })
+// dotenv is only useful when running the script locally — Vercel
+// (and any hosted CI) injects env vars directly into process.env,
+// and the package isn't in production deps. Import it dynamically
+// so the build doesn't blow up if it's missing.
+try {
+  const { config } = await import('dotenv')
+  config({ path: '.env' })
+  config({ path: '.env.local', override: true })
+} catch {
+  // dotenv unavailable — running in CI / production, env is already set
+}
 
 const SITE = 'https://cuedesign.space'
 const OUT_PATH = 'public/sitemap.xml'
