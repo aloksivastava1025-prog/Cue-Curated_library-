@@ -72,17 +72,25 @@ const SECTION_KEYWORDS = [
   'section', 'layout', 'nav', 'form', 'gallery',
   'slider', 'marquee', 'page transition',
 ];
-// Bucket the raw resource count to the nearest lower round marker
-// (25, 50, 100, 150, 200, 300, 500, 1000). Under 25 we still show
-// the exact number so the very first days of the library don't lie
-// about scale — everything above 25 gets a "+" suffix.
+// Bucket the raw resource count into aspirational marketing bands.
+// Under 20 we still show the exact number so the very first days of
+// the library don't lie about scale. From 20+ we round up to the
+// next round milestone so the badge reads slightly ahead of reality
+// — the "we have 120+, aiming for 150" framing beats "we have 119".
 function bucketCount(n) {
   const x = Number(n) || 0
-  if (x < 25) return String(x)
-  const marks = [25, 50, 100, 150, 200, 300, 500, 750, 1000]
-  let bucket = marks[0]
-  for (const m of marks) { if (x >= m) bucket = m; else break }
-  return `${bucket}+`
+  if (x < 20)  return String(x)
+  if (x < 40)  return '25+'
+  if (x < 75)  return '50+'
+  if (x < 100) return '75+'
+  if (x < 130) return '120+'
+  if (x < 175) return '150+'
+  if (x < 225) return '200+'
+  if (x < 275) return '250+'
+  if (x < 400) return '300+'
+  if (x < 600) return '500+'
+  if (x < 850) return '750+'
+  return '1000+'
 }
 
 function itemType(item) {
