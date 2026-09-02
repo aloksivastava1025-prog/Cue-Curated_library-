@@ -55,33 +55,15 @@ export default function Pricing() {
   const [foundingCount, setFoundingCount] = useState(0)
   const [openFaq, setOpenFaq] = useState(null)
 
-  // Display-only currency toggle. Dodo still applies the real
-  // regional price at checkout (via 'By Country' localized pricing),
-  // but this lets a buyer preview what they'll actually see before
-  // clicking through. Default = USD (global default).
-  const [currency, setCurrency] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cue.pricing.currency')
-      if (saved === 'INR' || saved === 'USD') return saved
-    } catch {}
-    // Best-effort geo hint: browser locale contains 'IN' → INR.
-    if (typeof navigator !== 'undefined') {
-      const langs = [navigator.language, ...(navigator.languages || [])].filter(Boolean)
-      if (langs.some((l) => /-IN\b|_IN\b/i.test(l))) return 'INR'
-    }
-    return 'USD'
-  })
-  useEffect(() => {
-    try { localStorage.setItem('cue.pricing.currency', currency) } catch {}
-  }, [currency])
-  // INR values match the Dodo dashboard exactly. Any drift here
-  // creates checkout-vs-site pricing mismatch, which we hit once —
-  // a real customer (Sarang, Sep 1 2026) saw ₹8,299 on-site but
-  // ₹4,999+GST at checkout and lost trust. Keep these two locked
-  // in sync: change on Dodo first, then here, in the same session.
-  const P = currency === 'INR'
-    ? { sym: '₹', founding: '4,999', crossed: '12,499', monthly: '2,499', yearlyCost: '29,988', taxSuffix: '' }
-    : { sym: '$', founding: '99',    crossed: '249',    monthly: '49',    yearlyCost: '588',    taxSuffix: '' }
+  // Single source of truth: USD everywhere on the site. Dodo's
+  // Localized Pricing (dashboard → Products) handles the actual
+  // currency conversion at checkout — an Indian buyer still sees
+  // the equivalent in INR + auto GST, a European buyer sees EUR +
+  // VAT, etc. Removing the on-site INR toggle avoids the sticker /
+  // checkout mismatch that broke a real buyer (Sarang, Sep 1 2026)
+  // and cuts the currency-toggle UI + localStorage plumbing.
+  const currency = 'USD'
+  const P = { sym: '$', founding: '99', crossed: '249', monthly: '49', yearlyCost: '588', taxSuffix: '' }
 
   useEffect(() => {
     let alive = true
@@ -280,8 +262,9 @@ export default function Pricing() {
           Prices shown are inclusive of applicable taxes · local currency auto-selected at checkout.
         </p>
 
-        {/* Founding counter + currency toggle — same visual weight,
-            sit side-by-side so the buyer notices both signals at once. */}
+        {/* Founding counter — currency toggle removed. Site shows USD
+            everywhere; Dodo's Localized Pricing converts to buyer's
+            local currency (with regional tax) at checkout. */}
         <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 999 }}>
             <span style={{ width: 8, height: 8, borderRadius: 999, background: foundingFilled ? 'var(--text-dim)' : 'var(--electric)' }} />
@@ -292,32 +275,6 @@ export default function Pricing() {
                   ? `Founding launch · ${FOUNDING_CAP} lifetime seats open`
                   : `${foundingCount} of ${FOUNDING_CAP} founding spots claimed`}
             </span>
-          </div>
-          <div role="tablist" aria-label="Choose currency" style={{
-            display: 'inline-flex', padding: 3,
-            border: '1px solid var(--border)', borderRadius: 999,
-            background: '#0e0e10',
-          }}>
-            {[
-              { code: 'USD', label: '$ USD' },
-              { code: 'INR', label: '₹ INR' },
-            ].map((c) => {
-              const on = currency === c.code
-              return (
-                <button
-                  key={c.code} role="tab" aria-selected={on}
-                  onClick={() => setCurrency(c.code)}
-                  style={{
-                    padding: '5px 14px', borderRadius: 999,
-                    background: on ? 'var(--electric)' : 'transparent',
-                    color: on ? '#fff' : 'var(--text-dim)',
-                    border: 'none', cursor: 'pointer',
-                    fontSize: 11.5, fontWeight: 600, letterSpacing: '0.04em',
-                    fontFamily: INTER, transition: 'background 0.15s ease, color 0.15s ease',
-                  }}
-                >{c.label}</button>
-              )
-            })}
           </div>
         </div>
       </section>
