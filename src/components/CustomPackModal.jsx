@@ -38,6 +38,10 @@ export default function CustomPackModal({ open, onClose }) {
   const [picked, setPicked] = useState(() => new Set())
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
+  // Buyer's proposed price. Made mandatory so Alok never has to
+  // guess someone's budget on the first reply — cuts one full
+  // email round-trip out of every custom-pack thread.
+  const [quote, setQuote] = useState('')
   const [message, setMessage] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
@@ -115,13 +119,20 @@ export default function CustomPackModal({ open, onClose }) {
       setSubmitErr('Use a real email (you@example.com) or an X handle (@username).')
       return
     }
+    // Quote is now required — cuts one email round-trip.
+    const quoteRaw = quote.trim()
+    const quoteNum = Number(quoteRaw.replace(/[^0-9.]/g, ''))
+    if (!quoteRaw || !Number.isFinite(quoteNum) || quoteNum <= 0) {
+      setSubmitErr('Add a proposed price so Alok can reply with a real yes/no.')
+      return
+    }
     // Backend requires a valid email column. If the user gave an X
     // handle, we stash a synthetic address so the insert doesn't
     // fail; the real contact is in `message` so Alok can DM them.
     const emailToSend = isEmail ? raw : `${raw.replace(/^@/, '').toLowerCase()}@x.handle`
-    const composedMessage = isEmail
-      ? message
-      : `Contact via X: ${raw.startsWith('@') ? raw : '@' + raw}${message ? '\n\n' + message : ''}`
+    const quoteLine = `Proposed price: ${quoteRaw}`
+    const contactLine = isEmail ? null : `Contact via X: ${raw.startsWith('@') ? raw : '@' + raw}`
+    const composedMessage = [contactLine, quoteLine, message].filter(Boolean).join('\n\n')
     setSubmitting(true)
     try {
       await backend.submitCustomPackRequest({
@@ -268,9 +279,10 @@ export default function CustomPackModal({ open, onClose }) {
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email or X handle (@username)"
+                placeholder="Your email or X handle (@username) · required"
                 type="text"
                 style={inputStyle}
+                required
               />
               <input
                 value={name}
@@ -278,10 +290,18 @@ export default function CustomPackModal({ open, onClose }) {
                 placeholder="Your name (optional)"
                 style={inputStyle}
               />
+              <input
+                value={quote}
+                onChange={(e) => setQuote(e.target.value)}
+                placeholder="Your proposed price · required (e.g. $60 or ₹4,500)"
+                type="text"
+                style={{ ...inputStyle, gridColumn: '1 / -1' }}
+                required
+              />
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Any budget or context? (optional)"
+                placeholder="Context — what you're building, stack, any specific tweaks (optional)"
                 rows={2}
                 style={{ ...inputStyle, gridColumn: '1 / -1', resize: 'vertical', fontFamily: 'inherit' }}
               />
@@ -292,23 +312,43 @@ export default function CustomPackModal({ open, onClose }) {
                 <span style={{ fontSize: 11.5, color: 'var(--text-dim, rgba(255,255,255,0.5))', lineHeight: 1.5, maxWidth: 520 }}>
                   Give us your email <em>or</em> X handle above. Alok reaches out within 24 hrs, agrees a fair price, and sends a payment link. Faster: DM <a href="https://x.com/alok619308" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.85)', textDecoration: 'underline' }}>@alok619308</a> on X directly — activation happens from there.
                 </span>
-                <button
-                  onClick={submit}
-                  disabled={submitting || picked.size === 0}
-                  style={{
-                    background: 'var(--electric, #0000ff)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '10px 20px',
-                    borderRadius: 8,
-                    fontSize: 13, fontWeight: 600,
-                    cursor: submitting ? 'wait' : (picked.size === 0 ? 'not-allowed' : 'pointer'),
-                    opacity: submitting ? 0.6 : (picked.size === 0 ? 0.4 : 1),
-                    letterSpacing: '0.02em',
-                  }}
-                >
-                  {submitting ? 'Sending…' : `Send request${picked.size > 0 ? ` · ${picked.size}` : ''}`}
-                </button>
+                {(() => {
+                  // Disable until all three requirements are met:
+                  //   1. at least one component picked
+                  //   2. a plausible email or X handle
+                  //   3. a plausible price (> 0)
+                  const emailRaw = email.trim()
+                  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)
+                    || /^@?[a-z0-9_]{1,15}$/i.test(emailRaw)
+                  const quoteNum = Number(quote.trim().replace(/[^0-9.]/g, ''))
+                  const quoteOk = quote.trim().length > 0 && Number.isFinite(quoteNum) && quoteNum > 0
+                  const ready = picked.size > 0 && emailOk && quoteOk
+                  const gate = submitting
+                    ? 'Sending…'
+                    : picked.size === 0 ? 'Pick a component'
+                    : !emailOk ? 'Add email / X handle'
+                    : !quoteOk ? 'Add proposed price'
+                    : `Send request · ${picked.size}`
+                  return (
+                    <button
+                      onClick={submit}
+                      disabled={submitting || !ready}
+                      style={{
+                        background: 'var(--electric, #0000ff)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        fontSize: 13, fontWeight: 600,
+                        cursor: submitting ? 'wait' : (ready ? 'pointer' : 'not-allowed'),
+                        opacity: submitting ? 0.6 : (ready ? 1 : 0.4),
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {gate}
+                    </button>
+                  )
+                })()}
               </div>
             </div>
           </>
