@@ -334,7 +334,7 @@ export default function Pricing() {
                 price="Fair"
                 priceSub="price"
                 badge="À la carte"
-                subLine="Great if you only need 2–5 components — no full-library commitment."
+                subLine="Best for 1–5 picks · pick 7+ and lifetime becomes the cheaper deal."
                 cta={
                   <button
                     type="button"
@@ -346,11 +346,12 @@ export default function Pricing() {
                 }
                 features={[
                   'Pick from the whole library (visual picker)',
+                  'Best for 1–5 picks · $5–15 per component',
+                  'Pick 7+? Lifetime ($79 CUE49 / $99) is cheaper',
                   'DM within 24 hrs · fair price agreed with you',
                   'Payment link sent to your registered email',
                   'Once paid, components activate on your account',
                   'Commercial use — no resell / redistribution',
-                  'Great for one landing page or one dashboard',
                 ]}
                 termsCopy={
                   <>
