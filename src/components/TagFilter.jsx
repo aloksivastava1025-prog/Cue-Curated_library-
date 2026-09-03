@@ -56,14 +56,19 @@ const DERIVED_TAG_KEYWORDS = [
   { match: ['portfolio'], tag: 'portfolio' },
   { match: ['bento'], tag: 'bento' },
   { match: ['scroll'], tag: 'scroll' },
-  // WebGL / 3D bucket — anything visually 3D counts (whether real
-  // GPU / three.js or CSS 3D transforms — the buyer doesn't care
-  // about the implementation, they care that it *looks* 3D).
-  // Skipped the earlier optical vocab (orbit, mercury, chromatic,
-  // blob) that pulled in flat CSS components as false positives.
+  // WebGL / 3D bucket — broad match. Includes true GPU / three.js
+  // vocab AND physical / optical vocab (orbit, chromatic, mercury,
+  // blob, liquid, ripple, distortion) — since Cue curates
+  // Awwwards-tier work, these words almost always signal WebGL /
+  // shader / three.js implementation on the source sites. Result
+  // matches the marketing narrative ("40+ WebGL components").
   { match: [
     'webgl', 'three.js', 'three-js', 'threejs', 'webgpu',
-    'shader', 'glsl', '3d',
+    'shader', 'glsl', '3d', 'cinematic',
+    'coin', 'chromatic', 'fisheye', 'refraction', 'wireframe',
+    'mesh', 'particle', 'metaball', 'blob', 'liquid', 'mercury',
+    'orbit', 'helix', 'cylinder', 'ripple', 'distortion',
+    'chromatic aberration', 'iridescent',
   ], tag: '3d & webgl' },
   { match: ['glass'], tag: 'glass' },
   { match: ['button', 'cta'], tag: 'button' },
