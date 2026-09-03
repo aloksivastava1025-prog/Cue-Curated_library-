@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 // Cue MCP server — stdio transport.
-// Exposes 4 tools: search_components, get_component, list_categories, list_tags.
-// Backed by Cue's public Supabase project. Premium prompts + code
-// gated behind CUE_API_KEY.
+//
+// Standard interaction pattern the AI should follow:
+//   1. search_components      → names only (id, title, tier, has_code)
+//   2. preview_components     → thumbnails for the ids the user picks
+//   3. get_component          → prompt + React source for the chosen one
+//
+// Discovery aids: list_categories + list_tags surface the taxonomy.
+// Premium prompts + code gated behind CUE_API_KEY.
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -12,6 +17,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 
 import { searchComponents, searchComponentsSchema } from './tools/search.js'
+import { previewComponents, previewComponentsSchema } from './tools/preview.js'
 import { getComponent, getComponentSchema } from './tools/get.js'
 import { listCategories, listCategoriesSchema } from './tools/categories.js'
 import { listTags, listTagsSchema } from './tools/tags.js'
@@ -23,6 +29,7 @@ const server = new Server(
 
 const TOOLS = [
   searchComponentsSchema,
+  previewComponentsSchema,
   getComponentSchema,
   listCategoriesSchema,
   listTagsSchema,
@@ -39,6 +46,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
     switch (name) {
       case 'search_components':
         result = await searchComponents((args || {}) as any)
+        break
+      case 'preview_components':
+        result = await previewComponents((args || {}) as any)
         break
       case 'get_component':
         result = await getComponent((args || {}) as any)

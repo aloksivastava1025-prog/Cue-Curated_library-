@@ -1,6 +1,9 @@
 // Cue MCP — search_components tool
-// Metadata-only browse (title, tags, tier). No prompt text or code.
-// Cheap; free tier friendly.
+// Names-only browse. Returns id + title + tier + has_code so the
+// AI can present a short list without dumping 20 thumbnails into
+// chat. Use preview_components({ids}) after the user picks which
+// ones they want to see, then get_component(id) to fetch prompt
+// + code for the chosen one.
 
 import { supabase } from '../supabase.js'
 import { canonicalTag, canonicalTags } from '../canonicalize.js'
@@ -8,7 +11,7 @@ import { canonicalTag, canonicalTags } from '../canonicalize.js'
 export const searchComponentsSchema = {
   name: 'search_components',
   description:
-    'Search Cue components by keyword, tag, category, or tier. Returns metadata only (title, description, category, tags, tier, thumbnail URL). Use get_component to fetch prompt text or React source.',
+    'Search Cue components by keyword, tag, category, or tier. Returns a LIGHT list (id + title + category + tier + has_code) — NOT thumbnails. Present these names to the user first, ask which ones they want to preview, then call preview_components({ids}) to fetch thumbnails, then get_component(id) to fetch the actual prompt + React source.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -72,18 +75,17 @@ export async function searchComponents(input: {
   const { data, error } = await q
   if (error) throw new Error(`Search failed: ${error.message}`)
 
+  // Lightweight response — id + title + tags + tier + has_code.
+  // NO thumb_url / preview_url here: those come from
+  // preview_components({ids}) once the user has picked. Keeping
+  // this payload small so the chat doesn't drown in URLs.
   let rows = (data || []).map((r: any) => ({
     id: r.id,
     title: r.title,
-    description: r.description || '',
     category: r.category || '',
     tags: canonicalTags(Array.isArray(r.tags) ? r.tags : []),
     tier: r.tier === 'premium' ? 'paid' : 'free',
-    thumb_url: r.thumb_src,
-    preview_url: r.hover_src,
     has_code: !!(r.code && String(r.code).trim()),
-    view_count: r.view_count || 0,
-    like_count: r.like_count || 0,
   }))
 
   // Client-side tag intersect
@@ -95,5 +97,8 @@ export async function searchComponents(input: {
   return {
     count: rows.length,
     results: rows,
+    // Hint the AI wraps into a helpful ask, so the client always
+    // stages the interaction the same way: names -> ask -> preview.
+    next_step: `Show these ${rows.length} names to the user. Ask which ones they want to preview. Then call preview_components({ids: [...]}) with the chosen ids to fetch thumbnails.`,
   }
 }
