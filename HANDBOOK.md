@@ -28,6 +28,7 @@
 18. [Automation (GitHub Actions)](#18-automation-github-actions)
 19. [Support & external accounts](#19-support--external-accounts)
 20. [Future roadmap](#20-future-roadmap)
+21. [Component authoring standard — HTML-first](#21-component-authoring-standard--html-first)
 
 ---
 
@@ -707,6 +708,150 @@ External services (dashboards to bookmark):
 - Code adaptation to user's design tokens (Blend Contract in prompt)
 - Taste-ranking model trained on Cue+ user signals
 - Full-team plan (Cue+ Team) with seat management
+
+---
+
+## 21. Component authoring standard — HTML-first
+
+The rule set below is the canonical pattern for every new Cue component. It exists because a real buyer (Marco, Sep 2 2026) called out that JS-array-driven components are hostile to agency workflows — clients on Webflow / WordPress / Framer can't update copy without pinging the developer. HTML-first also happens to be the most portable delivery format: same file lands cleanly in Webflow, Framer, WordPress, Next.js, or vanilla HTML with zero rewrites.
+
+### Why HTML-first
+
+- **Framework-agnostic delivery** — one file works everywhere. AI tools (Cursor, v0, Bolt) handle the HTML → React / Vue / Svelte conversion downstream. Cue doesn't need to ship four variants.
+- **CMS-friendly by default** — content lives in markup, not code. Client editing = editing HTML in their CMS, no dev round-trip.
+- **Reusable by structure** — same script animates any number of `.slide` elements. Add / remove content without code change.
+- **Marketing differentiator** — Aceternity / Magic UI ship React-only. Cue's positioning is now "drop into any site." Real edge.
+
+### The 3-part file structure
+
+Every component ships as one self-contained HTML file:
+
+```html
+<!-- 1. Scoped styles — use CSS variables for tokens -->
+<style>
+  .cue-thing {
+    --accent: #0000FF;
+    --serif: "Fraunces", serif;
+    --rhythm: 24px;
+  }
+  .cue-thing .element {
+    color: var(--accent);
+    font-family: var(--serif);
+    padding-block: var(--rhythm);
+  }
+</style>
+
+<!-- 2. HTML content — CMS-editable, semantic -->
+<section class="cue-thing">
+  <article class="item">
+    <img src="/img1.jpg" alt="">
+    <h3>Editable title</h3>
+    <p>Editable body</p>
+  </article>
+  <!-- Add / remove articles freely; script auto-picks up -->
+</section>
+
+<!-- 3. Vanilla JS — reads content, doesn't own it -->
+<script>
+  const items = document.querySelectorAll('.cue-thing .item');
+  items.forEach((item, i) => {
+    // Animation, interaction, physics — NOT content
+  });
+</script>
+```
+
+### Rules — content in HTML
+
+1. **No JS arrays of content.** Nothing like `const slides = [{title: "..."}]`. Content is inside `<article>` / `<li>` / `<section>` elements in the HTML.
+2. **Semantic elements** — `<article>`, `<section>`, `<figure>`, `<blockquote>` instead of `<div>` where possible. Screen readers + CMS parsers both benefit.
+3. **`data-*` attributes** for machine-readable state — `data-index`, `data-active`, `data-color` — not for content strings.
+4. **Alt text on every `<img>`** — accessibility + SEO baseline.
+
+### Rules — CSS
+
+1. **Scoped by root class** — every rule starts with `.cue-thing` so the component can't leak into the host site's styles.
+2. **CSS variables for tokens** — every color, font, spacing, easing uses `var(--xxx)`. Buyer overrides them via their brand tokens.
+3. **Fixed motion values** — the easing curve and duration of the signature interaction are hardcoded (this is Cue's aesthetic). Colors / spacing swap; motion doesn't.
+4. **Mobile-first media queries** — base styles for phone, `@media (min-width: 768px)` for desktop.
+
+### Rules — JS
+
+1. **Query, don't own.** Script uses `document.querySelectorAll('.item')` to find content. Never generates content.
+2. **Vanilla JS by default.** No React, no framework — the file must run in an HTML page directly.
+3. **`IntersectionObserver` for scroll-triggered work** — never bind to raw `scroll` events (perf killer).
+4. **Idempotent init** — the script must handle a) DOM already present, b) items added after load. Use `MutationObserver` when content is CMS-injected post-load.
+
+### When to break the pattern
+
+Not every component is data-driven. Some are single-interaction primitives — a magnetic button, a cursor effect, a hover-morph card. For those:
+
+- **The component IS the animation** — there's nothing to CMS-ify.
+- Ship a single `.html` (or `.tsx`) file with the interaction; skip the HTML content section entirely.
+- Note this in the prompt: "Single-interaction — no data pattern."
+
+Roughly 40% of Cue is this category today (see the Sep 2 audit).
+
+### React variant (optional, on request)
+
+For buyers building React apps, ship a slot-based wrapper that keeps the same content-in-JSX pattern:
+
+```jsx
+export function Thing({ children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const items = ref.current.querySelectorAll('.item');
+    // same animation logic
+  }, []);
+  return <section ref={ref} className="cue-thing">{children}</section>;
+}
+
+// Usage — content stays outside the component
+<Thing>
+  <article className="item">
+    <img src={cmsData.image} alt="" />
+    <h3>{cmsData.title}</h3>
+  </article>
+</Thing>
+```
+
+Content stays outside the component → CMS-editable → same semantics as the HTML version.
+
+### Blend contract (adaptation rules) — always in the prompt
+
+Every component prompt ends with an adaptation contract so the buyer's AI (Cursor / v0 / Bolt) knows what's safe to swap vs what's locked:
+
+```
+ADAPTATION CONTRACT
+
+Preserve (do not change):
+- Motion easing: cubic-bezier(0.22, 1, 0.36, 1)
+- Duration: 400ms
+- Vertical rhythm: 24px
+- Aspect ratio: 16 / 10
+
+Safe to swap:
+- Primary color (--accent) → your brand primary
+- Font family (--serif, --sans) → your fonts
+- Border radius (--radius) → your radius scale
+
+Reject if asked:
+- Removing scoping class
+- Replacing vanilla JS with jQuery / heavy library
+- Hardcoding content into JS
+```
+
+### Migration — existing 5 JS-array components
+
+The Sep 2 audit flagged 5 components using JS-array data (cue058, cue060, cue075, cue100, cue104). These get rewritten under this standard within two weeks of the standard landing. New submissions follow it from day one.
+
+### Request shortcuts when asking Claude for a component
+
+- `Cue prompt for [name] — [description]` — returns the AI prompt only
+- `Cue prompt for [name] with code` — prompt + full HTML file
+- `Cue html for [name]` — HTML file only, no prompt
+- `Cue html + react for [name]` — both HTML and React variants
+- `Cue prompt for [name] — single interaction` — animation-only, no data pattern
+- `Cue prompt for [name] — CMS friendly` — force the HTML-first data pattern (default anyway)
 
 ---
 
