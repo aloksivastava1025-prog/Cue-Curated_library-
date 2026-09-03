@@ -245,8 +245,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
       }}
       className="resource-card"
     >
-      {/* Media frame — inset with rounded corners, Osmo-style */}
-      <div style={{ position: 'relative', aspectRatio: '16 / 10', background: 'var(--card-img-bg)', overflow: 'hidden', margin: '8px 8px 0', borderRadius: '8px' }}>
+      {/* Media frame — inset with rounded corners, Osmo-style.
+          data-thumb-slot lets global.css paint a subtle shimmer
+          skeleton behind the image while it's still downloading,
+          so the card breathes instead of showing a dead grey
+          rectangle on slow connections / first-request DNS. */}
+      <div data-thumb-slot style={{ position: 'relative', aspectRatio: '16 / 10', background: 'var(--card-img-bg)', overflow: 'hidden', margin: '8px 8px 0', borderRadius: '8px' }}>
 
         {/* Inner hairline */}
         <div style={{ position: 'absolute', inset: 0, borderRadius: '8px', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04)', pointerEvents: 'none', zIndex: 4 }}></div>

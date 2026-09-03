@@ -174,6 +174,13 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Preconnect + dns-prefetch to R2 so the first thumbnail /
+         video request doesn't burn 300–500 ms on DNS + TLS. Huge
+         win on desktop where content-visibility skips off-screen
+         work — the moment a card scrolls into view, the R2
+         connection is already warm. -->
+    <link rel="preconnect" href="https://pub-bffac370ca114a6f873486297600ac6f.r2.dev" crossorigin />
+    <link rel="dns-prefetch" href="https://pub-bffac370ca114a6f873486297600ac6f.r2.dev" />
     <!--
       Hero serif (Fraunces) is loaded with display=block so the
       giant italic word never flashes as a bold Georgia fallback
