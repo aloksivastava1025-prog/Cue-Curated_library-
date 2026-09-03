@@ -56,17 +56,14 @@ const DERIVED_TAG_KEYWORDS = [
   { match: ['portfolio'], tag: 'portfolio' },
   { match: ['bento'], tag: 'bento' },
   { match: ['scroll'], tag: 'scroll' },
-  // WebGL / 3D bucket — TIGHT. Earlier we included physical /
-  // optical vocab (orbit, chromatic, fisheye, mercury, blob) which
-  // pulled in CSS-transform components that had those words in
-  // their title but no actual GPU work. Bucket ballooned to 46 with
-  // false positives. Now: only titles/categories that explicitly
-  // mention WebGL / three.js / shader / GLSL / WebGPU land here.
-  // Admin can add an explicit 'webgl' tag on any borderline card
-  // to force inclusion.
+  // WebGL / 3D bucket — anything visually 3D counts (whether real
+  // GPU / three.js or CSS 3D transforms — the buyer doesn't care
+  // about the implementation, they care that it *looks* 3D).
+  // Skipped the earlier optical vocab (orbit, mercury, chromatic,
+  // blob) that pulled in flat CSS components as false positives.
   { match: [
     'webgl', 'three.js', 'three-js', 'threejs', 'webgpu',
-    'shader', 'glsl',
+    'shader', 'glsl', '3d',
   ], tag: '3d & webgl' },
   { match: ['glass'], tag: 'glass' },
   { match: ['button', 'cta'], tag: 'button' },
