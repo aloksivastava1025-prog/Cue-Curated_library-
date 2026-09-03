@@ -40,9 +40,13 @@ const BLOCKERS = [
 
 const Q2_MAP = {
   conditional_yes: {
+    // Founder-guarantee framing — puts pressure on Alok, reads as
+    // confident to the user. If he can't ship the exact ask in
+    // 48 hrs, the deal is off — no soft "we'll try" hedging.
     title: 'Which one component would seal the deal?',
+    subtitle: "If I don't add it in 48 hrs, don't join Cue.",
     type: 'text',
-    placeholder: 'Paste an Awwwards / X link, or describe it. I ship genuine requests in 24 hrs.',
+    placeholder: 'Paste an Awwwards / X link, or describe it in one line.',
   },
   need_more_components: {
     title: 'Which category do you need most?',
@@ -531,6 +535,11 @@ export default function FoundingPoll() {
             {state === 'q2' && q2Config && (
               <>
                 <div className="cue-notch-title">{q2Config.title}</div>
+                {q2Config.subtitle && (
+                  <div className="cue-notch-subtitle" style={{ color: '#ccff00', fontWeight: 500 }}>
+                    {q2Config.subtitle}
+                  </div>
+                )}
                 {q2IsText ? (
                   <>
                     <textarea
