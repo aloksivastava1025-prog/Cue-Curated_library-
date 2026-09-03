@@ -1293,6 +1293,35 @@ export default function Admin() {
             </div>
 
             <div>
+              <label style={labelStyle}>WebGL Signature rail <span style={{ textTransform: 'none', color: 'var(--text-dimmer)', letterSpacing: 0 }}>(admin override)</span></label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                {[
+                  { val: null,  label: 'Auto',    hint: 'Rail decides via tags / title' },
+                  { val: true,  label: 'Force in', hint: 'Always show in WebGL rail' },
+                  { val: false, label: 'Force out',hint: 'Never show in WebGL rail' },
+                ].map((opt) => {
+                  const on = (form.featuredWebgl ?? null) === opt.val
+                  const color = opt.val === true ? '#ccff00' : opt.val === false ? '#ff6b6b' : 'var(--electric)'
+                  return (
+                    <div
+                      key={String(opt.val)}
+                      onClick={() => set({ featuredWebgl: opt.val })}
+                      style={{
+                        cursor: 'pointer', padding: '14px 16px',
+                        border: `1px solid ${on ? color : 'var(--border)'}`,
+                        borderRadius: '3px',
+                        background: on ? `${color}0F` : '#0e0e10',
+                      }}
+                    >
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{opt.label}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>{opt.hint}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div>
               <label style={labelStyle}>Access Tier</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div onClick={() => set({ tier: 'free' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.tier === 'free' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.tier === 'free' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>

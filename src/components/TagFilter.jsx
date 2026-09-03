@@ -15,7 +15,7 @@ const rawNormalize = (t) => String(t || '').trim().toLowerCase()
 // 3d-transform, css-3d, ...) so clicking "webgl" only surfaced 2 of 15.
 // Key = canonical display tag; value = list of variants that fold into it.
 const TAG_ALIASES = {
-  '3d & webgl': ['webgl', 'three-js', 'three.js', 'threejs', 'shader', 'glsl', '3d', '3d-tilt', '3d-transform', '3d-cylinder', '3d-stack', 'css-3d', 'three'],
+  '3d & webgl': ['webgl', 'webgl-shader', 'webgl-scene', 'webgpu', 'three-js', 'three.js', 'threejs', 'three', 'shader', 'glsl', '3d', '3d-tilt', '3d-transform', '3d-cylinder', '3d-stack', 'css-3d'],
   'scroll': ['scroll-driven', 'scroll-pin', 'scroll-reveal', 'scroll-interaction', 'scroll-animation', 'pinned-scroll', 'scroll-trigger', 'scrolltrigger', 'pinned-section', 'horizontal-pan', 'scroll-scrubbed', 'scroll-transition', 'section-transition'],
   'glass': ['glassmorphism', 'liquid-glass', 'frosted-glass'],
   'toggle': ['toggle', 'theme-toggle', 'dark-mode', 'light-dark-toggle', 'texture-toggle', 'card-toggle'],

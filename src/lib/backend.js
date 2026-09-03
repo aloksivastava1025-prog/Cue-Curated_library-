@@ -90,6 +90,10 @@ function toJs(row) {
     component_type: row.component_type || '',
     // DB stores 'premium'; the app uses 'paid' internally. Translate on read.
     tier: row.tier === 'premium' ? 'paid' : (row.tier || 'free'),
+    // Admin overrides for the home-page category rails. null = auto,
+    // true = force include, false = force exclude. See supabase-
+    // migration-featured-rails.sql for the column definition.
+    featuredWebgl: row.featured_webgl ?? null,
   }
 }
 
@@ -114,6 +118,12 @@ function toDb(item) {
   if (item.thumbSrc) out.thumb_src = item.thumbSrc
   if (item.hoverSrc) out.hover_src = item.hoverSrc
   if (item.rail)     out.rail = item.rail
+  // Admin overrides for the WebGL Signature rail. Explicit true /
+  // false send through; null / undefined skip so an older DB
+  // without the migration doesn't reject the insert.
+  if (item.featuredWebgl === true || item.featuredWebgl === false) {
+    out.featured_webgl = item.featuredWebgl
+  }
 
   // Timestamps — accept either camelCase (from the client) or snake_case.
   const createdAt = item.created_at || item.createdAt

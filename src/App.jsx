@@ -950,9 +950,19 @@ function MainApp() {
           same deriveItemTags logic the filter bar uses so the count
           matches the number visitors see in the filter chip. */}
       {(() => {
-        const items = (allPrompts || []).filter((p) =>
-          (deriveItemTags(p) || []).some((t) => String(t).toLowerCase() === '3d & webgl')
-        )
+        // Rail filter honours the admin override first, falls back
+        // to deriveItemTags:
+        //   featured_webgl = true   → always include (override in)
+        //   featured_webgl = false  → always exclude (override out)
+        //   null / undefined        → auto-detect via tags
+        const isWebGL = (p) => {
+          if (p.featuredWebgl === true) return true
+          if (p.featuredWebgl === false) return false
+          return (deriveItemTags(p) || []).some(
+            (t) => String(t).toLowerCase() === '3d & webgl'
+          )
+        }
+        const items = (allPrompts || []).filter(isWebGL)
         return (
           <CategoryRail
             eyebrow="Signature category"
