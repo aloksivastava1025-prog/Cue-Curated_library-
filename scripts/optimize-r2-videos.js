@@ -88,17 +88,24 @@ async function download(key, dest) {
 }
 
 function optimize(inPath, outPath) {
-  // -vf scale=1280:-2  → cap width at 1280, keep aspect ratio, ensure even height
-  // -c:v libx264 -b:v 1500k → H.264 target ~1.5 Mbps (crisp for card previews)
-  // -preset veryfast → fast encode, still good quality
-  // -movflags +faststart → moov atom at file start; enables progressive play
-  // -c:a copy → keep any audio track as-is (cheap; most hover videos are muted anyway)
-  // -y → overwrite output
+  // Tighter than v1 (was 1280w / 1500k). Card thumb renders at
+  // 400–500px, modal preview at ~800px — 960w is still 2× the
+  // largest display size. 800k bitrate is enough for muted hover
+  // clips (no dialog / no fine detail to preserve). Result: files
+  // ~40–50 % smaller than v1, so mobile 4G playback starts closer
+  // to 2 s than 5 s.
+  //
+  //   -vf scale=960:-2       cap width at 960, keep aspect
+  //   -c:v libx264 -b:v 800k ~0.8 Mbps target
+  //   -preset veryfast       fast encode, still good quality
+  //   -movflags +faststart   moov atom at file start; progressive play
+  //   -c:a copy              keep any audio track as-is
+  //   -y                     overwrite output
   const args = [
     '-i', inPath,
-    '-vf', 'scale=\'min(1280,iw)\':-2',
+    '-vf', 'scale=\'min(960,iw)\':-2',
     '-c:v', 'libx264',
-    '-b:v', '1500k',
+    '-b:v', '800k',
     '-preset', 'veryfast',
     '-movflags', '+faststart',
     '-c:a', 'copy',
@@ -126,17 +133,21 @@ async function upload(key, filePath, contentType) {
     ContentType: contentType || 'video/mp4',
     CacheControl: 'public, max-age=2592000, immutable',
     // Custom metadata tag — next run of this script uses it to
-    // detect already-optimized files and skip them. Makes the
-    // script idempotent: user can run it after any batch of new
-    // uploads and only the fresh files will be processed.
-    Metadata: { 'cue-optimized': '1' },
+    // detect already-optimized files and skip them. Version bumps
+    // (v1 → v2) on a settings change so the whole library
+    // re-encodes with the new recipe on the next run. v2 = 960w
+    // 800k (was 1280w 1500k in v1).
+    Metadata: { 'cue-optimized': 'v2' },
   }))
 }
 
 async function isOptimized(key) {
   try {
     const head = await s3.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }))
-    return head.Metadata?.['cue-optimized'] === '1'
+    // Only 'v2' tagged files are skipped. Older 'v1' tags are
+    // treated as un-optimized so they re-encode with the new
+    // (smaller / faster-loading) recipe.
+    return head.Metadata?.['cue-optimized'] === 'v2'
   } catch { return false }
 }
 
