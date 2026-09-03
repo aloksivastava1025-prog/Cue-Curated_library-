@@ -37,7 +37,9 @@ export default function EditorialCard({ item, setSelectedItem }) {
   // so a second hover plays instantly from the browser buffer with
   // no re-download.
   const [everHovered, setEverHovered] = useState(false);
-  const isHovered = mouseHover;
+  // `isHovered` is defined further down after both mouseHover +
+  // inViewport are set. Points at the combined signal so a card
+  // in-viewport (but not moused-over) still plays.
   const [videoReady, setVideoReady] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   // Safety net — if the video hasn't emitted onLoadedData/onPlaying
@@ -101,6 +103,12 @@ export default function EditorialCard({ item, setSelectedItem }) {
   //     don't create visual chaos on a narrow screen.
   //   - Desktop: 0.4 — matches the original ambient-motion feel
   //     where any card meaningfully in view is playing.
+  // Viewport-based play state. Kept SEPARATE from `mouseHover` so
+  // the two triggers don't fight — the previous single-state setup
+  // let the IO callback stomp on the hover state, killing playback
+  // as soon as the observer fired even once. Any of the two flips
+  // true → video plays.
+  const [inViewport, setInViewport] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
     const noHover = typeof window !== 'undefined'
@@ -108,19 +116,23 @@ export default function EditorialCard({ item, setSelectedItem }) {
     // Mobile threshold pulled down to 0.15 — on a narrow phone
     // screen the cards fill most of the viewport, so requiring 40%
     // visibility meant playback only kicked in when a card was
-    // almost fully centred (users had to "hover-like" scroll into
-    // one card and wait). 15% lets the video start as soon as the
-    // card is meaningfully on screen. Desktop stays at 0.25 —
+    // almost fully centred. 15% lets the video start as soon as
+    // the card is meaningfully on screen. Desktop stays at 0.25 —
     // multiple cards fit at once, so a low threshold there would
     // trigger 6+ playbacks per scroll (the 5-cap governor would
     // still clamp, but this is friendlier to the pool).
     const threshold = noHover ? 0.15 : 0.25;
     const io = new IntersectionObserver(([entry]) => {
-      setMouseHover(entry.isIntersecting && entry.intersectionRatio >= threshold);
+      setInViewport(entry.isIntersecting && entry.intersectionRatio >= threshold);
     }, { threshold: [0, 0.15, 0.25, 0.4, 0.6, 1] });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);
+
+  // Any active signal — hover OR viewport — triggers playback. This
+  // is what every mount + play + crossfade check reads.
+  const isActive = mouseHover || inViewport;
+  const isHovered = isActive;
 
   // Grace timer — pulled down from 600ms to 120ms. The <video>
   // element's poster attribute IS this same thumbnail, so hiding the
@@ -129,16 +141,16 @@ export default function EditorialCard({ item, setSelectedItem }) {
   // no flicker. 120ms is short enough that users perceive the fade
   // as "instant" rather than a visible fallback state.
   useEffect(() => {
-    if (!mouseHover) { setReadyTimeout(false); return; }
+    if (!isActive) { setReadyTimeout(false); return; }
     if (videoReady) return;
     const t = setTimeout(() => setReadyTimeout(true), 120);
     return () => clearTimeout(t);
-  }, [mouseHover, videoReady]);
+  }, [isActive, videoReady]);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (mouseHover) {
+    if (isActive) {
       // Do NOT call v.load() here — that force-refetches the file
       // and was one of the reasons egress blew up. Trust the buffer
       // the browser already has. If the video was just mounted this
@@ -149,7 +161,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
     } else {
       v.pause();
     }
-  }, [mouseHover]);
+  }, [isActive]);
 
   const formatAgo = (iso) => {
     if (!iso) return '';
@@ -199,13 +211,13 @@ export default function EditorialCard({ item, setSelectedItem }) {
   // IntersectionObserver and real mouse enter/leave) means the
   // moving cards are always the ones the user is actually looking
   // at. Free bandwidth on R2 makes re-mounting on scroll-back cheap.
-  const slot = useVideoSlot('editorial-card', item.id, hoverIsVideo && mouseHover)
+  const slot = useVideoSlot('editorial-card', item.id, hoverIsVideo && isActive)
   // Mount the <video> only for cards that are ACTIVELY in view or
   // being hovered — mirrors the slot claim above. Free R2 bandwidth
   // means a re-mount on scroll-back is cheap; the win is that the
   // grid keeps only ~5 videos alive at any moment, so decode never
   // overloads a laptop GPU.
-  const shouldMountHoverVideo = hoverIsVideo && mouseHover && slot.granted;
+  const shouldMountHoverVideo = hoverIsVideo && isActive && slot.granted;
 
   const pillBase = {
     // Bumped from 10px / 5px×11px — real-user feedback (Ibrahim, Aug 24)
@@ -376,11 +388,11 @@ export default function EditorialCard({ item, setSelectedItem }) {
                    were skipped by the codec pipeline. */
             onLoadedData={(e) => {
               setVideoReady(true);
-              if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
+              if (isActive) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onCanPlay={(e) => {
               setVideoReady(true);
-              if (mouseHover) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
+              if (isActive) { const p = e.currentTarget.play(); if (p?.catch) p.catch(() => {}); }
             }}
             onPlaying={() => setVideoReady(true)}
             onError={() => {
