@@ -56,18 +56,17 @@ const DERIVED_TAG_KEYWORDS = [
   { match: ['portfolio'], tag: 'portfolio' },
   { match: ['bento'], tag: 'bento' },
   { match: ['scroll'], tag: 'scroll' },
-  // WebGL / 3D bucket — broadened. Anything that reads as
-  // shader / raytraced / GPU-driven visual belongs here even if the
-  // title doesn't say "webgl". Physical / optical vocab (chromatic,
-  // fisheye, refraction, coin, mercury, orbit) almost always ships
-  // as a canvas or three.js scene on the sites this library curates.
+  // WebGL / 3D bucket — TIGHT. Earlier we included physical /
+  // optical vocab (orbit, chromatic, fisheye, mercury, blob) which
+  // pulled in CSS-transform components that had those words in
+  // their title but no actual GPU work. Bucket ballooned to 46 with
+  // false positives. Now: only titles/categories that explicitly
+  // mention WebGL / three.js / shader / GLSL / WebGPU land here.
+  // Admin can add an explicit 'webgl' tag on any borderline card
+  // to force inclusion.
   { match: [
     'webgl', 'three.js', 'three-js', 'threejs', 'webgpu',
-    'shader', 'glsl', '3d', 'cinematic',
-    'coin', 'chromatic', 'fisheye', 'refraction', 'wireframe',
-    'mesh', 'particle', 'metaball', 'blob', 'liquid', 'mercury',
-    'orbit', 'helix', 'cylinder', 'ripple', 'distortion',
-    'chromatic aberration', 'iridescent',
+    'shader', 'glsl',
   ], tag: '3d & webgl' },
   { match: ['glass'], tag: 'glass' },
   { match: ['button', 'cta'], tag: 'button' },
