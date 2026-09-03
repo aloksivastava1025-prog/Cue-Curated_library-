@@ -388,6 +388,31 @@ All under `scripts/`. Each has usage comments in the header — read the top of 
 
 Run these in Supabase → **SQL Editor**. `service_role` bypasses RLS; regular `postgres` role obeys it.
 
+### Founder-owned test accounts — standard exclusion list
+
+Every admin count / report / marketing-email query should exclude these so metrics reflect real users only. Add a new email to this list every time you make another personal test account.
+
+```sql
+-- Standard test-account exclusion. Paste into every user-facing
+-- report so real-user counts and email sends don't include the
+-- founder's own signups.
+lower(email) not in (
+  -- Admin / founder accounts (whitelisted in code too)
+  'aloks.int@teachforindia.org',
+  'akashkumar7653099@gmail.com',
+  'aloksivastava1025@gmail.com',
+  'srivastavaalok2214@gmail.com',
+  -- Personal test accounts
+  'aloksrivastava1144@gmail.com',
+  'aloksrivastava_ec24a11_028@dtu.ac.in',
+  '10programmer11@gmail.com',
+  'shubhanshsrivastava18@gmail.com',
+  'akashkumar7653011@gmail.com'
+)
+```
+
+**Where this fragment goes:** every query in this section that reports on real users (free-user counts, marketing email extracts, founding counts, subscription lists). The `getFoundingCount()` in `backend.js` uses a subset of this list (only the 3 admin accounts); the wider test-account net lives in SQL so ad-hoc reports can dedupe cleanly.
+
 ### Grant Cue+ lifetime to a user (paid conversion, one-off)
 
 ```sql
