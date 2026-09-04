@@ -28,9 +28,14 @@ const INITIALS = 'A'                    // fallback avatar text
 const FOUNDER_NAME = 'Alok'
 
 const HINT_DISMISSED_KEY = 'cue.founder.hint.dismissed'
+// Separate key for the signed-in "WhatsApp DM unlocked" hint so
+// members who already dismissed the generic hint still see the
+// unlock-perk arrow at least once after login.
+const HINT_WA_DISMISSED_KEY = 'cue.founder.hint.wa.dismissed'
 
 export default function FounderDock() {
   const { allPrompts } = useApp()
+  const { isSignedIn } = useUser()
   // Round the live count down to the nearest 5 so the dock reads as
   // "75+", "80+", "85+" instead of an oddly specific "83+". Every
   // drop from the admin panel updates this automatically the next
@@ -38,9 +43,19 @@ export default function FounderDock() {
   const componentCount = Math.floor(((allPrompts?.length) || 0) / 5) * 5
   const componentLabel = componentCount > 0 ? `${componentCount}+` : '75+'
   const [expanded, setExpanded] = useState(false)
+  // Two hint tracks: one for the generic "DM me" nudge shown to
+  // everyone, one for the signed-in "WhatsApp is unlocked inside"
+  // nudge. Pick the storage key by auth state so each variant fires
+  // at most once per user.
+  const hintKey = isSignedIn ? HINT_WA_DISMISSED_KEY : HINT_DISMISSED_KEY
   const [hintVisible, setHintVisible] = useState(() => {
-    try { return localStorage.getItem(HINT_DISMISSED_KEY) !== '1' } catch { return true }
+    try { return localStorage.getItem(hintKey) !== '1' } catch { return true }
   })
+  // Re-check when auth flips (sign-in mid-session) so the WhatsApp
+  // hint appears the first time a fresh member sees the dock.
+  useEffect(() => {
+    try { setHintVisible(localStorage.getItem(hintKey) !== '1') } catch { setHintVisible(true) }
+  }, [hintKey])
   const rootRef = useRef(null)
   const hoverGraceRef = useRef(null)
 
@@ -50,8 +65,8 @@ export default function FounderDock() {
     if (!expanded) return
     if (!hintVisible) return
     setHintVisible(false)
-    try { localStorage.setItem(HINT_DISMISSED_KEY, '1') } catch {}
-  }, [expanded, hintVisible])
+    try { localStorage.setItem(hintKey, '1') } catch {}
+  }, [expanded, hintVisible, hintKey])
 
   // Tap-outside collapses on touch devices where hover doesn't apply.
   useEffect(() => {
@@ -86,8 +101,13 @@ export default function FounderDock() {
       onMouseLeave={onMouseLeave}
     >
       {hintVisible && !expanded && (
-        <div className="cue-founder-hint" aria-hidden="true">
-          <div className="cue-founder-hint-text">Any doubts? DM me</div>
+        <div
+          className={`cue-founder-hint ${isSignedIn ? 'is-wa' : ''}`}
+          aria-hidden="true"
+        >
+          <div className="cue-founder-hint-text">
+            {isSignedIn ? 'DM me on WhatsApp inside' : 'Any doubts? DM me'}
+          </div>
           <svg
             className="cue-founder-hint-arrow"
             width="70" height="56" viewBox="0 0 70 56" fill="none"
@@ -321,6 +341,10 @@ export default function FounderDock() {
           margin-right: -6px;
           flex-shrink: 0;
         }
+        /* Signed-in "WhatsApp unlocked inside" variant — green so it
+           reads as a fresh perk, not the default nudge. */
+        .cue-founder-hint.is-wa .cue-founder-hint-text { color: #25D366; }
+        .cue-founder-hint.is-wa .cue-founder-hint-arrow { color: #25D366; }
         @keyframes cue-founder-hint-in {
           from { opacity: 0; transform: translateY(-6px); }
           to   { opacity: 1; transform: translateY(0); }
