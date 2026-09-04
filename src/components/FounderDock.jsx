@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useUser } from '@clerk/clerk-react'
 import { useApp } from '../context/AppContext.jsx'
 import { COUPON_ENABLED } from '../lib/features.js'
 import WhatsAppButton from './WhatsAppButton.jsx'
@@ -511,6 +512,11 @@ export default function FounderDock() {
  * is unset, so the whole callout hides silently in those cases.
  */
 function WhatsAppUnlockCallout() {
+  const { isSignedIn } = useUser()
+  // Whole callout — arrow + text + button — only exists for signed-in
+  // users. Signed-out visitors see nothing extra so the DM channel
+  // reads as a member perk, not a public support offer.
+  if (!isSignedIn) return null
   return (
     <div style={{
       marginTop: 10,
