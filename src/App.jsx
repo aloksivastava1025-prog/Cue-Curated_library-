@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SignInButton, useUser, AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import CueUserMenu from './components/CueUserMenu.jsx';
+import WhatsAppButton from './components/WhatsAppButton.jsx';
 import Lenis from 'lenis';
 import Modal from './components/Modal.jsx';
 import Admin from './pages/Admin.jsx';
@@ -599,6 +600,10 @@ function MainApp() {
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
           <a href="#/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
+          {/* WhatsApp direct-message — gated on sign-in via the
+              WhatsAppButton itself. Hides silently when
+              VITE_WHATSAPP_ENABLED=false or the number env is unset. */}
+          <WhatsAppButton variant="icon" />
           <button
             onClick={() => openFeedback('nav')}
             className="cue-nav-suggest"
