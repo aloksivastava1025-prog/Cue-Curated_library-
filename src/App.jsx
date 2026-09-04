@@ -600,10 +600,6 @@ function MainApp() {
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
           <a href="#/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
-          {/* WhatsApp direct-message — gated on sign-in via the
-              WhatsAppButton itself. Hides silently when
-              VITE_WHATSAPP_ENABLED=false or the number env is unset. */}
-          <WhatsAppButton variant="icon" />
           <button
             onClick={() => openFeedback('nav')}
             className="cue-nav-suggest"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Footer from '../components/Footer.jsx'
+import WhatsAppButton from '../components/WhatsAppButton.jsx'
 import { usePageMeta } from '../hooks/usePageMeta.js'
 import { supabase } from '../lib/supabase.js'
 import { friendlyError } from '../lib/friendlyError.js'
@@ -106,6 +107,7 @@ export default function Contact() {
               <a href="https://x.com/Alok619308" target="_blank" rel="noopener noreferrer" style={emailValueStyle}>
                 @Alok619308
               </a>
+              <WhatsAppButton variant="inline" style={{ marginTop: 6 }} />
             </InfoRow>
 
             {/* Colorful social pills */}

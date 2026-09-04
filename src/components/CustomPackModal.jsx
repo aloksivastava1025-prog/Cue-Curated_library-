@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { backend } from '../lib/backend.js'
+import WhatsAppButton from './WhatsAppButton.jsx'
 
 /**
  * Visual "build your own pack" modal.
@@ -311,6 +312,7 @@ export default function CustomPackModal({ open, onClose }) {
               <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 11.5, color: 'var(--text-dim, rgba(255,255,255,0.5))', lineHeight: 1.5, maxWidth: 520 }}>
                   Give us your email <em>or</em> X handle above. Alok reaches out within 24 hrs, agrees a fair price, and sends a payment link. Faster: DM <a href="https://x.com/alok619308" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.85)', textDecoration: 'underline' }}>@alok619308</a> on X directly — activation happens from there.
+                  <WhatsAppButton variant="inline" style={{ display: 'inline-flex', marginLeft: 6 }} />
                 </span>
                 {(() => {
                   // Disable until all three requirements are met:

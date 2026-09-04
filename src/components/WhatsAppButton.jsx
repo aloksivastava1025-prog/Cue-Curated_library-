@@ -109,30 +109,25 @@ export default function WhatsAppButton({
   }
 
   if (variant === 'inline') {
+    // Signed-out visitors already see the X handle in the
+    // surrounding copy — nothing to add. This is a "you just
+    // unlocked WhatsApp" nudge that only fires post-sign-in.
+    if (!isSignedIn) return null
     return (
       <button
         type="button"
-        onClick={isSignedIn ? handleClick : handleIconClick}
+        onClick={handleClick}
         style={{
           background: 'transparent', border: 'none', cursor: 'pointer',
-          color: isSignedIn ? green : 'var(--text)',
-          fontSize: 12.5, fontWeight: 500,
-          padding: '4px 8px',
+          color: green, fontSize: 11.5, fontWeight: 500,
+          padding: '2px 6px',
           display: 'inline-flex', alignItems: 'center', gap: 6,
           ...style,
         }}
       >
-        {isSignedIn ? (
-          <>
-            <WhatsAppIcon size={14} />
-            <span>you can now DM me on WhatsApp <span aria-hidden="true">↗</span></span>
-          </>
-        ) : (
-          <>
-            <XIcon size={12} />
-            <span>DM {xHandle} on X</span>
-          </>
-        )}
+        <span aria-hidden="true">↗</span>
+        <WhatsAppIcon size={12} />
+        <span>you can now DM me on WhatsApp</span>
       </button>
     )
   }
