@@ -48,7 +48,7 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
       entries.forEach((e) => {
         if (e.isIntersecting) { setWarm(true); io.disconnect() }
       })
-    }, { rootMargin: '500px 0px' })
+    }, { rootMargin: '1500px 0px' })
     io.observe(el)
     return () => io.disconnect()
   }, [hoverSrc, warm])

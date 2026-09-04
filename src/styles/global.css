@@ -457,7 +457,10 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cue-accent); ou
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity var(--cue-dur-base) var(--cue-ease);
+  /* Instant swap: no fade between poster and video. Grid feels like
+     Cursor / Bolt / v0 — hover lands, video is there. The base fade
+     was 200ms which read as "loading" instead of "live". */
+  transition: none;
   border-radius: inherit;
 }
 .thumb-video { z-index: 1; }
