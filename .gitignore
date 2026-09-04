@@ -11,3 +11,14 @@ dist
 supabase/.env
 supabase/functions/**/.env
 .tmp/
+
+# Personal Claude Code session config — never commit
+.claude/settings.local.json
+
+# Python bytecode from adjacent side-projects
+**/__pycache__/
+*.pyc
+
+# Personal notes / scratch files that shouldn't ship with Cue
+Microwave_Unit1_Notes.md
+outreach-drafts-*.md
