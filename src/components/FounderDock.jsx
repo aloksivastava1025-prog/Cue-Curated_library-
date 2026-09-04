@@ -23,6 +23,10 @@ import WhatsAppButton from './WhatsAppButton.jsx'
 // EDIT THESE to update contact endpoints without touching layout.
 const TWITTER_URL = 'https://x.com/Alok619308'
 const EMAIL = 'hello@cuedesign.space'
+// Secondary Gmail — shown as a small "also:" line under the Email
+// button so users who don't trust custom-domain replies (or whose
+// filters send them to Spam) have a plain-Gmail fallback.
+const EMAIL_ALT = 'cuedesign.space@gmail.com'
 const PHOTO_SRC = 'https://pbs.twimg.com/profile_images/2077750155353505792/Y3M2fdYV_400x400.jpg'
 const INITIALS = 'A'                    // fallback avatar text
 const FOUNDER_NAME = 'Alok'
@@ -220,6 +224,22 @@ export default function FounderDock() {
                 <path d="M3 7l9 6 9-6"/>
               </svg>
               <span>Email</span>
+            </a>
+          </div>
+          {/* Secondary Gmail fallback — small text link, no button
+              chrome, so it reads as an alternate address rather than
+              a third CTA competing with DM/Email. */}
+          <div style={{
+            marginTop: 6, textAlign: 'center',
+            fontSize: 11, color: 'var(--text-dim)',
+            letterSpacing: '0.01em',
+          }}>
+            or{' '}
+            <a
+              href={`mailto:${EMAIL_ALT}?subject=${encodeURIComponent('Hi Alok — about Cue')}`}
+              style={{ color: 'var(--text-dim)', textDecoration: 'underline' }}
+            >
+              {EMAIL_ALT}
             </a>
           </div>
           {/* WhatsApp callout — signed-in users only. Sits right
