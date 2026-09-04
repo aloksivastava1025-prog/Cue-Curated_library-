@@ -199,9 +199,7 @@ export default function FounderDock() {
               under the DM/Email row so the moment a visitor signs
               in, a fresh channel unlocks in the exact place they
               were looking for contact options. */}
-          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center' }}>
-            <WhatsAppButton variant="inline" />
-          </div>
+          <WhatsAppUnlockCallout />
           {/* Hire me — full-width blue CTA below the DM/Email row.
               Dispatches the same custom event the footer uses so the
               global HireModal opens from wherever the dock is
@@ -498,6 +496,53 @@ export default function FounderDock() {
           /* Sits above the FloatingNav pill which lives at bottom: 24 */
         }
       `}</style>
+    </div>
+  )
+}
+
+/**
+ * WhatsAppUnlockCallout — the "you just unlocked WhatsApp" nudge
+ * that sits between the DM/Email row and the Hire-me CTA. Wraps the
+ * WhatsAppButton `inline` CTA with a handwritten-style annotation
+ * ("now u can DM me on WhatsApp for all your queries") and a curved
+ * SVG arrow pointing down at the button — Awwwards-style so the
+ * unlock reads as a discovered perk, not a caption. WhatsAppButton
+ * itself returns null when signed-out or when VITE_WHATSAPP_NUMBER
+ * is unset, so the whole callout hides silently in those cases.
+ */
+function WhatsAppUnlockCallout() {
+  return (
+    <div style={{
+      marginTop: 10,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      gap: 2,
+    }}>
+      <div style={{
+        display: 'inline-flex', alignItems: 'flex-end', gap: 6,
+        fontSize: 11, color: '#25D366',
+        fontFamily: 'var(--font-serif, Georgia, serif)',
+        fontStyle: 'italic', letterSpacing: '0.01em',
+        lineHeight: 1.2,
+        transform: 'translateX(-8px)',
+      }}>
+        <span>now u can DM me on WhatsApp<br/>for all your queries</span>
+        {/* Curved arrow pointing down-right at the CTA below */}
+        <svg width="26" height="30" viewBox="0 0 26 30" fill="none"
+             aria-hidden="true"
+             style={{ marginBottom: -2 }}>
+          <path
+            d="M2 3 C 4 14, 10 22, 20 26"
+            stroke="#25D366" strokeWidth="1.4" fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M20 26 L 14 24 M20 26 L 18 20"
+            stroke="#25D366" strokeWidth="1.4" fill="none"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+      <WhatsAppButton variant="inline" />
     </div>
   )
 }

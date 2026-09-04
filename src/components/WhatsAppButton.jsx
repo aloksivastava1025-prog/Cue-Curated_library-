@@ -109,26 +109,47 @@ export default function WhatsAppButton({
   }
 
   if (variant === 'inline') {
-    // Signed-out visitors already see the X handle in the
-    // surrounding copy — nothing to add. This is a "you just
-    // unlocked WhatsApp" nudge that only fires post-sign-in.
+    // Signed-out visitors already see the X handle in the surrounding
+    // copy — nothing to add. This is a "you just unlocked WhatsApp"
+    // nudge that only fires post-sign-in. Rendered as a real CTA
+    // pill (background, hover lift, subtle pulse) so users read it
+    // as a button, not a caption they can ignore.
     if (!isSignedIn) return null
     return (
-      <button
-        type="button"
-        onClick={handleClick}
-        style={{
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          color: green, fontSize: 11.5, fontWeight: 500,
-          padding: '2px 6px',
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          ...style,
-        }}
-      >
-        <span aria-hidden="true">↗</span>
-        <WhatsAppIcon size={12} />
-        <span>you can now DM me on WhatsApp</span>
-      </button>
+      <>
+        <style>{`
+          @keyframes cue-wa-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0.35); }
+            50%      { box-shadow: 0 0 0 6px rgba(37,211,102,0.00); }
+          }
+          .cue-wa-cta { animation: cue-wa-pulse 2.4s ease-in-out infinite; }
+          .cue-wa-cta:hover { transform: translateY(-1px); }
+        `}</style>
+        <button
+          type="button"
+          onClick={handleClick}
+          className="cue-wa-cta"
+          style={{
+            background: green,
+            color: '#fff',
+            border: 'none',
+            borderRadius: 999,
+            padding: '8px 14px',
+            cursor: 'pointer',
+            fontSize: 12, fontWeight: 600, letterSpacing: '-0.005em',
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            fontFamily: 'inherit',
+            transition: 'transform 160ms ease, filter 160ms ease',
+            ...style,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.05)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)' }}
+        >
+          <WhatsAppIcon size={14} />
+          <span>DM me on WhatsApp</span>
+          <span aria-hidden="true" style={{ opacity: 0.9 }}>→</span>
+        </button>
+      </>
     )
   }
 
