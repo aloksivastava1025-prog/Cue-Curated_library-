@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import { COUPON_ENABLED } from '../lib/features.js'
+import WhatsAppButton from './WhatsAppButton.jsx'
 
 /**
  * FounderDock — a small persistent floating avatar of the founder
@@ -193,6 +194,13 @@ export default function FounderDock() {
               </svg>
               <span>Email</span>
             </a>
+          </div>
+          {/* WhatsApp callout — signed-in users only. Sits right
+              under the DM/Email row so the moment a visitor signs
+              in, a fresh channel unlocks in the exact place they
+              were looking for contact options. */}
+          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center' }}>
+            <WhatsAppButton variant="inline" />
           </div>
           {/* Hire me — full-width blue CTA below the DM/Email row.
               Dispatches the same custom event the footer uses so the
