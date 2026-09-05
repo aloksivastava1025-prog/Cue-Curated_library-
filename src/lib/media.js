@@ -37,6 +37,34 @@ function needsTransform(pathSegment) {
   return !TRANSFORM_HINT.test(pathSegment)
 }
 
+/**
+ * Derive a static first-frame image URL from a Cloudinary VIDEO URL,
+ * used as a fallback poster when a card has no thumb_src of its own.
+ * `so_0` = start offset 0s, `.jpg` = image delivery from the video
+ * asset. This costs one image request instead of downloading any of
+ * the video payload — safe to use eagerly. Returns null for non-
+ * Cloudinary URLs so callers can fall back to their own placeholder.
+ */
+export function videoFirstFramePosterUrl(videoUrl) {
+  if (!videoUrl || typeof videoUrl !== 'string') return null
+  if (!videoUrl.includes(CLOUDINARY_HOST)) return null
+  try {
+    const u = new URL(videoUrl)
+    const parts = u.pathname.split('/')
+    // Need at least /{cloud}/video/upload/{...} to be safe
+    if (parts.length < 5 || parts[2] !== 'video') return null
+    if (parts[3] !== 'upload' && parts[3] !== 'fetch') return null
+    // Insert so_0,f_jpg,q_auto,w_1200 transform right after delivery.
+    const transform = 'so_0,f_jpg,q_auto,w_1200'
+    const newParts = [...parts.slice(0, 4), transform, ...parts.slice(4)]
+    // Swap the file extension to .jpg so Cloudinary returns an image.
+    const last = newParts[newParts.length - 1]
+    newParts[newParts.length - 1] = last.replace(/\.(mp4|webm|mov|m4v)$/i, '.jpg')
+    u.pathname = newParts.join('/')
+    return u.toString()
+  } catch { return null }
+}
+
 export function optimizeCloudinaryUrl(url) {
   if (!url || typeof url !== 'string') return url
   if (!url.includes(CLOUDINARY_HOST)) return url

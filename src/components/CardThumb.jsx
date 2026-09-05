@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { optimizeCloudinaryUrl } from '../lib/media.js'
+import { optimizeCloudinaryUrl, videoFirstFramePosterUrl } from '../lib/media.js'
 
 /**
  * CardThumb — grid tile with hover-to-play video.
@@ -30,6 +30,11 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
   const wrapRef  = useRef(null)
 
   const hasMedia = Boolean(thumbSrc || hoverSrc)
+  // Cards uploaded with only a hover_src (no thumb) used to render as
+  // pure grey tiles until the user hovered. Fall back to Cloudinary's
+  // first-frame image transform (so_0.jpg) — costs one small image
+  // request, zero video bytes. Egress-safe by design.
+  const posterSrc = thumbSrc || videoFirstFramePosterUrl(hoverSrc)
 
   const onEnter = () => {
     setHover(true)
@@ -77,10 +82,10 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
   if (hasMedia) {
     return (
       <div ref={wrapRef} className="thumb thumb-media" onMouseEnter={onEnter} onMouseLeave={onLeave}>
-        {thumbSrc && (
+        {posterSrc && (
           <img
             className="thumb-img"
-            src={thumbSrc}
+            src={posterSrc}
             alt=""
             // Always visible — video overlays on top when hovering.
             // Previously we faded the img to 0 on hover to reveal the
@@ -98,7 +103,7 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
             ref={videoRef}
             className="thumb-video"
             src={optimizeCloudinaryUrl(hoverSrc)}
-            poster={thumbSrc || undefined}
+            poster={posterSrc || undefined}
             muted
             loop
             playsInline
