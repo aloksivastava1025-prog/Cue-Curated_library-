@@ -44,6 +44,11 @@ const FORBIDDEN = [
       // renders only when hover is true, so preload="auto" fires on
       // user intent, never on cold mount.
       'src/components/CategoryRail.jsx',
+      // CardThumb — mounts only after everHovered (first real hover),
+      // sticky for the session so subsequent hovers play from buffer.
+      // Never mounts for cards the user hasn't touched. Same pattern
+      // as EditorialCard.
+      'src/components/CardThumb.jsx',
       // Admin — frame extraction, only fires on user-triggered upload
       // or window.confirm backfill
       'src/pages/Admin.jsx',

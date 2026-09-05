@@ -4,21 +4,28 @@ import { optimizeCloudinaryUrl } from '../lib/media.js'
 /**
  * CardThumb — grid tile with hover-to-play video.
  *
- * Perf strategy: don't touch a card's video until it's actually
- * near the viewport, then start buffering aggressively so hover
- * feels instant. With 75+ cards this keeps total egress bounded
- * (only ~1 viewport-worth of videos warming at a time) while
- * making play latency imperceptible for cards the user can see.
+ * Egress-safe strategy (matches EditorialCard / FeaturedRail):
+ *   Off-screen           → no <video> element, 0 bytes
+ *   Never hovered        → no <video> element, 0 bytes
+ *   First hover          → <video preload="auto"> mounts, starts
+ *                          fetching. Some latency on this first hover
+ *                          while first segments arrive; the poster
+ *                          (same as thumb image) covers the tile so
+ *                          nothing flashes black.
+ *   Subsequent hovers    → <video> stays mounted (everHovered sticky)
+ *                          so browser buffer survives mouseleave;
+ *                          play() is instant.
  *
- *   Card off-screen        → no <video> element at all (0 bytes)
- *   Within 500px of view   → <video preload="auto"> starts fetch,
- *                            poster shows the thumb so tile isn't
- *                            blank while first frames arrive
- *   Hover / tap            → play() on already-buffered stream
+ * NOTE: this file is intentionally NOT on the check-video-conventions
+ * `allowedFiles` for `preload="auto"` unless it uses the everHovered
+ * gate — the earlier "warm on scroll" pattern reintroduced the 213 GB
+ * egress bug and was rejected by that guardrail.
  */
 export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc }) {
   const [hover, setHover] = useState(false)
-  const [warm, setWarm]   = useState(false)  // near-viewport → mount video
+  // Sticky: flips true on first real hover and stays true. Gates the
+  // <video> mount so cards the user never touches never download.
+  const [everHovered, setEverHovered] = useState(false)
   const videoRef = useRef(null)
   const wrapRef  = useRef(null)
 
@@ -26,9 +33,11 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
 
   const onEnter = () => {
     setHover(true)
-    if (hoverSrc && videoRef.current) {
-      videoRef.current.currentTime = 0
-      videoRef.current.play().catch(() => {})
+    if (!everHovered) setEverHovered(true)
+    const v = videoRef.current
+    if (hoverSrc && v) {
+      v.currentTime = 0
+      v.play().catch(() => {})
     }
   }
   const onLeave = () => {
@@ -36,26 +45,11 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
     if (hoverSrc && videoRef.current) videoRef.current.pause()
   }
 
-  // Near-viewport prewarm — mount the <video> tag (which triggers
-  // preload="auto") when the card is within 500px of the fold, so
-  // by the time the cursor lands on it the first chunks are already
-  // buffered. Once warmed we disconnect the observer — no need to
-  // unmount if the user scrolls away.
-  useEffect(() => {
-    if (!hoverSrc || !wrapRef.current || warm) return
-    const el = wrapRef.current
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) { setWarm(true); io.disconnect() }
-      })
-    }, { rootMargin: '1500px 0px' })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [hoverSrc, warm])
-
   // On touch devices (no hover) autoplay the video when the card
   // scrolls into view — otherwise mobile users just see a thumbnail
   // and never know the card has motion. Desktop keeps hover behavior.
+  // Touch autoplay counts as user-intent for egress purposes (mobile
+  // grids are naturally scroll-gated by the small viewport).
   useEffect(() => {
     if (!hoverSrc || !wrapRef.current) return
     const noHover = typeof window !== 'undefined'
@@ -64,20 +58,21 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
     const el = wrapRef.current
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
-        const v = videoRef.current
-        if (!v) return
         if (e.isIntersecting && e.intersectionRatio > 0.5) {
+          if (!everHovered) setEverHovered(true)
           setHover(true)
-          v.play().catch(() => {})
+          const v = videoRef.current
+          if (v) v.play().catch(() => {})
         } else {
           setHover(false)
-          v.pause()
+          const v = videoRef.current
+          if (v) v.pause()
         }
       })
     }, { threshold: [0, 0.5, 1] })
     io.observe(el)
     return () => io.disconnect()
-  }, [hoverSrc])
+  }, [hoverSrc, everHovered])
 
   if (hasMedia) {
     return (
@@ -92,7 +87,7 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
             decoding="async"
           />
         )}
-        {hoverSrc && warm && (
+        {hoverSrc && everHovered && (
           <video
             ref={videoRef}
             className="thumb-video"
@@ -101,6 +96,9 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
             muted
             loop
             playsInline
+            // Mount is gated on everHovered — this preload only fires
+            // after the user hovers the card at least once, matching
+            // the convention enforced by scripts/check-video-conventions.js.
             preload="auto"
             style={{ opacity: hover ? 1 : 0 }}
           />
