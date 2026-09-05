@@ -82,7 +82,13 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
             className="thumb-img"
             src={thumbSrc}
             alt=""
-            style={{ opacity: hover && hoverSrc ? 0 : 1 }}
+            // Always visible — video overlays on top when hovering.
+            // Previously we faded the img to 0 on hover to reveal the
+            // video underneath, but if the video hadn't buffered yet
+            // the tile showed grey. Keeping the img painted means the
+            // worst case on a cold hover is "still see the thumb"
+            // instead of "see grey until bytes arrive".
+            style={{ opacity: 1 }}
             loading="lazy"
             decoding="async"
           />
