@@ -345,6 +345,16 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
               <strong style={{ color: '#ccff00', fontWeight: 600 }}>New month special:</strong>{' '}
               use code <strong style={{ color: '#fff' }}>CUE49</strong> for <strong style={{ color: '#fff' }}>$79 lifetime</strong> (was $99). First 20 seats only.
             </p>
+            {/* $20 single-component nudge — new experiment. Tells
+                visitors who might balk at the subscription that
+                there's a smaller entry point for people who only
+                want one specific component. */}
+            <p style={{
+              margin: '10px 0 0', fontSize: 12.5, lineHeight: 1.6,
+              color: 'rgba(255,255,255,0.65)', fontStyle: 'italic',
+            }}>
+              Or if only one component catches your eye — <strong style={{ color: '#fff', fontWeight: 500 }}>pay just $20 for it</strong>. No subscription, lifetime access. <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>(experiment · a few days only)</span>
+            </p>
             {timeLeft > 0 && (
               <div className="cue-welcome-timer" aria-label="Time left on CUE49 promo">
                 <span className="cue-welcome-timer-dot" />
