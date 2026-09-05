@@ -721,25 +721,27 @@ function MainApp() {
               inside a text-align: center wrapper so the pill and
               this line share the same optical center. */}
           <div style={{
-            textAlign: 'center',
+            display: 'flex', justifyContent: 'center', width: '100%',
             marginBottom: 10,
           }}>
-            <span style={{
+            <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               fontSize: 10.5, letterSpacing: '0.18em', textTransform: 'uppercase',
               color: 'rgba(255,255,255,0.62)', fontWeight: 500,
               fontFamily: 'var(--font-sans)',
+              /* padding-left equal to (dot width + gap) so the text
+                 sits at true optical center of the flex box even
+                 though only the left side has a visible dot. */
+              paddingLeft: 11,
             }}>
               <span style={{
                 width: 5, height: 5, borderRadius: 999,
                 background: '#ccff00',
                 boxShadow: '0 0 6px rgba(204,255,0,0.6)',
+                marginLeft: -11,
               }} />
               NEW · $20 for whichever component you like
-              {/* Mirror spacer — same width as the left dot + gap so
-                  the visible text stays optically centered. */}
-              <span aria-hidden="true" style={{ width: 5, height: 5, opacity: 0 }} />
-            </span>
+            </div>
           </div>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
