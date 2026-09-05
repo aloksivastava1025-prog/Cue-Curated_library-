@@ -950,6 +950,15 @@ function Paywall({ item, onSubscribe }) {
       <p style={{ margin: '2px 6px 6px', fontSize: 13, lineHeight: 1.55, color: 'var(--text-dim)' }}>
         Subscribe to Cue+ for the prompts behind every premium component. Production code delivery — <span style={{ color: 'var(--text)' }}>coming in a future update</span>.
       </p>
+      {canRequestSingle && (
+        <p style={{
+          margin: '0 6px 4px', fontSize: 12.5, lineHeight: 1.55,
+          color: 'var(--text-dim)',
+          fontStyle: 'italic',
+        }}>
+          Only this one caught your eye? <span style={{ color: 'var(--text)' }}>Skip the subscription</span> — pay $20 for just this component below.
+        </p>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
         <button
