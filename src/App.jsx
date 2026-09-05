@@ -713,6 +713,34 @@ function MainApp() {
               backdrop-blur · inner bg-white/90 text-neutral-900).
               Right label carries a Cue-native tagline instead of
               'Agentic AI — Built for SMBs'. */}
+          {/* NEW-feature whisper — teases the "$20 per-component"
+              unlock so visitors know Cue+ isn't the only path. Small
+              green dot signals fresh; text stays quiet so the pill
+              below remains the visual anchor. Centered by mirroring
+              the leading dot with an equal-width right-side spacer,
+              inside a text-align: center wrapper so the pill and
+              this line share the same optical center. */}
+          <div style={{
+            textAlign: 'center',
+            marginBottom: 10,
+          }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 10.5, letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.62)', fontWeight: 500,
+              fontFamily: 'var(--font-sans)',
+            }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: 999,
+                background: '#ccff00',
+                boxShadow: '0 0 6px rgba(204,255,0,0.6)',
+              }} />
+              NEW · $20 for whichever component you like
+              {/* Mirror spacer — same width as the left dot + gap so
+                  the visible text stays optically centered. */}
+              <span aria-hidden="true" style={{ width: 5, height: 5, opacity: 0 }} />
+            </span>
+          </div>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */

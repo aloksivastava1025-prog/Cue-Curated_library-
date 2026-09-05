@@ -139,8 +139,27 @@ export default function Modal({ item, onClose, showToast }) {
     return () => { alive = false; };
   }, [isSignedIn, user?.id]);
   const isCuePlus = userPlan === 'cue_plus' || userPlan === 'cue_plus_team';
-  // Show paywall only if item is premium AND user is not entitled.
-  const isPremium = isPremiumMarker && !isCuePlus;
+
+  // Per-component grants — populated by dodo-webhook when someone
+  // buys just this one component ($20). If the current item is in
+  // the user's grants, treat it as unlocked even without Cue+.
+  const [grantedIds, setGrantedIds] = useState(null); // null = loading, [] = fetched empty
+  useEffect(() => {
+    let alive = true;
+    if (!isSignedIn || !user?.id) { setGrantedIds([]); return; }
+    // Refetch every time the user opens a different item — a buyer
+    // who just paid can come straight back to the same modal and see
+    // it unlock without a hard refresh (webhook lands in <5s).
+    backend.getMyGrants(user.id)
+      .then((rows) => { if (alive) setGrantedIds((rows || []).map(r => r.component_id)); })
+      .catch(() => { if (alive) setGrantedIds([]); });
+    return () => { alive = false; };
+  }, [isSignedIn, user?.id, item?.id]);
+  const hasSingleGrant = Array.isArray(grantedIds) && item?.id && grantedIds.includes(item.id);
+
+  // Show paywall only if item is premium AND user is not entitled
+  // (neither Cue+ nor a matching single-component grant).
+  const isPremium = isPremiumMarker && !isCuePlus && !hasSingleGrant;
 
   // Free tier: 2 AI-prompt copies per 24h. Peeked (non-mutating) so
   // the counter renders correctly before any click. Refetched when
@@ -865,10 +884,50 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
 }
 
 // ---------------------------------------------------------------------------
-// Paid item: paywall gate. Only Cue+ subscription unlocks the prompt.
-// Per-component purchase has been removed — one library, one subscription.
-// Code delivery is on the roadmap; for now Cue+ unlocks the PROMPT.
+// Paid item: paywall gate. Two paths — full-library subscription
+// (Cue+ $99 lifetime) or single-component request ($20 via Dodo).
+// Single-component flow is manual: opens the shared Dodo payment
+// link in a new tab, passing the component id + user email as URL
+// params so Alok can map the payment back to the request in Dodo's
+// dashboard and grant access manually. No Supabase log yet — that's
+// a follow-up once the flow is validated.
 function Paywall({ item, onSubscribe }) {
+  const { user, isSignedIn } = useUser();
+  const { openAuth } = useAuth();
+  const email = user?.primaryEmailAddress?.emailAddress
+    || user?.emailAddresses?.[0]?.emailAddress
+    || '';
+  // Dodo checkout for the "$20 — pay only for this component" flow.
+  // Hardcoded default because the link is inherently public (it's the
+  // page users click through to) and Vercel now blocks new VITE_
+  // env vars unless you convert them to Config (which would move the
+  // value server-side and break the button). Env var stays supported
+  // for local overrides / A/B tests without a redeploy.
+  const dodoUrl = String(
+    import.meta.env.VITE_DODO_SINGLE_COMPONENT_URL || 'https://dodo.pe/zf72j2mxk4'
+  ).trim();
+  const canRequestSingle = Boolean(dodoUrl);
+
+  const openSingleComponentCheckout = () => {
+    if (!dodoUrl) return;
+    // Signed-out gate — without a Clerk user_id we can't confidently
+    // attribute the Dodo payment back to the buyer's account after
+    // they sign up. Send them through sign-in first so the grant
+    // lands on their real user_id when the webhook fires.
+    if (!isSignedIn) {
+      openAuth('sign-in');
+      return;
+    }
+    // Attach the item + purchaser as query params so the Dodo checkout
+    // page shows them and the resulting payment record carries the
+    // context. Alok grants access manually after payment lands.
+    const url = new URL(dodoUrl);
+    if (item?.id)    url.searchParams.set('component_id', item.id);
+    if (item?.title) url.searchParams.set('component',    item.title);
+    if (email)       url.searchParams.set('email',        email);
+    window.open(url.toString(), '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
@@ -904,6 +963,44 @@ function Paywall({ item, onSubscribe }) {
         >
           Subscribe to Cue+ →
         </button>
+
+        {canRequestSingle && (
+          <>
+            {/* Divider — "or" between the two paths so users read them
+                as alternatives, not steps of a funnel. */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              fontSize: 10.5, color: 'var(--text-dimmer)',
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              margin: '2px 0',
+            }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              or just this one
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            </div>
+            <button
+              onClick={openSingleComponentCheckout}
+              style={{
+                padding: '12px 18px',
+                background: 'transparent', color: 'var(--text)',
+                border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8,
+                fontSize: 13.5, fontWeight: 500, cursor: 'pointer', letterSpacing: '0.01em',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'border-color 160ms ease, background 160ms ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.42)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
+            >
+              Pay only for this component — <b style={{ fontWeight: 700 }}>$20</b>
+              <span aria-hidden="true" style={{ opacity: 0.75 }}>→</span>
+            </button>
+            <div style={{ fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.45, marginTop: -2 }}>
+              {isSignedIn
+                ? 'One-time payment, unlocks only this component. Access granted within seconds after payment.'
+                : 'Sign in first — we need your account to attach the unlock to. One-time $20, lifetime access to this component.'}
+            </div>
+          </>
+        )}
       </div>
       <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--text-dimmer)' }}>
         <a href="#/pricing" style={{ color: 'var(--text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>See what's included →</a>

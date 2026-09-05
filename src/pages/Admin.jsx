@@ -62,6 +62,193 @@ function InboxNavLink() {
   );
 }
 
+// Admin safety-net for the "Request this component — $20" flow.
+// The dodo-webhook auto-grants when the payment carries our metadata,
+// but manual entry here covers refunds, missing-metadata payments,
+// and pre-webhook edge cases. Uses email → user_id lookup via the
+// service-role edge fn so we don't have to know the Clerk id.
+function GrantSingleComponentPanel({ allPrompts }) {
+  const [email, setEmail] = React.useState('');
+  const [componentId, setComponentId] = React.useState('');
+  const [dodoPaymentId, setDodoPaymentId] = React.useState('');
+  const [amountUsd, setAmountUsd] = React.useState('20');
+  const [notes, setNotes] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [msg, setMsg] = React.useState(null); // { kind: 'ok'|'err', text }
+
+  // Restrict the dropdown to premium-marked components — the flow
+  // only makes sense for paywalled items. Falls back to text input
+  // if allPrompts hasn't loaded yet.
+  const premiumOptions = React.useMemo(() => {
+    const items = Array.isArray(allPrompts) ? allPrompts : [];
+    return items
+      .filter((p) => p?.tier === 'premium' || p?.tier === 'paid')
+      .map((p) => ({ id: p.id, title: p.title || p.id }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }, [allPrompts]);
+
+  const submit = async (action) => {
+    setMsg(null);
+    if (busy) return;
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setMsg({ kind: 'err', text: 'Enter a valid email.' }); return;
+    }
+    if (!componentId.trim()) {
+      setMsg({ kind: 'err', text: 'Pick a component.' }); return;
+    }
+    setBusy(true);
+    try {
+      const res = await backend.adminGrantComponent({
+        action,
+        email: cleanEmail,
+        componentId: componentId.trim(),
+        dodoPaymentId: dodoPaymentId.trim() || null,
+        amountUsd: amountUsd ? Number(amountUsd) : null,
+        notes: notes.trim() || null,
+      });
+      setMsg({ kind: 'ok', text: action === 'revoke'
+        ? `Revoked. Removed ${res.revoked || 0} row.`
+        : `Granted. User ${res.user_id} → ${res.component_id}.`
+      });
+      if (action === 'grant') { setDodoPaymentId(''); setNotes(''); }
+    } catch (e) {
+      setMsg({ kind: 'err', text: e?.message || 'Failed' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputStyle = {
+    padding: '10px 12px', borderRadius: 6, background: '#0e0e10',
+    border: '1px solid var(--border)', color: 'var(--text)',
+    fontSize: 13, fontFamily: 'inherit', width: '100%',
+  };
+  const labelStyle = {
+    fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+    color: 'var(--text-dim)', marginBottom: 5, fontWeight: 500,
+  };
+
+  return (
+    <div style={{
+      padding: '20px 22px', margin: '0 0 28px',
+      border: '1px solid var(--border)', borderRadius: 10,
+      background: 'linear-gradient(180deg, rgba(0,0,255,0.04) 0%, transparent 100%)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>
+          Grant single-component access
+        </h2>
+        <span style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+          $20 flow · safety net
+        </span>
+      </div>
+      <p style={{ margin: '0 0 16px', fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.55 }}>
+        Use when the Dodo webhook couldn't auto-grant (payment missing metadata, buyer signed in after paying, refund reversal, etc.).
+      </p>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(220px, 1.4fr) 100px 1fr',
+        gap: 10, marginBottom: 10,
+      }}>
+        <div>
+          <div style={labelStyle}>Buyer email</div>
+          <input
+            type="email" value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="buyer@example.com"
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <div style={labelStyle}>Component</div>
+          <select
+            value={componentId}
+            onChange={(e) => setComponentId(e.target.value)}
+            style={inputStyle}
+          >
+            <option value="">— select —</option>
+            {premiumOptions.map((o) => (
+              <option key={o.id} value={o.id}>{o.id} — {o.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div style={labelStyle}>Amount USD</div>
+          <input
+            type="number" min="0" step="1" value={amountUsd}
+            onChange={(e) => setAmountUsd(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <div style={labelStyle}>Dodo payment id</div>
+          <input
+            type="text" value={dodoPaymentId}
+            onChange={(e) => setDodoPaymentId(e.target.value)}
+            placeholder="pay_..."
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={labelStyle}>Notes (optional)</div>
+        <input
+          type="text" value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="e.g. 'DM'd from X, paid via personal UPI'"
+          style={inputStyle}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <button
+          onClick={() => submit('grant')}
+          disabled={busy}
+          style={{
+            padding: '10px 18px', borderRadius: 8,
+            background: busy ? 'rgba(0,0,255,0.4)' : 'var(--electric)',
+            color: '#fff', border: 'none',
+            fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {busy ? 'Working…' : 'Grant access →'}
+        </button>
+        <button
+          onClick={() => submit('revoke')}
+          disabled={busy}
+          style={{
+            padding: '10px 16px', borderRadius: 8,
+            background: 'transparent', color: 'var(--text)',
+            border: '1px solid var(--border)',
+            fontSize: 12.5, fontWeight: 500,
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}
+          title="Remove the grant — use on refunds"
+        >
+          Revoke
+        </button>
+        {msg && (
+          <span style={{
+            fontSize: 12,
+            color: msg.kind === 'ok' ? '#ccff00' : '#ff6b6b',
+            padding: '6px 10px', borderRadius: 6,
+            background: msg.kind === 'ok'
+              ? 'rgba(204,255,0,0.06)'
+              : 'rgba(255,107,107,0.06)',
+            border: msg.kind === 'ok'
+              ? '1px solid rgba(204,255,0,0.28)'
+              : '1px solid rgba(255,107,107,0.28)',
+          }}>{msg.text}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function nextId(existing) {
   let n = 1;
   const nums = existing.map((p) => parseInt(p.id.replace(/\\D/g, ''), 10)).filter((x) => !Number.isNaN(x));
@@ -1375,6 +1562,9 @@ export default function Admin() {
         </div>
 
       </div>
+
+      {/* Single-component grant safety net — $20 flow backup */}
+      <GrantSingleComponentPanel allPrompts={allPrompts} />
 
       {/* Uploaded List */}
       <UploadedResources

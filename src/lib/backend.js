@@ -882,6 +882,23 @@ const supabaseAdapter = {
     return data.content
   },
 
+  // Per-user single-component unlocks. Populated by the dodo-webhook
+  // when someone buys via the "Request this component — $20" flow, or
+  // by admin-grant-component as a safety net. Modal checks this list
+  // alongside Cue+ plan status to decide whether to hide the paywall
+  // for a given premium item. Public SELECT with user_id filter
+  // (matches prompt_contents' current posture — will tighten when the
+  // Clerk→Supabase JWT bridge lands).
+  async getMyGrants(userId) {
+    if (!userId) return []
+    const { data, error } = await supabase
+      .from('user_component_grants')
+      .select('component_id, granted_at, granted_via')
+      .eq('user_id', userId)
+    if (error || !data) return []
+    return data
+  },
+
   // Submit a "Custom pack" request — the user picks N components on
   // the visual picker; admin follows up with a hand-crafted Dodo
   // link at a custom price. Anon can insert; the admin dashboard
@@ -983,6 +1000,31 @@ const supabaseAdapter = {
       console.warn('hire-notify failed (non-blocking):', e?.message)
     }
     return { ok: true }
+  },
+
+  // Admin: manually grant or revoke a single-component unlock.
+  // Backup for the dodo-webhook's auto-grant path (used when a
+  // payment couldn't be attributed to a user, or for refunds).
+  //   action: 'grant' | 'revoke'
+  //   email, componentId: required
+  //   dodoPaymentId, amountUsd, notes: optional audit fields
+  async adminGrantComponent({ action = 'grant', email, componentId, dodoPaymentId, amountUsd, notes }) {
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-grant-component`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, email, componentId, dodoPaymentId, amountUsd, notes }),
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`grant (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    return await resp.json()
   },
 
   // Admin: run the autofill-metadata edge fn against a raw prompt.

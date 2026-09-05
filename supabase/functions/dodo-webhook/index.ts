@@ -142,6 +142,125 @@ serve(async (req) => {
 
   // ---- Process the event (only runs once per webhook-id) ----
   try {
+    // ------------------------------------------------------------
+    // Single-component grant path — fires BEFORE the Cue+ upgrade
+    // branch. Any payment that arrived via the "Request this
+    // component — $20" checkout carries component_id in metadata /
+    // custom_data / reference, OR uses the dedicated product id
+    // configured in DODO_SINGLE_COMPONENT_PRODUCT_ID. Route those to
+    // user_component_grants instead of upgrading the buyer's plan
+    // to Cue+ (which would defeat the whole point of the flow).
+    // ------------------------------------------------------------
+    const singleComponentProductId =
+      Deno.env.get('DODO_SINGLE_COMPONENT_PRODUCT_ID') || ''
+    const _productId0 = event.data?.product_id
+      || event.data?.product_cart?.[0]?.product_id
+      || null
+    const componentIdFromEvent =
+         event.data?.metadata?.component_id
+      || event.data?.custom_data?.component_id
+      || null
+    const looksLikeSingleComponent =
+      event.type === 'payment.succeeded' &&
+      (
+        Boolean(componentIdFromEvent) ||
+        (singleComponentProductId && _productId0 === singleComponentProductId)
+      )
+
+    if (looksLikeSingleComponent) {
+      // Whitelist the shape of component ids we accept ("cue001",
+      // "cue142" etc). Anything else is dropped so a malformed /
+      // hostile URL param never lands in the grants table.
+      const componentId = /^cue\d{1,4}$/i.test(String(componentIdFromEvent || ''))
+        ? String(componentIdFromEvent).toLowerCase()
+        : null
+      const email = event.data?.customer?.email || event.data?.metadata?.email || null
+      const paymentId = event.data?.payment_id || event.data?.id || null
+      const amountUsd = (() => {
+        const raw = event.data?.total_amount ?? event.data?.amount ?? null
+        if (raw == null) return null
+        // Dodo amounts arrive in cents; guard against decimals just in case.
+        return typeof raw === 'number' ? raw / 100 : Number(raw) / 100
+      })()
+
+      // Resolve user_id — same waterfall as the Cue+ path so we
+      // never lose a payment to attribution failure.
+      const dodoCustomerId =
+        event.data?.customer?.customer_id || event.data?.customer_id || null
+      let resolvedUserId =
+           userId
+        || event.data?.metadata?.user_id
+        || event.data?.metadata?.reference
+        || event.data?.reference
+        || null
+
+      if (!resolvedUserId && email) {
+        const { data: byEmail } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('email', email.toLowerCase())
+          .maybeSingle()
+        if (byEmail?.user_id) resolvedUserId = byEmail.user_id
+      }
+      if (!resolvedUserId && dodoCustomerId) {
+        const { data: byCustomer } = await supabase
+          .from('user_profiles')
+          .select('user_id')
+          .eq('dodo_customer_id', dodoCustomerId)
+          .maybeSingle()
+        if (byCustomer?.user_id) resolvedUserId = byCustomer.user_id
+      }
+      if (!resolvedUserId && email) {
+        // Self-heal anchor so a payment from a not-yet-signed-in
+        // buyer isn't dropped. ensureUserProfile will merge later.
+        resolvedUserId = dodoCustomerId
+          ? `dodo:${dodoCustomerId}`
+          : `email:${email.toLowerCase()}`
+      }
+
+      if (!resolvedUserId || !componentId) {
+        // Missing either identity or which component — the payment
+        // is real but we can't grant automatically. Log loud so
+        // Alok sees it and grants via the admin safety-net UI.
+        log.error('Single-component payment could not be auto-granted', {
+          paymentId, email, componentId, resolvedUserId,
+        })
+        return new Response(JSON.stringify({
+          ok: true,
+          warning: 'payment recorded, grant deferred — see admin panel',
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      }
+
+      const { error: grantErr } = await supabase
+        .from('user_component_grants')
+        .upsert({
+          user_id: resolvedUserId,
+          component_id: componentId,
+          granted_via: 'dodo',
+          dodo_payment_id: paymentId,
+          amount_usd: amountUsd,
+          notes: email ? `Auto-grant on Dodo payment. Buyer email: ${email}` : null,
+        }, { onConflict: 'user_id,component_id' })
+
+      if (grantErr) {
+        log.error('Failed to insert component grant', {
+          error: grantErr.message, paymentId, componentId, resolvedUserId,
+        })
+        // Roll back idempotency lock so a retry can replay the event.
+        await supabase.from('payment_events').delete().eq('id', webhookId)
+        return new Response(JSON.stringify({ error: 'grant insert failed' }), {
+          status: 500, headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      log.info('Single-component access granted', {
+        paymentId, componentId, userId: resolvedUserId, amountUsd,
+      })
+      return new Response(JSON.stringify({
+        ok: true, granted: { user_id: resolvedUserId, component_id: componentId },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+
     if (event.type === 'payment.succeeded' || event.type === 'subscription.active' || event.type === 'subscription.renewed') {
       const planType = event.data?.metadata?.plan_type || 'cue_plus' // 'cue_plus' or 'cue_plus_team'
       const billingCycle = event.data?.metadata?.billing_cycle || 'lifetime'
