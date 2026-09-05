@@ -1150,7 +1150,7 @@ function MainApp() {
                             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                           }}
                         >
-                          Sign up free — unlock 60+ more
+                          Sign up free — unlock 100+ more
                         </button>
                         <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-dim)' }}>
                           Already have an account?{' '}
