@@ -201,7 +201,10 @@ function MainApp() {
   // window is still open and the visitor hasn't already unlocked
   // CUE49. The hook re-ticks internally every 30s so the chip
   // counts down without needing an outer clock.
-  const couponLabel = COUPON_ENABLED ? useCouponHeroLabel() : null;
+  // Hero pill is now a static "with MCP · $99 lifetime" message —
+  // dropped the coupon-hunt timer since MCP support is the headline
+  // instead. Keep useCouponHeroLabel() available for other surfaces.
+  const couponLabel = null;
   const foundingFilled = spotsLeft === 0;
 
   const { allPrompts, bookmarkedIds, loadingDrafts, openFeedback, filter, updateFilter } = useApp();
@@ -773,26 +776,14 @@ function MainApp() {
                 padding: '2px 8px',                                          /* py-0.5 px-2 */
                 fontFamily: 'var(--font-sans)',
                 lineHeight: 1.4,
-              }}>{couponLabel ? couponLabel.chip : 'Early Access'}</span>
+              }}>MCP</span>
               <span style={{
                 fontSize: 14, fontWeight: 500,                              /* text-sm font-medium */
                 color: 'rgba(255,255,255,0.90)',                            /* text-white/90 */
                 fontFamily: 'var(--font-sans)',
                 lineHeight: 1.4,
               }}>
-                {couponLabel
-                  ? couponLabel.text
-                  : foundingFilled
-                    ? 'Founding closed — launch pricing live'
-                    : COUPON_ENABLED ? (
-                      <>
-                        {spotsLeft} founding spots left ·{' '}
-                        <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
-                        $79 lifetime
-                      </>
-                    ) : (
-                      `${spotsLeft} founding spots left · $99 lifetime`
-                    )}
+                with MCP · $99 lifetime
               </span>
             </a>
           </div>
