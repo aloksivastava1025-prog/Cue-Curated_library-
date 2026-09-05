@@ -317,7 +317,7 @@ export default function Pricing() {
                 features={[
                   'Browse all 50+ components',
                   'Selected free components unlocked',
-                  'Works with Framer, Bolt, v0, Cursor',
+                  'Works with any AI agent',
                   '2 AI prompts per day',
                   'Weekly drop newsletter',
                   'Personal use only',
@@ -400,7 +400,7 @@ export default function Pricing() {
                 }
                 features={[
                   'Full library, unlocked',
-                  'Works with Framer, Bolt, v0, Cursor',
+                  'Works with any AI agent',
                   'New drops every week — forever',
                   'React source code',
                   'Request any component\'s code — I ship it personally',
@@ -446,7 +446,7 @@ export default function Pricing() {
                 }
                 features={[
                   'Full library unlocked',
-                  'Works with Framer, Bolt, v0, Cursor',
+                  'Works with any AI agent',
                   '15 prompt copies per month · need more? DM Alok on X',
                   'New drops every week — while active',
                   'Cancel anytime — access until cycle end',
