@@ -141,7 +141,7 @@ export default function Modal({ item, onClose, showToast }) {
   const isCuePlus = userPlan === 'cue_plus' || userPlan === 'cue_plus_team';
 
   // Per-component grants — populated by dodo-webhook when someone
-  // buys just this one component ($20). If the current item is in
+  // buys just this one component ($12). If the current item is in
   // the user's grants, treat it as unlocked even without Cue+.
   const [grantedIds, setGrantedIds] = useState(null); // null = loading, [] = fetched empty
   useEffect(() => {
@@ -886,7 +886,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
 
 // ---------------------------------------------------------------------------
 // Paid item: paywall gate. Two paths — full-library subscription
-// (Cue+ $99 lifetime) or single-component request ($20 via Dodo).
+// (Cue+ $99 lifetime) or single-component request ($12 via Dodo).
 // Single-component flow is manual: opens the shared Dodo payment
 // link in a new tab, passing the component id + user email as URL
 // params so Alok can map the payment back to the request in Dodo's
@@ -898,7 +898,7 @@ function Paywall({ item, onSubscribe }) {
   const email = user?.primaryEmailAddress?.emailAddress
     || user?.emailAddresses?.[0]?.emailAddress
     || '';
-  // Dodo checkout for the "$20 — pay only for this component" flow.
+  // Dodo checkout for the "$12 — pay only for this component" flow.
   // Hardcoded default because the link is inherently public (it's the
   // page users click through to) and Vercel now blocks new VITE_
   // env vars unless you convert them to Config (which would move the
@@ -957,7 +957,7 @@ function Paywall({ item, onSubscribe }) {
           color: 'var(--text-dim)',
           fontStyle: 'italic',
         }}>
-          Only this one caught your eye? <span style={{ color: 'var(--text)' }}>Skip the subscription</span> — pay $20 for just this component below.
+          Only this one caught your eye? <span style={{ color: 'var(--text)' }}>Skip the subscription</span> — pay $12 for just this component below.
         </p>
       )}
 
@@ -1001,13 +1001,13 @@ function Paywall({ item, onSubscribe }) {
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.42)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
             >
-              Pay only for this component — <b style={{ fontWeight: 700 }}>$20</b>
+              Pay only for this component — <b style={{ fontWeight: 700 }}>$12</b>
               <span aria-hidden="true" style={{ opacity: 0.75 }}>→</span>
             </button>
             <div style={{ fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.45, marginTop: -2 }}>
               {isSignedIn
                 ? 'One-time payment, unlocks only this component. Access granted within seconds after payment.'
-                : 'Sign in first — we need your account to attach the unlock to. One-time $20, lifetime access to this component.'}
+                : 'Sign in first — we need your account to attach the unlock to. One-time $12, lifetime access to this component.'}
             </div>
           </>
         )}

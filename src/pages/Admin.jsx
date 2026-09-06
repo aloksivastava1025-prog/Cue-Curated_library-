@@ -101,7 +101,7 @@ ${lines}
 
 The previews are free — hover any card and see them run. If one of them fits a project you're building, the full copy-paste prompt + React source unlocks with Cue+ ($99 lifetime, no subscription).
 
-Also new this week — you can now pay $20 for just ONE component if only one caught your eye. Small experiment, might remove it soon, so grab if it makes sense.
+Also new this week — you can now pay $12 for just ONE component if only one caught your eye. Small experiment, might remove it soon, so grab if it makes sense.
 
 One thing I'd love to know: what's the #1 thing you're stuck on right now building UI? I'm shaping next month's drops around whatever real people keep hitting.
 
@@ -255,7 +255,7 @@ Just reply — reading every one.
   );
 }
 
-// Admin safety-net for the "Request this component — $20" flow.
+// Admin safety-net for the "Request this component — $12" flow.
 // The dodo-webhook auto-grants when the payment carries our metadata,
 // but manual entry here covers refunds, missing-metadata payments,
 // and pre-webhook edge cases. Uses email → user_id lookup via the
@@ -264,7 +264,7 @@ function GrantSingleComponentPanel({ allPrompts }) {
   const [email, setEmail] = React.useState('');
   const [componentId, setComponentId] = React.useState('');
   const [dodoPaymentId, setDodoPaymentId] = React.useState('');
-  const [amountUsd, setAmountUsd] = React.useState('20');
+  const [amountUsd, setAmountUsd] = React.useState('12');
   const [notes, setNotes] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState(null); // { kind: 'ok'|'err', text }
@@ -333,7 +333,7 @@ function GrantSingleComponentPanel({ allPrompts }) {
           Grant single-component access
         </h2>
         <span style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-          $20 flow · safety net
+          $12 flow · safety net
         </span>
       </div>
       <p style={{ margin: '0 0 16px', fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.55 }}>
@@ -1759,7 +1759,7 @@ export default function Admin() {
       {/* Drop-notification email — free users only */}
       <SendDropEmailPanel allPrompts={allPrompts} />
 
-      {/* Single-component grant safety net — $20 flow backup */}
+      {/* Single-component grant safety net — $12 flow backup */}
       <GrantSingleComponentPanel allPrompts={allPrompts} />
 
       {/* Uploaded List */}

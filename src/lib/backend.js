@@ -883,7 +883,7 @@ const supabaseAdapter = {
   },
 
   // Per-user single-component unlocks. Populated by the dodo-webhook
-  // when someone buys via the "Request this component — $20" flow, or
+  // when someone buys via the "Request this component — $12" flow, or
   // by admin-grant-component as a safety net. Modal checks this list
   // alongside Cue+ plan status to decide whether to hide the paywall
   // for a given premium item. Public SELECT with user_id filter
