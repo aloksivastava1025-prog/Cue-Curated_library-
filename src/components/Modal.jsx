@@ -905,7 +905,8 @@ function Paywall({ item, onSubscribe }) {
   // value server-side and break the button). Env var stays supported
   // for local overrides / A/B tests without a redeploy.
   const dodoUrl = String(
-    import.meta.env.VITE_DODO_SINGLE_COMPONENT_URL || 'https://dodo.pe/zf72j2mxk4'
+    import.meta.env.VITE_DODO_SINGLE_COMPONENT_URL
+      || 'https://checkout.dodopayments.com/buy/pdt_0Nn06XLjK9vZSRuYjxEez?quantity=1'
   ).trim();
   const canRequestSingle = Boolean(dodoUrl);
 
