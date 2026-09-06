@@ -69,7 +69,7 @@ function InboxNavLink() {
 // keyed by a `campaignKey` that guarantees idempotency (accidental
 // double-click = no double-send).
 function SendDropEmailPanel({ allPrompts }) {
-  const [subject, setSubject]   = React.useState('New drops on Cue — 3 fresh components');
+  const [subject, setSubject]   = React.useState('Small update on Cue — a few new components');
   const [ctaLabel, setCtaLabel] = React.useState('See the drops');
   const [ctaUrl, setCtaUrl]     = React.useState('https://cuedesign.space');
   const [body, setBody]         = React.useState('');
@@ -85,14 +85,27 @@ function SendDropEmailPanel({ allPrompts }) {
     const top = items.slice(0, 5);
     if (!top.length) { setMsg({ kind: 'err', text: 'No prompts loaded yet.' }); return; }
     const lines = top.map(p => `  → ${p.title || p.id}`).join('\n');
+    // Conversational, first-person tone — Primary-tab friendly on
+    // Gmail (real question at the end invites replies, which Gmail's
+    // ML reads as "not marketing"). Never edit into promo-speak with
+    // caps / discount language / multiple CTAs — that's what drags
+    // it into Promotions tab.
     setBody(
-`Dropped ${top.length} new components this week:
+`Alok here — founder of Cue.
+
+Quick note because I don't want to spam you: dropped ${top.length} fresh components on the library this week. If you signed up for Cue (or the waitlist), figured you'd want a heads-up.
+
+The new ones:
 
 ${lines}
 
-You've got the previews unlocked already. Cue+ unlocks the copy-paste prompts + React source for all of them (plus 130+ more) — $99 lifetime, no subscription.
+The previews are free — hover any card and see them run. If one of them fits a project you're building, the full copy-paste prompt + React source unlocks with Cue+ ($99 lifetime, no subscription).
 
-Or if only one of them caught your eye — pay $20 for just that one. New this week.
+Also new this week — you can now pay $20 for just ONE component if only one caught your eye. Small experiment, might remove it soon, so grab if it makes sense.
+
+One thing I'd love to know: what's the #1 thing you're stuck on right now building UI? I'm shaping next month's drops around whatever real people keep hitting.
+
+Just reply — reading every one.
 `
     );
     setMsg({ kind: 'ok', text: `Draft filled with ${top.length} latest drops. Edit as needed.` });
