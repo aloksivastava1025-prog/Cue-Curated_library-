@@ -55,6 +55,40 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const [videoSrcFallback, setVideoSrcFallback] = useState(false);
   const ref = useRef(null);
   const videoRef = useRef(null);
+  // Scroll-safe tap tracking for mobile. Without this, any finger
+  // touch during a scroll can register as onClick and open the
+  // modal mid-scroll — users report "cards keep opening while I
+  // scroll". We record touchstart position and only fire the open
+  // handler if the finger moved less than ~10px between start and
+  // end (a real tap) and the touch was under 500ms. Desktop click
+  // continues to work because it doesn't go through the touch path.
+  const touchStartRef = useRef(null);
+  // Timestamp of the last handled touch — used to suppress the
+  // synthetic click event that fires ~300ms after touchend on
+  // Chrome mobile even when we preventDefault the touchend.
+  const lastTouchHandledRef = useRef(0);
+
+  const handleTouchStart = (e) => {
+    const t = e.touches[0];
+    if (!t) return;
+    touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const handleTouchEnd = (e) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const dx = Math.abs(t.clientX - start.x);
+    const dy = Math.abs(t.clientY - start.y);
+    const dt = Date.now() - start.t;
+    lastTouchHandledRef.current = Date.now();
+    // Real tap: barely moved + short duration. Anything else was
+    // part of a scroll — swallow it.
+    if (dx < 10 && dy < 10 && dt < 500) {
+      setSelectedItem(item);
+    }
+  };
 
   // Once the user hovers a card, mark it "everHovered" so the <video>
   // stays mounted for the rest of the session. Prevents the second
@@ -238,7 +272,17 @@ export default function EditorialCard({ item, setSelectedItem }) {
   return (
     <article
       ref={ref}
-      onClick={() => setSelectedItem(item)}
+      // Desktop: normal click opens the card. Touch: routed through
+      // touchstart/touchend above so a scroll doesn't accidentally
+      // open the modal. Suppress the synthetic click that fires
+      // right after touchend on mobile Chrome — anything within
+      // 700ms of a handled touch is the ghost click.
+      onClick={() => {
+        if (Date.now() - lastTouchHandledRef.current < 700) return;
+        setSelectedItem(item);
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       onMouseEnter={() => setMouseHover(true)}
       onMouseLeave={() => setMouseHover(false)}
       style={{
