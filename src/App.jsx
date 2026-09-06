@@ -713,6 +713,40 @@ function MainApp() {
               backdrop-blur · inner bg-white/90 text-neutral-900).
               Right label carries a Cue-native tagline instead of
               'Agentic AI — Built for SMBs'. */}
+          {/* Discord whisper — sits above the hero pill. Positions
+              the community as "the room where the next drops are
+              picked" so joining feels like early access, not just
+              a chat server. Green Discord-brand-ish tint + subtle
+              pulse-dot signals liveness. */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <a
+              href="https://discord.gg/NxuKbhFjP"
+              target="_blank"
+              rel="noreferrer noopener"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.75)', fontWeight: 500,
+                fontFamily: 'var(--font-sans)',
+                textDecoration: 'none',
+                paddingLeft: 11,
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#5865f2' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.75)' }}
+            >
+              <span aria-hidden="true" style={{
+                width: 5, height: 5, borderRadius: 999,
+                background: '#5865f2', /* Discord blurple */
+                boxShadow: '0 0 6px rgba(88,101,242,0.7)',
+                marginLeft: -11,
+                animation: 'cue-live-pulse 2s ease-in-out infinite',
+              }} />
+              Join Discord — pick the next component &amp; it&apos;s yours
+              <span aria-hidden="true" style={{ marginLeft: 2, opacity: 0.7 }}>→</span>
+            </a>
+          </div>
+          <style>{`@keyframes cue-live-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }`}</style>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
