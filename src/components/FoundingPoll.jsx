@@ -30,6 +30,13 @@ const POLL_BASE_ID = 'founding-signal-v3'
 const WIGGLE_INTERVAL_MS = 22_000 // downward nudge every 22s
 
 const BLOCKERS = [
+  // Top option — the strongest buying signal on the page. Any user
+  // who picks this is basically saying "I'm ready, just fix ONE
+  // thing". The Q2 branch (below) opens a free-text field so they
+  // can name that one thing (price tweak, missing component, extra
+  // feature, whatever). Sits at the top of the list because it's
+  // the option with the highest revenue value if fulfilled.
+  { key: 'take_now_if',          label: "I'll take it right now if…" },
   { key: 'conditional_yes',      label: "I'll join once the component I want is added" },
   { key: 'need_more_components', label: 'Not enough components yet' },
   { key: 'need_more_proof',      label: 'I need to see more value first' },
@@ -39,6 +46,15 @@ const BLOCKERS = [
 ]
 
 const Q2_MAP = {
+  take_now_if: {
+    // Broadest founder-guarantee prompt — user names ANY single
+    // condition (price tweak, missing component, extra feature) and
+    // Alok has 24 hrs to make it happen. Reads confident + generous.
+    title: "What's the ONE thing that would seal it?",
+    subtitle: "Tell me — a price you'd feel fair, a component to add, a feature you need. If I can make it happen in 24 hrs, it's done.",
+    type: 'text',
+    placeholder: "e.g. '$79 instead of $99' · 'add [Awwwards link]' · 'need Framer source' — one line is fine",
+  },
   conditional_yes: {
     // Founder-guarantee framing — puts pressure on Alok, reads as
     // confident to the user. If he can't ship the exact ask in
@@ -133,10 +149,15 @@ const IDEAL_COUNTS = [
 
 export default function FoundingPoll() {
   const { isSignedIn, isLoaded } = useUser()
-  // 'hidden' | 'countdown' | 'ready' | 'q1' | 'q2' | 'q3' | 'email' | 'thanks' | 'gone'
+  // 'hidden' | 'countdown' | 'ready' | 'q0' | 'q1' | 'q2' | 'q3' | 'email' | 'thanks' | 'gone'
+  // q0 was added as the new first step — a free-text "what were you
+  // searching for and couldn't find" prompt so users can tell Alok
+  // exactly what to add next. The rest of the flow (blocker → conditional
+  // → commit) stays intact one step further down the chain.
   const [state, setState] = useState('hidden')
   const [secondsLeft, setSecondsLeft] = useState(TRIGGER_SECONDS)
-  const [answers, setAnswers] = useState({ blocker: null, q2: null, q2Text: '', q2b: null, commit: null, email: '' })
+  const [answers, setAnswers] = useState({ q0Text: '', blocker: null, q2: null, q2Text: '', q2b: null, commit: null, email: '' })
+  const [q0Text, setQ0Text] = useState('')
   const [q2Text, setQ2Text] = useState('')
   const [emailText, setEmailText] = useState('')
   // When an option row is "prompt" (like the "Something else" row
@@ -178,12 +199,14 @@ export default function FoundingPoll() {
         const saved = JSON.parse(raw)
         if (saved?.answers) {
           setAnswers({
+            q0Text: saved.answers.q0Text || '',
             blocker: saved.answers.blocker || null,
             q2: saved.answers.q2 || null,
             q2Text: saved.answers.q2Text || '',
             commit: saved.answers.commit || null,
             email: saved.answers.email || '',
           })
+          setQ0Text(saved.answers.q0Text || '')
           setQ2Text(saved.answers.q2Text || '')
           setEmailText(saved.answers.email || '')
         }
@@ -221,10 +244,10 @@ export default function FoundingPoll() {
       const persistState = inSurveyRef(state) ? state : (resumeStep || 'ready')
       localStorage.setItem(PROGRESS_KEY, JSON.stringify({
         state: persistState,
-        answers: { ...answers, q2Text, email: emailText },
+        answers: { ...answers, q0Text, q2Text, email: emailText },
       }))
     } catch {}
-  }, [state, resumeStep, answers, q2Text, emailText])
+  }, [state, resumeStep, answers, q0Text, q2Text, emailText])
 
   // Measure the currently rendered survey view so the outer notch
   // can hug the content. useLayoutEffect fires before browser paint
@@ -400,7 +423,8 @@ export default function FoundingPoll() {
 
   // Back navigation
   const goBack = () => {
-    if (state === 'q2') setState('q1')
+    if (state === 'q1') setState('q0')
+    else if (state === 'q2') setState('q1')
     else if (state === 'q2b') setState('q2')
     else if (state === 'q3') {
       // If they came from the ideal-count follow-up, drop them
@@ -415,7 +439,10 @@ export default function FoundingPoll() {
   // — only a click outside does.
   const openSurvey = () => {
     if (state !== 'ready') return
-    setState(resumeStep || 'q1')
+    // Default entry point is now q0 (the new "what were you
+    // searching for" step). resumeStep still wins so returning
+    // users land back on whichever step they left mid-survey.
+    setState(resumeStep || 'q0')
   }
   const onEnter = openSurvey
   const onLeave = () => { /* stay open once user has entered survey */ }
@@ -438,10 +465,13 @@ export default function FoundingPoll() {
   // q2b (the "ideal count" follow-up for need_more_components) shares
   // the second pip with q2 so the progress bar doesn't visually
   // regress when the extra step fires.
-  const stepIndex = state === 'q1' ? 0
-    : state === 'q2' || state === 'q2b' ? 1
-    : state === 'q3' ? 2
-    : state === 'email' ? 3 : -1
+  // Progress index — q0 is the new first step, so everything else
+  // shifts by one. Pip row below now renders 5 dots instead of 4.
+  const stepIndex = state === 'q0' ? 0
+    : state === 'q1' ? 1
+    : state === 'q2' || state === 'q2b' ? 2
+    : state === 'q3' ? 3
+    : state === 'email' ? 4 : -1
 
   const q2Config = answers.blocker ? Q2_MAP[answers.blocker] : null
   const q2IsText = q2Config?.type === 'text'
@@ -493,7 +523,7 @@ export default function FoundingPoll() {
         {inSurvey && (
           <div className="cue-notch-view cue-notch-poll is-on" ref={contentRef}>
             <div className="cue-notch-topbar">
-              {(state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email') ? (
+              {(state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email') ? (
                 <button type="button" className="cue-notch-back" aria-label="Back" onClick={goBack}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   Back
@@ -505,11 +535,58 @@ export default function FoundingPoll() {
             </div>
 
             <div className="cue-notch-progress">
-              {[0, 1, 2, 3].map((i) => (
+              {[0, 1, 2, 3, 4].map((i) => (
                 <span key={i} className={`cue-notch-pip ${i <= stepIndex ? 'is-on' : ''}`} />
               ))}
             </div>
             <div className="cue-notch-eyebrow">Alok, founder of Cue</div>
+
+            {state === 'q0' && (
+              <>
+                <div className="cue-notch-title">
+                  What were you looking for and <strong>couldn&apos;t find</strong>?
+                </div>
+                <div className="cue-notch-subtitle" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  Tell me — I might add it in 24 hrs.
+                </div>
+                <textarea
+                  className="cue-notch-textarea"
+                  placeholder="e.g. a scroll-pinned hero for fintech, a specific 404, a component style you can't find anywhere…"
+                  value={q0Text}
+                  onChange={(e) => setQ0Text(e.target.value.slice(0, 500))}
+                  rows={3}
+                  autoFocus
+                />
+                <div className="cue-notch-actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleaned = q0Text.trim()
+                      setAnswers((a) => ({ ...a, q0Text: cleaned }))
+                      // Persist even if the user later drops off —
+                      // this is the highest-value signal on the poll
+                      // (tells Alok EXACTLY what to add next).
+                      recordStep('looking_for', null, cleaned || null)
+                      setState('q1')
+                    }}
+                    className="cue-notch-submit"
+                  >
+                    Next →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      recordStep('looking_for', 'skipped', null)
+                      setState('q1')
+                    }}
+                    className="cue-notch-skip"
+                  >
+                    Skip
+                  </button>
+                </div>
+                <div className="cue-notch-foot">1 of 4 · one line is enough</div>
+              </>
+            )}
 
             {state === 'q1' && (
               <>
@@ -528,7 +605,7 @@ export default function FoundingPoll() {
                     </button>
                   ))}
                 </div>
-                <div className="cue-notch-foot">1 of 3 · one click per step</div>
+                <div className="cue-notch-foot">2 of 4 · one click per step</div>
               </>
             )}
 
@@ -593,7 +670,7 @@ export default function FoundingPoll() {
                     ))}
                   </div>
                 )}
-                <div className="cue-notch-foot">2 of 3</div>
+                <div className="cue-notch-foot">3 of 4</div>
               </>
             )}
 
@@ -635,7 +712,7 @@ export default function FoundingPoll() {
                     </button>
                   ))}
                 </div>
-                <div className="cue-notch-foot">3 of 3 · thanks for the signal</div>
+                <div className="cue-notch-foot">4 of 4 · thanks for the signal</div>
               </>
             )}
 
@@ -986,7 +1063,7 @@ export default function FoundingPoll() {
 }
 
 function inSurveyRef(state) {
-  return state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email'
+  return state === 'q0' || state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email'
 }
 
 function getSessionId() {
