@@ -713,40 +713,55 @@ function MainApp() {
               backdrop-blur · inner bg-white/90 text-neutral-900).
               Right label carries a Cue-native tagline instead of
               'Agentic AI — Built for SMBs'. */}
-          {/* Discord whisper — sits above the hero pill. Positions
-              the community as "the room where the next drops are
-              picked" so joining feels like early access, not just
-              a chat server. Green Discord-brand-ish tint + subtle
-              pulse-dot signals liveness. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          {/* Discord CTA pill — proper button so it clearly reads as
+              clickable, not a caption. Discord blurple background,
+              white text, subtle glow + pulse-dot to signal an active
+              community. Positioned above the hero pill so it's the
+              first thing users notice on the page. */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
             <a
               href="https://discord.gg/NxuKbhFjP"
               target="_blank"
               rel="noreferrer noopener"
+              className="cue-discord-cta"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.75)', fontWeight: 500,
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '8px 14px', borderRadius: 999,
+                background: '#5865f2',
+                color: '#ffffff',
                 fontFamily: 'var(--font-sans)',
+                fontSize: 12, fontWeight: 600, letterSpacing: '0.01em',
                 textDecoration: 'none',
-                paddingLeft: 11,
-                transition: 'color 0.15s ease',
+                boxShadow: '0 8px 24px -8px rgba(88,101,242,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#5865f2' }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.75)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.filter = 'brightness(1.08)'
+                e.currentTarget.style.boxShadow = '0 12px 28px -8px rgba(88,101,242,0.7), 0 0 0 1px rgba(255,255,255,0.08) inset'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.filter = 'brightness(1)'
+                e.currentTarget.style.boxShadow = '0 8px 24px -8px rgba(88,101,242,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset'
+              }}
             >
+              {/* Live pulse dot */}
               <span aria-hidden="true" style={{
-                width: 5, height: 5, borderRadius: 999,
-                background: '#5865f2', /* Discord blurple */
-                boxShadow: '0 0 6px rgba(88,101,242,0.7)',
-                marginLeft: -11,
+                width: 8, height: 8, borderRadius: 999,
+                background: '#ffffff',
+                boxShadow: '0 0 8px rgba(255,255,255,0.9)',
                 animation: 'cue-live-pulse 2s ease-in-out infinite',
               }} />
-              Join Discord — pick the next component &amp; it&apos;s yours
-              <span aria-hidden="true" style={{ marginLeft: 2, opacity: 0.7 }}>→</span>
+              {/* Discord logo */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.298 12.298 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.363 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.548-13.66a.06.06 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.21 0 2.176 1.096 2.157 2.418 0 1.334-.955 2.42-2.157 2.42zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.211 0 2.176 1.096 2.157 2.418 0 1.334-.946 2.42-2.157 2.42z"/>
+              </svg>
+              <span>Join Discord — pick the next drop &amp; it&apos;s yours</span>
+              <span aria-hidden="true" style={{ opacity: 0.9 }}>→</span>
             </a>
           </div>
-          <style>{`@keyframes cue-live-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }`}</style>
+          <style>{`@keyframes cue-live-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
