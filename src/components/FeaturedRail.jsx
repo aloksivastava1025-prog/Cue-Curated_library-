@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { isPremium as isPremiumItem } from '../lib/promptHelpers.js'
 import { useVideoSlot } from '../lib/videoGovernor.js'
+import { getLastScrollAt } from '../lib/scrollTracker.js'
 
 /**
  * Awwwards-style horizontal "Design of the Day" rail.
@@ -153,14 +154,9 @@ export default function FeaturedRail({ items, onOpen }) {
 // ---------------------------------------------------------------------------
 function FeaturedCard({ item, onOpen }) {
   const [hover, setHover] = useState(false)
-  // Scroll-vs-tap guard (matches EditorialCard). Any onClick within
-  // 150ms of a scroll event is treated as scroll-tail, not a tap.
-  const lastScrollAtRef = useRef(0)
-  useEffect(() => {
-    const onScroll = () => { lastScrollAtRef.current = Date.now() }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  // Scroll-vs-tap guard reads from the shared scrollTracker module —
+  // one global listener, not one per card, so a 100+ card grid stays
+  // silky on mobile.
   const [videoReady, setVideoReady] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
   // Bandwidth fix (Aug 2026): the rail used to mount every <video>
@@ -214,7 +210,7 @@ function FeaturedCard({ item, onOpen }) {
     <article
       ref={cardRef}
       onClick={() => {
-        if (Date.now() - lastScrollAtRef.current < 150) return
+        if (Date.now() - getLastScrollAt() < 150) return
         onOpen(item)
       }}
       onMouseEnter={() => setHover(true)}

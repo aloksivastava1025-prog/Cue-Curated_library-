@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react'
+import { getLastScrollAt } from '../lib/scrollTracker.js'
 import { useUser } from '@clerk/clerk-react'
 import { isPremium as isPremiumItem } from '../lib/promptHelpers.js'
 import { useVideoSlot } from '../lib/videoGovernor.js'
@@ -237,13 +238,7 @@ function CategoryCard({ item, onOpen }) {
   const videoRef = useRef(null)
   const cardRef = useRef(null)
   const media = item.hoverSrc
-  // Scroll-vs-tap guard — matches EditorialCard + FeaturedCard.
-  const lastScrollAtRef = useRef(0)
-  useEffect(() => {
-    const onScroll = () => { lastScrollAtRef.current = Date.now() }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  // Scroll-vs-tap guard reads from the shared scrollTracker module.
   const isImage = media && /\.(jpe?g|gif|png|webp|svg|heic)$/i.test(media)
   const hoverIsVideo = media && !isImage
   const slot = useVideoSlot('category-rail', item.id, hoverIsVideo && hover)
@@ -279,7 +274,7 @@ function CategoryCard({ item, onOpen }) {
     <article
       ref={cardRef}
       onClick={() => {
-        if (Date.now() - lastScrollAtRef.current < 150) return
+        if (Date.now() - getLastScrollAt() < 150) return
         onOpen(item)
       }}
       onMouseEnter={() => setHover(true)}

@@ -3,6 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { isPremium as isPremiumItem, primaryCategory as primaryCategoryOf } from '../lib/promptHelpers.js';
+import { getLastScrollAt } from '../lib/scrollTracker.js';
 import { optimizeCloudinaryUrl } from '../lib/media.js';
 import { useVideoSlot } from '../lib/videoGovernor.js';
 
@@ -55,21 +56,10 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const [videoSrcFallback, setVideoSrcFallback] = useState(false);
   const ref = useRef(null);
   const videoRef = useRef(null);
-  // Scroll-vs-tap disambiguation for mobile. Older attempt used
-  // onTouchStart/onTouchEnd but React attaches those non-passive,
-  // which cues mobile browsers to hold the scroll until the JS
-  // decides — result: user's thumb on a card stalled page scroll.
-  // New approach: track window scroll via a passive listener (zero
-  // scroll-blocking cost), and ignore any onClick that fires within
-  // 150ms of a scroll — that click was the tail of the scroll, not
-  // a real tap. Native scroll works perfectly because we never
-  // touch the touch pipeline.
-  const lastScrollAtRef = useRef(0);
-  useEffect(() => {
-    const onScroll = () => { lastScrollAtRef.current = Date.now(); };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  // Scroll-vs-tap disambiguation for mobile. Reads from a single
+  // module-level scroll tracker instead of registering per-card
+  // listeners — with 100+ cards on a grid, per-card listeners fire
+  // on every scroll event and cause visible jank on mobile.
 
   // Once the user hovers a card, mark it "everHovered" so the <video>
   // stays mounted for the rest of the session. Prevents the second
@@ -260,7 +250,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
       // last scroll moment; anything faster than 150ms after that
       // is scroll-tail, not a real tap.
       onClick={() => {
-        if (Date.now() - lastScrollAtRef.current < 150) return;
+        if (Date.now() - getLastScrollAt() < 150) return;
         setSelectedItem(item);
       }}
       onMouseEnter={() => setMouseHover(true)}
