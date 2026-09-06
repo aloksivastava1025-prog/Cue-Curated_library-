@@ -156,8 +156,12 @@ export default function FoundingPoll() {
   // → commit) stays intact one step further down the chain.
   const [state, setState] = useState('hidden')
   const [secondsLeft, setSecondsLeft] = useState(TRIGGER_SECONDS)
-  const [answers, setAnswers] = useState({ q0Text: '', blocker: null, q2: null, q2Text: '', q2b: null, commit: null, email: '' })
+  const [answers, setAnswers] = useState({ q0Text: '', blocker: null, q2: null, q2Text: '', q2b: null, commit: null, rating: null, email: '' })
   const [q0Text, setQ0Text] = useState('')
+  // Rating slider (0-100) — 0 = worse than other libraries, 100 = the
+  // clear best. Default null = untouched; if the user drags at all,
+  // we snapshot the last value on Next / Skip.
+  const [ratingDraft, setRatingDraft] = useState(70)
   const [q2Text, setQ2Text] = useState('')
   const [emailText, setEmailText] = useState('')
   // When an option row is "prompt" (like the "Something else" row
@@ -421,14 +425,14 @@ export default function FoundingPoll() {
   }
 
 
-  // Back navigation
+  // Back navigation. Flow now: q4 (slider) → q0 (text) → q1 (blocker)
+  // → q2 (conditional) → q3 (commit) → email → thanks.
   const goBack = () => {
-    if (state === 'q1') setState('q0')
+    if (state === 'q0') setState('q4')
+    else if (state === 'q1') setState('q0')
     else if (state === 'q2') setState('q1')
     else if (state === 'q2b') setState('q2')
     else if (state === 'q3') {
-      // If they came from the ideal-count follow-up, drop them
-      // back there — not one step further to the category picker.
       setState(answers.blocker === 'need_more_components' ? 'q2b' : 'q2')
     }
     else if (state === 'email') setState('q3')
@@ -439,10 +443,11 @@ export default function FoundingPoll() {
   // — only a click outside does.
   const openSurvey = () => {
     if (state !== 'ready') return
-    // Default entry point is now q0 (the new "what were you
-    // searching for" step). resumeStep still wins so returning
-    // users land back on whichever step they left mid-survey.
-    setState(resumeStep || 'q0')
+    // Default entry point is now the rating slider (q4) — it's the
+    // lowest-friction "one drag" question, so opening with it gets
+    // more people past the first step than opening with text input.
+    // resumeStep still wins so returning users land where they left.
+    setState(resumeStep || 'q4')
   }
   const onEnter = openSurvey
   const onLeave = () => { /* stay open once user has entered survey */ }
@@ -458,7 +463,7 @@ export default function FoundingPoll() {
 
   const isCountdown = state === 'countdown'
   const isReady = state === 'ready'
-  const inSurvey = state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email'
+  const inSurvey = state === 'q0' || state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'q4' || state === 'email'
   const thanks = state === 'thanks'
 
   // Pips: 4 slots for q1, q2, q3, email
@@ -467,11 +472,13 @@ export default function FoundingPoll() {
   // regress when the extra step fires.
   // Progress index — q0 is the new first step, so everything else
   // shifts by one. Pip row below now renders 5 dots instead of 4.
-  const stepIndex = state === 'q0' ? 0
-    : state === 'q1' ? 1
-    : state === 'q2' || state === 'q2b' ? 2
-    : state === 'q3' ? 3
-    : state === 'email' ? 4 : -1
+  // Slider first, so q4=0. Everything else shifts by one.
+  const stepIndex = state === 'q4' ? 0
+    : state === 'q0' ? 1
+    : state === 'q1' ? 2
+    : state === 'q2' || state === 'q2b' ? 3
+    : state === 'q3' ? 4
+    : state === 'email' ? 5 : -1
 
   const q2Config = answers.blocker ? Q2_MAP[answers.blocker] : null
   const q2IsText = q2Config?.type === 'text'
@@ -523,7 +530,7 @@ export default function FoundingPoll() {
         {inSurvey && (
           <div className="cue-notch-view cue-notch-poll is-on" ref={contentRef}>
             <div className="cue-notch-topbar">
-              {(state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email') ? (
+              {(state === 'q0' || state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email') ? (
                 <button type="button" className="cue-notch-back" aria-label="Back" onClick={goBack}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                   Back
@@ -535,7 +542,7 @@ export default function FoundingPoll() {
             </div>
 
             <div className="cue-notch-progress">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {[0, 1, 2, 3, 4, 5].map((i) => (
                 <span key={i} className={`cue-notch-pip ${i <= stepIndex ? 'is-on' : ''}`} />
               ))}
             </div>
@@ -584,7 +591,7 @@ export default function FoundingPoll() {
                     Skip
                   </button>
                 </div>
-                <div className="cue-notch-foot">1 of 4 · one line is enough</div>
+                <div className="cue-notch-foot">2 of 5 · one line is enough</div>
               </>
             )}
 
@@ -605,7 +612,7 @@ export default function FoundingPoll() {
                     </button>
                   ))}
                 </div>
-                <div className="cue-notch-foot">2 of 4 · one click per step</div>
+                <div className="cue-notch-foot">3 of 5 · one click per step</div>
               </>
             )}
 
@@ -670,7 +677,7 @@ export default function FoundingPoll() {
                     ))}
                   </div>
                 )}
-                <div className="cue-notch-foot">3 of 4</div>
+                <div className="cue-notch-foot">4 of 5</div>
               </>
             )}
 
@@ -712,7 +719,133 @@ export default function FoundingPoll() {
                     </button>
                   ))}
                 </div>
-                <div className="cue-notch-foot">4 of 4 · thanks for the signal</div>
+                <div className="cue-notch-foot">5 of 5 · almost done</div>
+              </>
+            )}
+
+            {state === 'q4' && (
+              <>
+                <div className="cue-notch-title">
+                  Rate Cue&apos;s component <strong>quality</strong> out of 100
+                </div>
+                <div className="cue-notch-subtitle" style={{ color: 'var(--text-dim, #6b7280)' }}>
+                  Compared to other libraries you&apos;ve tried — slide to your honest score.
+                </div>
+                <style>{`
+                  /* Simple 0-100 fill bar. Blue fill on the left grows
+                     with the value, dark track on the right, white
+                     handle in the middle. Draggable via pointer. */
+                  .cue-rating-bar {
+                    position: relative;
+                    height: 44px;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    cursor: ew-resize;
+                    user-select: none;
+                    touch-action: none;
+                    background: #262629;
+                    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10);
+                  }
+                  .cue-rating-fill {
+                    position: absolute; left: 0; top: 0; bottom: 0;
+                    background: #0000ff;
+                    transition: width 60ms ease;
+                  }
+                  .cue-rating-handle {
+                    position: absolute;
+                    top: 4px; bottom: 4px;
+                    width: 5px;
+                    background: #ffffff;
+                    border-radius: 4px;
+                    transform: translateX(-50%);
+                    box-shadow: 0 0 10px rgba(0,0,0,0.35);
+                    pointer-events: none;
+                  }
+                  .cue-rating-number {
+                    text-align: center;
+                    font-family: var(--font-serif, "Cormorant Garamond", Georgia, serif);
+                    font-style: italic; font-weight: 700;
+                    font-size: 56px; line-height: 1;
+                    letter-spacing: -0.03em;
+                    color: var(--text, #171717);
+                  }
+                  .cue-rating-number small {
+                    font-family: var(--font-mono, ui-monospace, monospace);
+                    font-style: normal; font-weight: 500;
+                    font-size: 16px; opacity: 0.4; margin-left: 6px;
+                    letter-spacing: 0;
+                  }
+                  .cue-rating-hints {
+                    width: 100%;
+                    display: flex; justify-content: space-between; align-items: center;
+                    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+                    font-weight: 600;
+                    padding: 6px 4px 0;
+                    gap: 24px;
+                  }
+                `}</style>
+                <div style={{
+                  display: 'flex', flexDirection: 'column',
+                  gap: 14, padding: '10px 4px 4px',
+                  width: '100%', minWidth: 280,
+                }}>
+                  <div className="cue-rating-number">
+                    {ratingDraft}<small>/ 100</small>
+                  </div>
+
+                  <div
+                    className="cue-rating-bar"
+                    onPointerDown={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const updateFromX = (clientX) => {
+                        const rel = (clientX - rect.left) / rect.width
+                        const pct = Math.round(Math.min(1, Math.max(0, rel)) * 100)
+                        setRatingDraft(pct)
+                      }
+                      updateFromX(e.clientX)
+                      e.currentTarget.setPointerCapture(e.pointerId)
+                      const onMove = (ev) => updateFromX(ev.clientX)
+                      const onUp = () => {
+                        window.removeEventListener('pointermove', onMove)
+                        window.removeEventListener('pointerup', onUp)
+                      }
+                      window.addEventListener('pointermove', onMove)
+                      window.addEventListener('pointerup', onUp)
+                    }}
+                  >
+                    <div className="cue-rating-fill" style={{ width: `${ratingDraft}%` }} />
+                    <div className="cue-rating-handle" style={{ left: `${ratingDraft}%` }} />
+                  </div>
+
+                  <div className="cue-rating-hints">
+                    <span style={{ color: '#e05d3b' }}>← 0 · Bad</span>
+                    <span style={{ color: '#22a06b' }}>100 · Best →</span>
+                  </div>
+                </div>
+                <div className="cue-notch-actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAnswers((a) => ({ ...a, rating: ratingDraft }))
+                      recordStep('rating', String(ratingDraft), null)
+                      setState('q0')
+                    }}
+                    className="cue-notch-submit"
+                  >
+                    Next →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      recordStep('rating', 'skipped', null)
+                      setState('q0')
+                    }}
+                    className="cue-notch-skip"
+                  >
+                    Skip
+                  </button>
+                </div>
+                <div className="cue-notch-foot">1 of 5 · one drag</div>
               </>
             )}
 
@@ -801,7 +934,7 @@ export default function FoundingPoll() {
           /* height is set inline from React based on the measured
              inner content — falls back to a sensible max in case
              the measurement hasn't run yet on first paint. */
-          height: 520px; width: 400px;
+          height: 520px; width: 460px;
           max-height: 620px;
           border-bottom-left-radius: 24px;
           border-bottom-right-radius: 24px;
@@ -1063,7 +1196,7 @@ export default function FoundingPoll() {
 }
 
 function inSurveyRef(state) {
-  return state === 'q0' || state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'email'
+  return state === 'q0' || state === 'q1' || state === 'q2' || state === 'q2b' || state === 'q3' || state === 'q4' || state === 'email'
 }
 
 function getSessionId() {

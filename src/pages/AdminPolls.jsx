@@ -21,6 +21,7 @@ const CHECKOUT_LINK = 'https://checkout.dodopayments.com/session/cks_0NmXG2sSI76
 const MY_X_HANDLE = '@Alok619308'
 
 const BLOCKER_LABEL = {
+  take_now_if:          "I'll take it right now IF…",
   conditional_yes:      "I'll join once component I want is added",
   need_more_components: 'Not enough components yet',
   need_more_proof:      'Need more value proof',
@@ -81,6 +82,8 @@ export default function AdminPolls() {
     for (const [sid, items] of bySession.entries()) {
       const findByPoll = (p) => items.find((x) => x.poll_id === p)
       const findByPrefix = (p) => items.find((x) => x.poll_id.startsWith(p))
+      const rating   = findByPoll(`${POLL_ID}:rating`)         // NEW — q4 slider, first step now
+      const looking  = findByPoll(`${POLL_ID}:looking_for`)    // NEW — q0 text
       const q1 = findByPoll(`${POLL_ID}:blocker`)
       const q2 = findByPrefix(`${POLL_ID}:q2:`)
       const q3 = findByPoll(`${POLL_ID}:commit`)
@@ -89,16 +92,24 @@ export default function AdminPolls() {
       // — check both so nothing is silently dropped.
       const em = findByPoll(`${POLL_ID}:contact`) || findByPoll(`${POLL_ID}:email`)
       const oldest = items.reduce((a, b) => (a.created_at < b.created_at ? a : b))
+      // Rating: choice is the numeric string ('0'-'100') or 'skipped'.
+      const ratingNum = rating?.choice && /^\d+$/.test(rating.choice)
+        ? Number(rating.choice) : null
       list.push({
         sid,
+        rating: ratingNum,                              // 0-100 or null
+        ratingSkipped: rating?.choice === 'skipped',
+        lookingFor: looking?.free_text || null,         // free text from q0
+        lookingSkipped: looking?.choice === 'skipped',
         q1: q1?.choice || null,
         q2Choice: q2?.choice || null,
         q2Text: q2?.free_text || null,
         q3: q3?.choice || null,
         email: em?.free_text || null,
-        time: q1?.seconds_on_site || oldest.seconds_on_site,
+        time: (rating?.seconds_on_site) || (looking?.seconds_on_site)
+              || q1?.seconds_on_site || oldest.seconds_on_site,
         at: oldest.created_at,
-        step: em ? 4 : q3 ? 3 : q2 ? 2 : q1 ? 1 : 0,
+        step: em ? 6 : q3 ? 5 : q2 ? 4 : q1 ? 3 : looking ? 2 : rating ? 1 : 0,
       })
     }
     // Newest sessions first.
@@ -110,13 +121,13 @@ export default function AdminPolls() {
     if (filter === 'hot') return sessions.filter((s) => s.q1 === 'conditional_yes')
     if (filter === 'email') return sessions.filter((s) => s.email)
     if (filter === 'yes') return sessions.filter((s) => s.q3 === 'yes')
-    if (filter === 'completed') return sessions.filter((s) => s.step >= 3)
+    if (filter === 'completed') return sessions.filter((s) => s.step >= 5)
     return sessions
   }, [sessions, filter])
 
   const stats = useMemo(() => {
     const started = sessions.length
-    const completed = sessions.filter((s) => s.step >= 3).length
+    const completed = sessions.filter((s) => s.step >= 5).length
     const gaveEmail = sessions.filter((s) => s.email).length
     const hotLeads = sessions.filter((s) => s.q1 === 'conditional_yes').length
     const wouldJoin = sessions.filter((s) => s.q3 === 'yes').length
@@ -157,7 +168,7 @@ export default function AdminPolls() {
           gap: 12, marginBottom: 32,
         }}>
           <Stat label="Started" value={stats.started} />
-          <Stat label="Completed 3 steps" value={stats.completed} />
+          <Stat label="Completed to commit" value={stats.completed} />
           <Stat label="Hot leads" value={stats.hotLeads} accent="#22c55e" />
           <Stat label="Would join at $99" value={stats.wouldJoin} accent="#ccff00" />
           <Stat label="Gave email" value={stats.gaveEmail} accent="var(--electric)" />
@@ -219,9 +230,11 @@ export default function AdminPolls() {
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--text-dim)', textAlign: 'left' }}>
                   <Th>When</Th>
-                  <Th>Q1 · Blocker</Th>
+                  <Th>Rating</Th>
+                  <Th>Looking for</Th>
+                  <Th>Blocker</Th>
                   <Th>Q2 · Answer</Th>
-                  <Th>Q3 · Commit</Th>
+                  <Th>Commit</Th>
                   <Th>Contact</Th>
                   <Th>Time</Th>
                   <Th>Send</Th>
@@ -231,6 +244,26 @@ export default function AdminPolls() {
                 {filtered.map((s) => (
                   <tr key={s.sid} style={{ borderTop: '1px solid var(--border)' }}>
                     <Td dim>{new Date(s.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</Td>
+                    <Td>
+                      {s.rating != null ? (
+                        <span style={{
+                          fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                          fontWeight: 700,
+                          color: s.rating >= 75 ? '#22c55e' : s.rating >= 40 ? 'var(--text)' : '#ff6b6b',
+                        }}>{s.rating}</span>
+                      ) : s.ratingSkipped ? (
+                        <em style={{ color: 'var(--text-dim)', fontSize: 11 }}>skip</em>
+                      ) : <em style={{ color: 'var(--text-dim)' }}>—</em>}
+                    </Td>
+                    <Td>
+                      {s.lookingFor ? (
+                        <span style={{ color: 'var(--electric)' }} title={s.lookingFor}>
+                          {s.lookingFor.length > 44 ? s.lookingFor.slice(0, 44) + '…' : s.lookingFor}
+                        </span>
+                      ) : s.lookingSkipped ? (
+                        <em style={{ color: 'var(--text-dim)', fontSize: 11 }}>skip</em>
+                      ) : <em style={{ color: 'var(--text-dim)' }}>—</em>}
+                    </Td>
                     <Td>
                       {s.q1 ? (
                         <span style={{ color: s.q1 === 'conditional_yes' ? '#22c55e' : 'var(--text)' }}>
@@ -395,7 +428,7 @@ function SendButton({ session }) {
 }
 
 function downloadCsv(rows) {
-  const header = ['when', 'q1_blocker', 'q2_choice', 'q2_text', 'q3_commit', 'contact', 'time_seconds']
+  const header = ['when', 'rating_0_100', 'looking_for', 'blocker', 'q2_choice', 'q2_text', 'commit', 'contact', 'time_seconds']
   const esc = (v) => {
     if (v == null) return ''
     const s = String(v).replace(/"/g, '""')
@@ -405,6 +438,8 @@ function downloadCsv(rows) {
   for (const s of rows) {
     lines.push([
       esc(s.at ? new Date(s.at).toISOString() : ''),
+      esc(s.rating != null ? s.rating : (s.ratingSkipped ? 'skipped' : '')),
+      esc(s.lookingFor || (s.lookingSkipped ? 'skipped' : '')),
       esc(s.q1 || ''),
       esc(s.q2Choice || ''),
       esc(s.q2Text || ''),
