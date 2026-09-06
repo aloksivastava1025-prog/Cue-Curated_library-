@@ -131,7 +131,12 @@ export default function CategoryRail({ title, eyebrow, items, onOpen, onViewAll 
           gap: '16px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          overscrollBehavior: 'contain',
+          // Only capture horizontal touch — vertical drags bubble up
+          // to the page so mobile users can scroll down even when
+          // their thumb lands on a category rail card.
+          touchAction: 'pan-x',
+          overscrollBehaviorX: 'contain',
+          overscrollBehaviorY: 'auto',
           scrollSnapType: 'x proximity',
           scrollPaddingLeft: '4px',
           paddingBottom: '4px',
@@ -230,6 +235,13 @@ function CategoryCard({ item, onOpen }) {
   const videoRef = useRef(null)
   const cardRef = useRef(null)
   const media = item.hoverSrc
+  // Scroll-vs-tap guard — matches EditorialCard + FeaturedCard.
+  const lastScrollAtRef = useRef(0)
+  useEffect(() => {
+    const onScroll = () => { lastScrollAtRef.current = Date.now() }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   const isImage = media && /\.(jpe?g|gif|png|webp|svg|heic)$/i.test(media)
   const hoverIsVideo = media && !isImage
   const slot = useVideoSlot('category-rail', item.id, hoverIsVideo && hover)
@@ -264,7 +276,10 @@ function CategoryCard({ item, onOpen }) {
   return (
     <article
       ref={cardRef}
-      onClick={() => onOpen(item)}
+      onClick={() => {
+        if (Date.now() - lastScrollAtRef.current < 150) return
+        onOpen(item)
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{

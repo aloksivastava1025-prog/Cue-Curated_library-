@@ -117,7 +117,14 @@ export default function FeaturedRail({ items, onOpen }) {
           gap: '20px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          overscrollBehavior: 'contain',
+          // Only capture horizontal touch gestures inside the rail —
+          // vertical drags bubble up to the page so mobile users can
+          // scroll down normally even when their thumb is on a
+          // featured card. Without this the rail ate every vertical
+          // gesture that landed inside its bounds.
+          touchAction: 'pan-x',
+          overscrollBehaviorX: 'contain',
+          overscrollBehaviorY: 'auto',
           // `proximity` = feels smooth (soft magnet near a card),
           // vs `mandatory` which yanks after every scroll delta.
           scrollSnapType: 'x proximity',
@@ -143,6 +150,14 @@ export default function FeaturedRail({ items, onOpen }) {
 // ---------------------------------------------------------------------------
 function FeaturedCard({ item, onOpen }) {
   const [hover, setHover] = useState(false)
+  // Scroll-vs-tap guard (matches EditorialCard). Any onClick within
+  // 150ms of a scroll event is treated as scroll-tail, not a tap.
+  const lastScrollAtRef = useRef(0)
+  useEffect(() => {
+    const onScroll = () => { lastScrollAtRef.current = Date.now() }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   const [videoReady, setVideoReady] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
   // Bandwidth fix (Aug 2026): the rail used to mount every <video>
@@ -195,7 +210,10 @@ function FeaturedCard({ item, onOpen }) {
   return (
     <article
       ref={cardRef}
-      onClick={() => onOpen(item)}
+      onClick={() => {
+        if (Date.now() - lastScrollAtRef.current < 150) return
+        onOpen(item)
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{

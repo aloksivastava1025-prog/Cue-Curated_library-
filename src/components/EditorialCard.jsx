@@ -55,40 +55,21 @@ export default function EditorialCard({ item, setSelectedItem }) {
   const [videoSrcFallback, setVideoSrcFallback] = useState(false);
   const ref = useRef(null);
   const videoRef = useRef(null);
-  // Scroll-safe tap tracking for mobile. Without this, any finger
-  // touch during a scroll can register as onClick and open the
-  // modal mid-scroll — users report "cards keep opening while I
-  // scroll". We record touchstart position and only fire the open
-  // handler if the finger moved less than ~10px between start and
-  // end (a real tap) and the touch was under 500ms. Desktop click
-  // continues to work because it doesn't go through the touch path.
-  const touchStartRef = useRef(null);
-  // Timestamp of the last handled touch — used to suppress the
-  // synthetic click event that fires ~300ms after touchend on
-  // Chrome mobile even when we preventDefault the touchend.
-  const lastTouchHandledRef = useRef(0);
-
-  const handleTouchStart = (e) => {
-    const t = e.touches[0];
-    if (!t) return;
-    touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-  };
-  const handleTouchEnd = (e) => {
-    const start = touchStartRef.current;
-    touchStartRef.current = null;
-    if (!start) return;
-    const t = e.changedTouches[0];
-    if (!t) return;
-    const dx = Math.abs(t.clientX - start.x);
-    const dy = Math.abs(t.clientY - start.y);
-    const dt = Date.now() - start.t;
-    lastTouchHandledRef.current = Date.now();
-    // Real tap: barely moved + short duration. Anything else was
-    // part of a scroll — swallow it.
-    if (dx < 10 && dy < 10 && dt < 500) {
-      setSelectedItem(item);
-    }
-  };
+  // Scroll-vs-tap disambiguation for mobile. Older attempt used
+  // onTouchStart/onTouchEnd but React attaches those non-passive,
+  // which cues mobile browsers to hold the scroll until the JS
+  // decides — result: user's thumb on a card stalled page scroll.
+  // New approach: track window scroll via a passive listener (zero
+  // scroll-blocking cost), and ignore any onClick that fires within
+  // 150ms of a scroll — that click was the tail of the scroll, not
+  // a real tap. Native scroll works perfectly because we never
+  // touch the touch pipeline.
+  const lastScrollAtRef = useRef(0);
+  useEffect(() => {
+    const onScroll = () => { lastScrollAtRef.current = Date.now(); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Once the user hovers a card, mark it "everHovered" so the <video>
   // stays mounted for the rest of the session. Prevents the second
@@ -272,17 +253,16 @@ export default function EditorialCard({ item, setSelectedItem }) {
   return (
     <article
       ref={ref}
-      // Desktop: normal click opens the card. Touch: routed through
-      // touchstart/touchend above so a scroll doesn't accidentally
-      // open the modal. Suppress the synthetic click that fires
-      // right after touchend on mobile Chrome — anything within
-      // 700ms of a handled touch is the ghost click.
+      // Open the modal only if no scroll has happened in the last
+      // 150ms. Mobile browsers fire a synthetic click after a
+      // scrolling touch ends — that click is what used to open the
+      // modal mid-scroll. Passive scroll listener above tracks the
+      // last scroll moment; anything faster than 150ms after that
+      // is scroll-tail, not a real tap.
       onClick={() => {
-        if (Date.now() - lastTouchHandledRef.current < 700) return;
+        if (Date.now() - lastScrollAtRef.current < 150) return;
         setSelectedItem(item);
       }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
       onMouseEnter={() => setMouseHover(true)}
       onMouseLeave={() => setMouseHover(false)}
       style={{
