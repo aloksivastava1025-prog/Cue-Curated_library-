@@ -295,6 +295,15 @@ export default function EditorialCard({ item, setSelectedItem }) {
         borderRadius: '14px',
         overflow: 'hidden',
         cursor: 'pointer',
+        /* Mobile scroll fix: explicitly tell the browser that vertical
+           panning through the card must always work. Without this,
+           mobile Chrome/Safari sometimes treats the card as a gesture
+           target (video autoplay + touch handlers below combine into
+           a "captured" area) and vertical scroll stalls when the
+           user's thumb lands on a card. pan-y = only allow browser-
+           native vertical scroll gestures; our onTouch* handlers still
+           receive events but can't block the scroll. */
+        touchAction: 'pan-y',
         transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease',
         transform: mouseHover ? 'translateY(-4px)' : 'translateY(0)',
         willChange: mouseHover ? 'transform' : 'auto',
