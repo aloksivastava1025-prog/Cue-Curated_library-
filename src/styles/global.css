@@ -252,6 +252,29 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cue-accent); ou
   padding: 28px 0 44px;
 }
 .filter-group { display: flex; gap: 10px; }
+
+/* Narrow phones (≤540px): pills would otherwise overflow the
+   viewport right edge and clip category labels ("INTERAC..."). Let
+   the toolbar stack, and let each group horizontally scroll so all
+   pills stay reachable without the layout jumping. */
+@media (max-width: 540px) {
+  .filter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 20px 0 28px;
+  }
+  .filter-group {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;         /* Firefox */
+    padding-bottom: 4px;
+  }
+  .filter-group::-webkit-scrollbar { display: none; } /* iOS/Chrome */
+  .filter-group .pill {
+    flex-shrink: 0;                /* stop pills from squeezing */
+  }
+}
 .pill {
   background: var(--cue-surface-1);
   color: var(--cue-text-2);
@@ -465,6 +488,31 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cue-accent); ou
 }
 .thumb-video { z-index: 1; }
 .thumb-img { z-index: 0; }
+
+/* Hide native mobile video controls / overlay play button on ALL
+   preview videos across the site (EditorialCard, CategoryRail,
+   FeaturedRail, CardThumb, all use the same underlying <video>
+   tag). Mobile Chrome + Safari inject a giant play button overlay
+   when a muted autoplay video hasn't been "engaged" — on a scroll
+   grid this reads as broken (huge white ▶ over every card). We
+   autoplay muted+playsinline so no controls are ever needed.
+   pointer-events:none on the video also stops accidental taps from
+   triggering the browser's playback UI (Modal video opts back in
+   below because it needs real playback controls). */
+video:not(.modal-video):not(.cue-playable) {
+  pointer-events: none;
+}
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-panel,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-play-button,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-overlay-play-button,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-start-playback-button,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-enclosure,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-fullscreen-button,
+video:not(.modal-video):not(.cue-playable)::-webkit-media-controls-timeline {
+  display: none !important;
+  -webkit-appearance: none;
+}
 
 .card-meta { padding: 0 4px; }
 .card-row {

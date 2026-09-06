@@ -388,6 +388,7 @@ export default function Modal({ item, onClose, showToast }) {
       {hoverIsVideoMedia && !modalVideoFailed && (
         <video
           ref={modalVideoRef}
+          className="modal-video"
           src={modalVideoSrcFallback ? item.hoverSrc : optimizeCloudinaryUrl(item.hoverSrc)}
           poster={item.thumbSrc || undefined}
           autoPlay loop muted playsInline
