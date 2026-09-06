@@ -62,6 +62,186 @@ function InboxNavLink() {
   );
 }
 
+// Admin: send a drop-notification email to free-tier signed-up
+// users. Cue+ members are excluded server-side. The panel supports
+// two modes: (1) test send to a single email so you can preview
+// deliverability + rendering before committing, then (2) bulk send
+// keyed by a `campaignKey` that guarantees idempotency (accidental
+// double-click = no double-send).
+function SendDropEmailPanel({ allPrompts }) {
+  const [subject, setSubject]   = React.useState('New drops on Cue — 3 fresh components');
+  const [ctaLabel, setCtaLabel] = React.useState('See the drops');
+  const [ctaUrl, setCtaUrl]     = React.useState('https://cuedesign.space');
+  const [body, setBody]         = React.useState('');
+  const [testTo, setTestTo]     = React.useState('');
+  const [busy, setBusy]         = React.useState(false);
+  const [msg, setMsg]           = React.useState(null); // { kind, text }
+
+  // Pull latest 5 prompts to auto-draft the body — the admin can
+  // still edit before sending. Sorted by created_at desc.
+  const loadRecentDrops = () => {
+    const items = Array.isArray(allPrompts) ? allPrompts.slice() : [];
+    items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const top = items.slice(0, 5);
+    if (!top.length) { setMsg({ kind: 'err', text: 'No prompts loaded yet.' }); return; }
+    const lines = top.map(p => `  → ${p.title || p.id}`).join('\n');
+    setBody(
+`Dropped ${top.length} new components this week:
+
+${lines}
+
+You've got the previews unlocked already. Cue+ unlocks the copy-paste prompts + React source for all of them (plus 130+ more) — $99 lifetime, no subscription.
+
+Or if only one of them caught your eye — pay $20 for just that one. New this week.
+`
+    );
+    setMsg({ kind: 'ok', text: `Draft filled with ${top.length} latest drops. Edit as needed.` });
+  };
+
+  const send = async (mode) => {
+    setMsg(null);
+    if (busy) return;
+    if (!subject.trim() || !body.trim()) {
+      setMsg({ kind: 'err', text: 'Subject + body required.' }); return;
+    }
+    if (mode === 'test' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testTo.trim())) {
+      setMsg({ kind: 'err', text: 'Valid test email required.' }); return;
+    }
+    if (mode === 'bulk' && !confirm('Send to ALL free-tier signed-up users? Cue+ members are auto-skipped.')) return;
+    setBusy(true);
+    try {
+      const iso = new Date().toISOString().slice(0, 10);
+      const campaignKey = `drop-${iso}`;
+      const res = await backend.adminSendDropEmail({
+        mode,
+        subject: subject.trim(),
+        body: body.trim(),
+        ctaLabel: ctaLabel.trim() || 'See the drops',
+        ctaUrl: ctaUrl.trim() || 'https://cuedesign.space',
+        to: mode === 'test' ? testTo.trim() : undefined,
+        campaignKey: mode === 'bulk' ? campaignKey : undefined,
+      });
+      if (mode === 'test') {
+        setMsg({ kind: res.sent ? 'ok' : 'err',
+          text: res.sent ? `Test sent to ${testTo}` : `Test failed: ${res.error || 'unknown'}` });
+      } else {
+        setMsg({ kind: 'ok',
+          text: `Bulk send complete — sent: ${res.sent}, failed: ${res.failed}, skipped: ${res.skipped} (already sent this campaign key).` });
+      }
+    } catch (e) {
+      setMsg({ kind: 'err', text: e?.message || 'Failed' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputStyle = {
+    padding: '10px 12px', borderRadius: 6, background: '#0e0e10',
+    border: '1px solid var(--border)', color: 'var(--text)',
+    fontSize: 13, fontFamily: 'inherit', width: '100%',
+  };
+  const labelStyle = {
+    fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+    color: 'var(--text-dim)', marginBottom: 5, fontWeight: 500,
+  };
+
+  return (
+    <div style={{
+      padding: '20px 22px', margin: '0 0 28px',
+      border: '1px solid var(--border)', borderRadius: 10,
+      background: 'linear-gradient(180deg, rgba(204,255,0,0.03) 0%, transparent 100%)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>
+          Send drop email
+        </h2>
+        <span style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+          Free-tier users only · Cue+ auto-skipped
+        </span>
+      </div>
+      <p style={{ margin: '0 0 16px', fontSize: 12.5, color: 'var(--text-dim)', lineHeight: 1.55 }}>
+        Notify signed-up free users about new drops or features. Includes unsubscribe link automatically. Test to yourself first, always.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div>
+          <div style={labelStyle}>Subject</div>
+          <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <div style={labelStyle}>CTA label</div>
+          <input type="text" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <div style={labelStyle}>CTA link</div>
+          <input type="text" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} style={inputStyle} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: 5 }}>
+          <div style={labelStyle}>Body (plain text — line breaks preserved)</div>
+          <button
+            onClick={loadRecentDrops} disabled={busy}
+            style={{
+              background: 'transparent', color: 'var(--text-dim)',
+              border: '1px solid var(--border)', borderRadius: 6,
+              fontSize: 11, padding: '4px 10px', cursor: 'pointer',
+            }}
+          >Load recent drops →</button>
+        </div>
+        <textarea
+          value={body} onChange={(e) => setBody(e.target.value)}
+          rows={10}
+          placeholder="Hey {{name}}, dropped 3 new components this week..."
+          style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.55, fontFamily: 'inherit' }}
+        />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 10, alignItems: 'end' }}>
+        <div>
+          <div style={labelStyle}>Test-send to</div>
+          <input
+            type="email" value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+            placeholder="you@example.com" style={inputStyle}
+          />
+        </div>
+        <button
+          onClick={() => send('test')} disabled={busy}
+          style={{
+            padding: '10px 16px', borderRadius: 8,
+            background: 'transparent', color: 'var(--text)',
+            border: '1px solid var(--border)',
+            fontSize: 13, fontWeight: 500,
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}
+        >Send test</button>
+        <button
+          onClick={() => send('bulk')} disabled={busy}
+          style={{
+            padding: '10px 16px', borderRadius: 8,
+            background: busy ? 'rgba(0,0,255,0.4)' : 'var(--electric)',
+            color: '#fff', border: 'none',
+            fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
+            cursor: busy ? 'not-allowed' : 'pointer',
+          }}
+        >{busy ? 'Working…' : 'Send to all free users →'}</button>
+      </div>
+
+      {msg && (
+        <div style={{
+          marginTop: 12, fontSize: 12,
+          color: msg.kind === 'ok' ? '#ccff00' : '#ff6b6b',
+          padding: '8px 12px', borderRadius: 6,
+          background: msg.kind === 'ok' ? 'rgba(204,255,0,0.06)' : 'rgba(255,107,107,0.06)',
+          border: msg.kind === 'ok' ? '1px solid rgba(204,255,0,0.28)' : '1px solid rgba(255,107,107,0.28)',
+        }}>{msg.text}</div>
+      )}
+    </div>
+  );
+}
+
 // Admin safety-net for the "Request this component — $20" flow.
 // The dodo-webhook auto-grants when the payment carries our metadata,
 // but manual entry here covers refunds, missing-metadata payments,
@@ -1562,6 +1742,9 @@ export default function Admin() {
         </div>
 
       </div>
+
+      {/* Drop-notification email — free users only */}
+      <SendDropEmailPanel allPrompts={allPrompts} />
 
       {/* Single-component grant safety net — $20 flow backup */}
       <GrantSingleComponentPanel allPrompts={allPrompts} />

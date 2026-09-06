@@ -19,17 +19,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import { verifyClerkAdmin, authErrorResponse } from '../_shared/clerk.ts'
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'http://localhost:5175',
-  'http://localhost:5180',
-  'http://localhost:5230',
   'https://cuedesign.space',
   'https://www.cuedesign.space',
 ]
 
+// Prod hosts + any localhost port (Vite autoPort).
 function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') || ''
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const isLocal = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
+  const allowed = ALLOWED_ORIGINS.includes(origin) || isLocal ? origin : ALLOWED_ORIGINS[0]
   return {
     'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

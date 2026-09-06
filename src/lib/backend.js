@@ -1002,6 +1002,31 @@ const supabaseAdapter = {
     return { ok: true }
   },
 
+  // Admin: send a drop / feature notification email.
+  //   mode 'test' → single email to `to`, uses dummy unsubscribe
+  //   mode 'bulk' → to all free-tier signed-up users. Requires a
+  //                 unique `campaignKey` so an accidental re-click
+  //                 doesn't double-send (idempotency via a UNIQUE
+  //                 index on email_send_log(campaign_key, email)).
+  async adminSendDropEmail({ mode, subject, body, ctaLabel, ctaUrl, to, campaignKey }) {
+    const token = await _getClerkSessionToken()
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-drop-email`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ mode, subject, body, ctaLabel, ctaUrl, to, campaignKey }),
+    })
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => '')
+      throw new Error(`send-drop (${resp.status}): ${t.slice(0, 200)}`)
+    }
+    return await resp.json()
+  },
+
   // Admin: manually grant or revoke a single-component unlock.
   // Backup for the dodo-webhook's auto-grant path (used when a
   // payment couldn't be attributed to a user, or for refunds).
