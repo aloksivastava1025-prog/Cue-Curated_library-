@@ -117,14 +117,17 @@ export default function FeaturedRail({ items, onOpen }) {
           gap: '20px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          // Only capture horizontal touch gestures inside the rail —
-          // vertical drags bubble up to the page so mobile users can
-          // scroll down normally even when their thumb is on a
-          // featured card. Without this the rail ate every vertical
-          // gesture that landed inside its bounds.
-          touchAction: 'pan-x',
+          // Let the browser natively decide direction based on the
+          // finger's movement — vertical drag = page scrolls, mostly-
+          // horizontal drag = rail scrolls. `pan-x` alone stopped
+          // vertical touches from being interpreted at all (user
+          // reports "thumb on card, page won't scroll"). manipulation
+          // = allow pan (both axes) + pinch-zoom but suppress the
+          // 300ms double-tap-zoom delay.
+          touchAction: 'manipulation',
           overscrollBehaviorX: 'contain',
           overscrollBehaviorY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           // `proximity` = feels smooth (soft magnet near a card),
           // vs `mandatory` which yanks after every scroll delta.
           scrollSnapType: 'x proximity',

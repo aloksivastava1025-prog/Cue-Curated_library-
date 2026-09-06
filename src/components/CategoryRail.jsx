@@ -131,12 +131,14 @@ export default function CategoryRail({ title, eyebrow, items, onOpen, onViewAll 
           gap: '16px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          // Only capture horizontal touch — vertical drags bubble up
-          // to the page so mobile users can scroll down even when
-          // their thumb lands on a category rail card.
-          touchAction: 'pan-x',
+          // Let browser natively route drags — vertical goes to page,
+          // horizontal drives the rail. `pan-x` alone blocked vertical
+          // entirely (user reports "card pe thumb rakh ke scroll nahi
+          // hota"). manipulation = both pan axes + pinch-zoom allowed.
+          touchAction: 'manipulation',
           overscrollBehaviorX: 'contain',
           overscrollBehaviorY: 'auto',
+          WebkitOverflowScrolling: 'touch',
           scrollSnapType: 'x proximity',
           scrollPaddingLeft: '4px',
           paddingBottom: '4px',

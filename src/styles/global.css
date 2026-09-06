@@ -489,15 +489,14 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cue-accent); ou
 .thumb-video { z-index: 1; }
 .thumb-img { z-index: 0; }
 
-/* Ensure vertical scroll always wins over touch handlers on card
-   media. Mobile Chrome/Safari otherwise sometimes stalls the scroll
-   when a finger lands on a card that has an autoplaying video +
-   touch listeners — the browser treats the area as a gesture
-   target. pan-y = "only allow browser-native vertical scroll" —
-   our onTouch* logic still fires but can't block scroll. */
+/* Ensure the browser natively routes scroll gestures on card media.
+   Some mobile browsers otherwise stall the scroll when a finger lands
+   on a card that has an autoplaying video + touch listeners.
+   manipulation = allow pan (both axes so horizontal rails still work)
+   + pinch-zoom, but suppress the 300ms double-tap-zoom delay. */
 .thumb-media,
 .thumb {
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 
 /* Hide native mobile video controls / overlay play button on ALL
