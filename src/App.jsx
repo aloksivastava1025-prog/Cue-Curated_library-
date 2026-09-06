@@ -740,7 +740,7 @@ function MainApp() {
                 boxShadow: '0 0 6px rgba(204,255,0,0.6)',
                 marginLeft: -11,
               }} />
-              NEW · $20 for whichever component you like
+              NEW · pay only for whichever component you like
             </div>
           </div>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
