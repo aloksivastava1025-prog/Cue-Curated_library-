@@ -971,7 +971,7 @@ function Paywall({ item, onSubscribe }) {
             boxShadow: '0 6px 24px -8px rgba(0,0,255,0.55)',
           }}
         >
-          Subscribe to Cue+ →
+          Subscribe to Cue+ — <b style={{ fontWeight: 700 }}>lifetime for $99</b> →
         </button>
 
         {canRequestSingle && (
