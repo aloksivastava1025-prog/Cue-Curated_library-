@@ -178,20 +178,30 @@ serve(async (req) => {
       })
     }
 
-    // Recipient set: signed-up users on free tier (plan is null OR
-    // 'free' — NOT cue_plus/cue_plus_team). Drop rows with no email
-    // (edge case for pre-webhook self-heal users) and dedupe on
-    // lower(email) so alias variants don't get two emails.
-    const { data: freeUsers, error: usersErr } = await supabase
-      .from('user_profiles')
-      .select('user_id, email, first_name, plan')
-      .not('email', 'is', null)
-      .or('plan.is.null,plan.eq.free')
+    // Recipient set: (a) signed-up users on free tier (plan is null
+    // OR 'free' — NOT cue_plus/cue_plus_team), UNION (b) everyone
+    // on the pre-launch waitlist. Cue+ paid users are excluded from
+    // both so we don't nudge people who already converted.
+    //
+    // Two queries + merge because they live in different tables and
+    // Supabase doesn't do cross-table UNION at the REST level.
+    const [{ data: freeUsers, error: usersErr }, { data: waitlist, error: wlErr }] = await Promise.all([
+      supabase.from('user_profiles')
+        .select('user_id, email, first_name, plan')
+        .not('email', 'is', null)
+        .or('plan.is.null,plan.eq.free'),
+      supabase.from('waitlist_emails')
+        .select('email'),
+    ])
 
     if (usersErr) {
       return new Response(JSON.stringify({ error: 'recipient query failed: ' + usersErr.message }), {
         status: 500, headers: { ...headers, 'Content-Type': 'application/json' },
       })
+    }
+    if (wlErr) {
+      // Waitlist read failure is non-fatal — proceed with just users.
+      // Better to notify signed-ups than skip the whole send.
     }
 
     // Fetch existing unsubscribes so we skip them.
@@ -201,7 +211,8 @@ serve(async (req) => {
       .eq('unsubscribed', true)
     const unsubSet = new Set((prefs || []).map(p => (p.email || '').toLowerCase()))
 
-    // Dedupe + filter.
+    // Dedupe + filter. Signed-up users come first so their
+    // first_name wins if they're also on the waitlist.
     const seen = new Set<string>()
     const recipients: Array<{ user_id: string; email: string; first_name: string }> = []
     for (const u of (freeUsers || [])) {
@@ -212,6 +223,18 @@ serve(async (req) => {
         user_id: String(u.user_id || ''),
         email: em,
         first_name: String(u.first_name || '').trim() || 'there',
+      })
+    }
+    // Add waitlist emails that aren't already in the signed-up set.
+    // No first_name available — falls back to 'there' in the email.
+    for (const w of (waitlist || [])) {
+      const em = String(w.email || '').toLowerCase().trim()
+      if (!em || seen.has(em) || unsubSet.has(em)) continue
+      seen.add(em)
+      recipients.push({
+        user_id: `email:${em}`, // anchor for unsubscribe token
+        email: em,
+        first_name: 'there',
       })
     }
 
