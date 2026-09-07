@@ -767,24 +767,6 @@ function PromoToggle({ couponMode, onChange, timerLabel, fullPriceLabel, promoPr
         </button>
       </div>
 
-      {/* Live countdown only when the promo is picked */}
-      {couponMode && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: 8, padding: '6px 10px',
-          background: 'rgba(0,0,255,0.08)', border: '1px solid rgba(0,0,255,0.24)',
-          borderRadius: 999,
-          fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'var(--text)', fontWeight: 500,
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: 999,
-            background: 'var(--electric)',
-            boxShadow: '0 0 6px rgba(0,0,255,0.55)',
-          }} />
-          <span>CUE49 · ends in {timerLabel}</span>
-        </div>
-      )}
     </div>
   )
 }
