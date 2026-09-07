@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useSignIn, useSignUp, useClerk } from '@clerk/clerk-react'
+import { useSignIn, useSignUp, useClerk, useUser } from '@clerk/clerk-react'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { backend } from '../lib/backend.js'
 
@@ -62,6 +62,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
   const { toggleMode } = useAuth()
   const { signIn, isLoaded: signInLoaded, setActive: setActiveSignIn } = useSignIn()
   const { signUp, isLoaded: signUpLoaded, setActive: setActiveSignUp } = useSignUp()
+  const { isSignedIn, isLoaded: userLoaded } = useUser()
   const isSignIn = mode === 'sign-in'
 
   const [email, setEmail] = useState('')
@@ -75,8 +76,23 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
   // the email step, which is really frustrating.
   useEffect(() => {
     if (!open) return
+    // If the user is already signed in when the modal opens, there
+    // is nothing left to do — close immediately and wipe any stale
+    // "pending OTP" marker from a previous session. Without this
+    // guard, users who successfully signed up in a prior visit come
+    // back, get restored to the code screen, hit resubmit, and get
+    // Clerk's "verification has already been verified" 422.
+    if (userLoaded && isSignedIn) {
+      clearPending()
+      onClose?.()
+      return
+    }
     const pending = loadPending()
-    if (pending?.email && pending.mode === mode) {
+    // Ignore pending markers older than 10 minutes — Clerk's code
+    // resource expires around then and stale markers strand users
+    // on a dead OTP screen.
+    const isFresh = pending?.ts && (Date.now() - pending.ts) < 10 * 60 * 1000
+    if (pending?.email && pending.mode === mode && isFresh) {
       // Mid-flow — restore to OTP step
       setEmail(pending.email)
       setStep('code')
@@ -84,6 +100,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
       setError('')
       setBusy(false)
     } else {
+      if (pending && !isFresh) clearPending()
       setEmail(''); setCode(''); setError(''); setStep('email'); setBusy(false)
     }
     const prev = document.body.style.overflow
@@ -91,7 +108,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
     const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
     window.addEventListener('keydown', onKey)
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
-  }, [open, mode, onClose])
+  }, [open, mode, onClose, isSignedIn, userLoaded])
 
   if (!open) return null
 
