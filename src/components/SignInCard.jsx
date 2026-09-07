@@ -170,20 +170,83 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
     try {
       if (isSignIn) {
         const res = await signIn.attemptFirstFactor({ strategy: 'email_code', code: code.trim() })
-        if (res.status === 'complete') {
+        if (res.status === 'complete' && res.createdSessionId) {
           clearPending()
           await setActiveSignIn({ session: res.createdSessionId })
           onClose?.()
-        } else setError('Verification incomplete. Try again.')
+        } else {
+          // Rare: second-factor required. Not enabled on our Clerk
+          // instance, but surfaced defensively.
+          setError('One more step needed — refresh and try signing in again.')
+        }
       } else {
         const res = await signUp.attemptEmailAddressVerification({ code: code.trim() })
-        if (res.status === 'complete') {
+        // 'complete' → session created, we're done.
+        // 'missing_requirements' → email verified server-side but
+        //   Clerk still wants a username/first-name/etc. before
+        //   activating the session. If our instance doesn't require
+        //   those (typical setup), createdSessionId will exist here
+        //   anyway — activate it. Otherwise, retry signUp.update({})
+        //   with empty payload to nudge Clerk past the check.
+        const sid = res.createdSessionId || signUp?.createdSessionId
+        if (res.status === 'complete' && sid) {
           clearPending()
-          await setActiveSignUp({ session: res.createdSessionId })
+          await setActiveSignUp({ session: sid })
           onClose?.()
-        } else setError('Verification incomplete. Try again.')
+        } else if (sid) {
+          // Session exists — verification actually succeeded, just
+          // status didn't flip to complete. Activate anyway.
+          clearPending()
+          await setActiveSignUp({ session: sid })
+          onClose?.()
+        } else if (res.status === 'missing_requirements') {
+          // Try to finalise by calling update() with no fields —
+          // works when the Clerk instance's required fields are
+          // already satisfied (email + password / email-only).
+          try {
+            const upd = await signUp.update({})
+            const usid = upd?.createdSessionId || signUp?.createdSessionId
+            if (usid) {
+              clearPending()
+              await setActiveSignUp({ session: usid })
+              onClose?.()
+              return
+            }
+          } catch (_) { /* fall through */ }
+          setError("Almost there — refresh once and you'll be signed in.")
+        } else {
+          setError('Verification incomplete. Try again.')
+        }
       }
     } catch (err) {
+      // "Verification has already been verified" fires when a code
+      // was accepted seconds earlier (double-click, autofill + Enter,
+      // React re-submit, tab focus race) and the second call sees a
+      // completed state. Treat it as success — try to finalise the
+      // sign-in/sign-up we already have, and close the modal.
+      const rawMsg = String(err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || '')
+      const alreadyVerified =
+        /verification.*already.*verified/i.test(rawMsg)
+        || /already.*been.*verified/i.test(rawMsg)
+        || err?.errors?.[0]?.code === 'verification_already_verified'
+      if (alreadyVerified) {
+        try {
+          const sid = (isSignIn ? signIn?.createdSessionId : signUp?.createdSessionId)
+          if (sid) {
+            clearPending()
+            if (isSignIn) await setActiveSignIn({ session: sid })
+            else await setActiveSignUp({ session: sid })
+            onClose?.()
+            return
+          }
+        } catch (_) { /* fall through — show a friendly error */ }
+        // Session id unavailable — clear pending so the user can
+        // just close the modal and refresh into their signed-in
+        // state instead of hitting the error again.
+        clearPending()
+        setError("You're already verified — close this and refresh.")
+        return
+      }
       setError(clerkErr(err))
     } finally {
       setBusy(false)
