@@ -418,6 +418,52 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
                   </>
                 )}
               </button>
+
+              {/* X / Twitter OAuth — same visual system as Google
+                  button. Uses the xLogin handler which invokes
+                  Clerk's oauth_twitter strategy. */}
+              <button
+                type="button"
+                onClick={xLogin}
+                disabled={busy || !signInLoaded || !signUpLoaded}
+                style={{
+                  background: '#000', color: '#fff', border: '1px solid #000',
+                  borderRadius: 24, padding: 14, fontSize: 14, fontWeight: 500,
+                  width: '100%',
+                  cursor: (busy || !signInLoaded || !signUpLoaded) ? 'not-allowed' : 'pointer',
+                  opacity: (!signInLoaded || !signUpLoaded) ? 0.7 : 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  marginBottom: 16, fontFamily: 'inherit',
+                  transition: 'background 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease',
+                }}
+                onMouseEnter={(e) => { if (!busy && signInLoaded && signUpLoaded) { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)' } }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#000'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                {(!signInLoaded || !signUpLoaded) ? (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ animation: 'cue-signin-spin 700ms linear infinite' }}>
+                      <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.25)" strokeWidth="3" fill="none" />
+                      <path d="M12 3a9 9 0 0 1 9 9" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" />
+                    </svg>
+                    Loading sign-in…
+                  </>
+                ) : busy ? (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ animation: 'cue-signin-spin 700ms linear infinite' }}>
+                      <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.25)" strokeWidth="3" fill="none" />
+                      <path d="M12 3a9 9 0 0 1 9 9" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" />
+                    </svg>
+                    Redirecting to X…
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    Continue with X
+                  </>
+                )}
+              </button>
               <style>{`@keyframes cue-signin-spin { to { transform: rotate(360deg); } }`}</style>
 
 <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', marginBottom: 16, color: '#AAAAAA', fontSize: 12, fontWeight: 500 }}>
