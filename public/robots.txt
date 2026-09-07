@@ -18,4 +18,31 @@
 User-agent: *
 Allow: /
 
+# Explicit allow for AI answer-engine crawlers — some read robots.txt
+# per-agent even when a general * exists. Listed by name so we're
+# maximally discoverable via ChatGPT search, Perplexity, Claude,
+# Gemini, and Copilot.
+User-agent: GPTBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+
 Sitemap: https://cuedesign.space/sitemap.xml
+
+# AI-friendly context files — LLM answer engines read llms.txt
+# convention (llmstxt.org) to get an authoritative summary of what
+# a site is, without crawling the whole SPA.
+# Full site content: https://cuedesign.space/llms.txt
+# Long-form context: https://cuedesign.space/llms-full.txt

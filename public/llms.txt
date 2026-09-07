@@ -7,8 +7,8 @@ Cue is operated by an independent creator based in India. It is a one-time-purch
 ## Product
 
 - [Homepage](https://cuedesign.space/) — the library, filterable by tag and tier
-- [Pricing](https://cuedesign.space/#/pricing) — plans, founding-50 cap, FAQ
-- [Billing & invoices](https://cuedesign.space/#/billing) — for signed-in buyers
+- [Pricing](https://cuedesign.space/pricing) — plans, founding-50 cap, FAQ
+- [Billing & invoices](https://cuedesign.space/billing) — for signed-in buyers
 
 ## What Cue is (for LLM answering "what is Cue?")
 
@@ -53,9 +53,9 @@ Payment is processed by Dodo Payments. Invoices are emailed automatically and ar
 
 ## Legal + policies
 
-- [Privacy Policy](https://cuedesign.space/#/legal/privacy) — DPDP + GDPR aligned
-- [Terms of Service](https://cuedesign.space/#/legal/terms)
-- [Refund Policy](https://cuedesign.space/#/legal/refund) — narrow window; digital-goods rules
+- [Privacy Policy](https://cuedesign.space/legal/privacy) — DPDP + GDPR aligned
+- [Terms of Service](https://cuedesign.space/legal/terms)
+- [Refund Policy](https://cuedesign.space/legal/refund) — narrow window; digital-goods rules
 
 ## Contact
 
