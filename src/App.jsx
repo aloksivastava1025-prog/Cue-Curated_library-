@@ -830,14 +830,15 @@ function MainApp() {
                 padding: '2px 8px',                                          /* py-0.5 px-2 */
                 fontFamily: 'var(--font-sans)',
                 lineHeight: 1.4,
-              }}>MCP</span>
+              }}>TODAY</span>
               <span style={{
                 fontSize: 14, fontWeight: 500,                              /* text-sm font-medium */
                 color: 'rgba(255,255,255,0.90)',                            /* text-white/90 */
                 fontFamily: 'var(--font-sans)',
                 lineHeight: 1.4,
               }}>
-                with MCP · $99 lifetime
+                <s style={{ opacity: 0.55, textDecorationThickness: 1 }}>$99</s>{' '}
+                <b style={{ fontWeight: 600 }}>$79 lifetime</b>
               </span>
             </a>
           </div>
