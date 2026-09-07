@@ -769,7 +769,7 @@ function MainApp() {
                ~24px right on wider screens so both pills share the
                same optical center; mobile stays true-centered. */
             @media (min-width: 900px) {
-              .cue-discord-wrap { padding-left: 24px; }
+              .cue-discord-wrap { padding-left: 56px; }
             }
           `}</style>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
