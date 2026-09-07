@@ -29,9 +29,22 @@ const TAG_ALIASES = {
   'pricing': ['pricing', 'pricing-card', 'pricing-table'],
   'gallery': ['gallery', 'gallery-images', 'grid-gallery', 'image-gallery'],
   'carousel': ['carousel', 'slider', 'sliders', 'marquee'],
-  'typography': ['typography', 'text-reveal', 'char-reveal', 'letter-split', 'word-split', 'per-letter-settle', 'kinetic-type', 'sentence-reveal', 'char-animation'],
+  // Consolidated "text" bucket — folds ALL fragmented text-animation
+  // variants (scramble-text, blur-text, split-text, splittext,
+  // rolling-text, shimmer-text, text-animation, text-scramble,
+  // typography, char/letter/word splits, kinetic type, reveals) into
+  // one canonical "text" tag. Prevents the tag list from splintering
+  // into 10 near-identical text-* / *-text entries.
+  'text': [
+    'typography', 'text-animation', 'text-reveal', 'text-scramble',
+    'scramble-text', 'text-scramble',
+    'blur-text', 'shimmer-text', 'rolling-text',
+    'split-text', 'splittext', 'letter-split', 'word-split',
+    'char-reveal', 'char-animation', 'per-letter-settle',
+    'kinetic-type', 'sentence-reveal',
+  ],
   'hover': ['hover-interaction', 'hover-reveal', 'hover-scale', 'hover-panel', 'hover'],
-  'reveal': ['blur-reveal', 'text-reveal', 'image-reveal', 'reveal'],
+  'reveal': ['blur-reveal', 'image-reveal', 'reveal'],  // text-reveal moved to 'text' canonical
   'dashboard': ['dashboard', 'admin-panel', 'analytics'],
   'portfolio': ['portfolio', 'agency', 'personal-site'],
   'bento': ['bento', 'bento-grid', 'bento-layout'],
