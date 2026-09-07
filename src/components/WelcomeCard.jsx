@@ -124,12 +124,16 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
 
   const onPrimary = () => {
     markSeen()
-    // Route the "Grab CUE49" / "Begin the hunt" click straight to
-    // pricing — the whole purpose of the CTA is to get the visitor
-    // onto the plan-picker screen where they can apply the coupon.
-    // onExploreFree stays as a soft fallback if the caller wants a
-    // different post-CTA action, but by default we go to pricing.
-    try { window.location.hash = '#/pricing' } catch {}
+    // Route to /pricing via pushState (real path — SEO indexable —
+    // NOT window.location.hash which Google treats as same page).
+    // Falls back to hash assignment if pushState fails so old
+    // browsers still work.
+    try {
+      window.history.pushState({}, '', '/pricing')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    } catch {
+      try { window.location.hash = '#/pricing' } catch {}
+    }
     if (onExploreFree) onExploreFree()
     dismiss()
   }

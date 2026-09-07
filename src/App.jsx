@@ -78,6 +78,21 @@ const SECTION_KEYWORDS = [
 // the library don't lie about scale. From 20+ we round up to the
 // next round milestone so the badge reads slightly ahead of reality
 // — the "we have 120+, aiming for 150" framing beats "we have 119".
+// Resolve the current route as a "#/foo" string, whether the URL
+// uses the legacy hash form (#/pricing) OR the new SEO-friendly
+// path form (/pricing). Every route-check in the app compares
+// against '#/…' shape, so we normalise pathnames into that shape
+// here — path '/pricing' → '#/pricing'. Root '/' with no hash =
+// empty route (home).
+function getRoute() {
+  if (typeof window === 'undefined') return '';
+  const h = window.location.hash;
+  if (h && h.length > 1) return h;
+  const p = window.location.pathname;
+  if (!p || p === '/') return '';
+  return '#' + p;
+}
+
 function bucketCount(n) {
   const x = Number(n) || 0
   if (x < 20)  return String(x)
@@ -122,7 +137,11 @@ function ContactIcon() {
 
 function MainApp() {
   const [selectedItem, setSelectedItem] = useState(null);
-  const [route, setRoute] = useState(window.location.hash);
+  // Route source-of-truth: hash first (legacy), then pathname (new
+  // SEO-friendly URLs like /pricing). Once we've migrated all links
+  // to real paths, hash support stays as a redirect shim so old
+  // bookmarks + Google's discovered hash URLs still resolve.
+  const [route, setRoute] = useState(getRoute());
   const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'sections' | 'interactions'
   const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'paid'
@@ -340,17 +359,19 @@ function MainApp() {
   const anyFilterOn = typeFilter !== 'all' || tierFilter !== 'all' || tagsFilter.length > 0;
 
   useEffect(() => {
-    const handleHash = () => {
-      setRoute(window.location.hash);
-      // Reset scroll to top on every route change — otherwise the
-      // browser preserves the previous page's y-position and the
-      // new route lands mid-content (also strands the floating nav
-      // in scrolled-past-hero mode until the user manually scrolls up).
+    const handleRoute = () => {
+      setRoute(getRoute());
       window.scrollTo(0, 0);
       setScrolledPastHero(false);
     };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    // Listen to BOTH hashchange (legacy hash routing) AND popstate
+    // (real path routing when links use pushState / <a href="/x">).
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('popstate', handleRoute);
+    return () => {
+      window.removeEventListener('hashchange', handleRoute);
+      window.removeEventListener('popstate', handleRoute);
+    };
   }, []);
 
   useEffect(() => {
