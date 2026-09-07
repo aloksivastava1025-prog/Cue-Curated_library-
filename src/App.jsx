@@ -230,11 +230,12 @@ function MainApp() {
   const { openAuth } = useAuth();
 
   // Anon users can browse the first 12 cards visually AND open up to
-  // 2 of them via click (a small taste that makes the sign-in feel
-  // earned instead of blocking). On the 3rd click the sign-up modal
-  // opens instead of the item modal. Counter resets on sign-in so a
-  // returning session that lapses starts a fresh budget.
-  const ANON_OPEN_LIMIT = 2;
+  // 5 of them via click (a longer taste before the sign-in gate —
+  // 2 was too tight; users hadn't formed intent yet). On the 6th
+  // click the sign-up modal opens instead of the item modal.
+  // Counter resets on sign-in so a returning session that lapses
+  // starts a fresh budget.
+  const ANON_OPEN_LIMIT = 5;
   const openItem = (item) => {
     if (isSignedIn) { setSelectedItem(item); return; }
     let used = 0;
