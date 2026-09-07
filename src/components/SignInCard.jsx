@@ -217,11 +217,36 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
           await setActiveSignUp({ session: sid })
           onClose?.()
         } else if (res.status === 'missing_requirements') {
-          // Try to finalise by calling update() with no fields —
-          // works when the Clerk instance's required fields are
-          // already satisfied (email + password / email-only).
+          // Clerk instance is asking for extra fields the flow didn't
+          // collect (username / first_name / last_name / password).
+          // Auto-fill defaults from the email so the user never sees
+          // an extra form for stuff Cue doesn't actually care about.
           try {
-            const upd = await signUp.update({})
+            const localPart = (email || '').split('@')[0] || 'user'
+            const safeUsername = localPart
+              .toLowerCase()
+              .replace(/[^a-z0-9_]/g, '_')
+              .slice(0, 30) || `user_${Date.now().toString(36)}`
+            const firstName = localPart.replace(/[^a-zA-Z]/g, '') || 'there'
+            // Random 20-char password Clerk accepts and user never
+            // needs to know — they log in with email OTP anyway.
+            const randomPassword = 'Cue-' + Math.random().toString(36).slice(2, 12)
+              + '-' + Math.random().toString(36).slice(2, 12)
+            const missing = Array.isArray(signUp?.missingFields) ? signUp.missingFields : []
+            const payload = {}
+            if (missing.includes('username'))    payload.username = safeUsername
+            if (missing.includes('first_name'))  payload.firstName = firstName
+            if (missing.includes('last_name'))   payload.lastName = 'User'
+            if (missing.includes('password'))    payload.password = randomPassword
+            // If Clerk didn't tell us what's missing, throw the
+            // kitchen sink — Clerk ignores fields it doesn't need.
+            const finalPayload = Object.keys(payload).length ? payload : {
+              username: safeUsername,
+              firstName: firstName,
+              lastName: 'User',
+              password: randomPassword,
+            }
+            const upd = await signUp.update(finalPayload)
             const usid = upd?.createdSessionId || signUp?.createdSessionId
             if (usid) {
               clearPending()
