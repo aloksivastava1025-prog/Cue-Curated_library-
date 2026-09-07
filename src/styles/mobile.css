@@ -173,10 +173,21 @@
     gap: 12px !important;
   }
 
-  /* Grid — one column below 640px */
+  /* Grid — one column below 640px, but cards shrink to a friendlier
+     "medium" width instead of stretching edge-to-edge. Extra side
+     padding + cap on card width gives roomier margins so the grid
+     feels less claustrophobic on phones. Founder feedback (Sept 7). */
   .cue-grid {
     grid-template-columns: 1fr !important;
     row-gap: 24px !important;
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+  }
+  .cue-grid > * {
+    max-width: 380px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
   }
 
   /* Card meta padding */
