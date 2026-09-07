@@ -718,7 +718,7 @@ function MainApp() {
               white text, subtle glow + pulse-dot to signal an active
               community. Positioned above the hero pill so it's the
               first thing users notice on the page. */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <div className="cue-discord-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
             <a
               href="https://discord.gg/NxuKbhFjP"
               target="_blank"
@@ -761,7 +761,17 @@ function MainApp() {
               <span aria-hidden="true" style={{ opacity: 0.9 }}>→</span>
             </a>
           </div>
-          <style>{`@keyframes cue-live-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
+          <style>{`
+            @keyframes cue-live-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+            /* Desktop-only optical alignment nudge — the Discord pill
+               reads slightly left of the MCP pill because the MCP
+               pill's chip skews its visual center. Shift the pill
+               ~24px right on wider screens so both pills share the
+               same optical center; mobile stays true-centered. */
+            @media (min-width: 900px) {
+              .cue-discord-wrap { padding-left: 24px; }
+            }
+          `}</style>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <a href="#/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
