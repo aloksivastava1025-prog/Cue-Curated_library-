@@ -26,17 +26,21 @@ try {
 const SITE = 'https://cuedesign.space'
 const OUT_PATH = 'public/sitemap.xml'
 
-// The SPA is hash-routed, so this sitemap uses fragment URLs. Once
-// we migrate to BrowserRouter (post-launch), drop the `#` prefix
-// below and Google will fully index each per-route surface.
+// Real paths (post hash → path migration, Sep 2026). Google now
+// treats each as a distinct URL. Component URLs are intentionally
+// NOT included — components render inside a Modal on top of the
+// grid page, not on their own routes, so listing them would give
+// Google another 140 "indexed without content" reports. Once we
+// build per-component landing pages, add them back with proper
+// meta + prerender.
 const STATIC_ROUTES = [
-  { loc: '/',                changefreq: 'daily',   priority: '1.0' },
-  { loc: '/#/pricing',       changefreq: 'weekly',  priority: '0.9' },
-  { loc: '/#/contact',       changefreq: 'monthly', priority: '0.5' },
-  { loc: '/#/legal/terms',   changefreq: 'yearly',  priority: '0.3' },
-  { loc: '/#/legal/privacy', changefreq: 'yearly',  priority: '0.3' },
-  { loc: '/#/legal/refund',  changefreq: 'yearly',  priority: '0.3' },
-  { loc: '/#/legal/license', changefreq: 'yearly',  priority: '0.3' },
+  { loc: '/',              changefreq: 'daily',   priority: '1.0' },
+  { loc: '/pricing',       changefreq: 'weekly',  priority: '0.9' },
+  { loc: '/contact',       changefreq: 'monthly', priority: '0.5' },
+  { loc: '/legal/terms',   changefreq: 'yearly',  priority: '0.3' },
+  { loc: '/legal/privacy', changefreq: 'yearly',  priority: '0.3' },
+  { loc: '/legal/refund',  changefreq: 'yearly',  priority: '0.3' },
+  { loc: '/legal/license', changefreq: 'yearly',  priority: '0.3' },
 ]
 
 async function fetchPromptIds() {
@@ -77,12 +81,8 @@ async function main() {
   const prompts = await fetchPromptIds()
   console.log(`sitemap: found ${prompts.length} published prompts`)
 
-  const promptEntries = prompts.map((p) => ({
-    loc: `/#/prompt/${p.id}`,
-    lastmod: p.created_at ? String(p.created_at).slice(0, 10) : undefined,
-    changefreq: 'monthly',
-    priority: '0.7',
-  }))
+  // Prompt/component URLs excluded — see comment on STATIC_ROUTES.
+  const promptEntries = []
   const all = [...STATIC_ROUTES, ...promptEntries]
 
   const body = all.map((r) => {
