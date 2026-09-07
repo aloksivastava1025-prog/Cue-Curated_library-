@@ -129,21 +129,31 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
     }
   }
 
-  // X / Twitter OAuth — mirrors the Google flow, uses Clerk's
-  // `oauth_x` strategy which is the current name for the Twitter/X
-  // provider (Clerk kept `oauth_twitter` as an alias for older apps).
+  // X / Twitter OAuth — Clerk renamed the strategy from
+  // `oauth_twitter` to `oauth_x` in 2024. New instances only accept
+  // `oauth_x`; older instances that were provisioned as Twitter still
+  // take the legacy name. Try `oauth_x` first, fall back to
+  // `oauth_twitter` on the "does not match allowed values" error so
+  // both instance vintages work.
   const xLogin = async () => {
     if (busy) return
     setError(''); setBusy(true)
+    const target = isSignIn ? signIn : signUp
+    if (!target) { setBusy(false); setError('Getting ready — try again in a couple of seconds.'); return }
+    const tryStrategy = (strategy) => target.authenticateWithRedirect({
+      strategy,
+      redirectUrl: window.location.origin + '/sso-callback',
+      redirectUrlComplete: window.location.href,
+    })
     try {
-      const target = isSignIn ? signIn : signUp
-      if (!target) throw new Error('Getting ready — try again in a couple of seconds.')
-      await target.authenticateWithRedirect({
-        strategy: 'oauth_twitter',
-        redirectUrl: window.location.origin + '/sso-callback',
-        redirectUrlComplete: window.location.href,
-      })
+      await tryStrategy('oauth_x')
     } catch (err) {
+      const msg = String(err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || '')
+      if (/does not match|allowed values|invalid.*strategy/i.test(msg)) {
+        try { await tryStrategy('oauth_twitter'); return } catch (err2) {
+          setBusy(false); setError(clerkErr(err2)); return
+        }
+      }
       setBusy(false)
       setError(clerkErr(err))
     }
