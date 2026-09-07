@@ -63,7 +63,7 @@ export default function AdminSubscriptions() {
   if (!isAdmin) {
     return (
       <div style={{ padding: 100, textAlign: 'center', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
-        <a href="#/" style={{ color: 'var(--text-dim)' }}>← Back</a>
+        <a href="/" style={{ color: 'var(--text-dim)' }}>← Back</a>
         <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 32, marginTop: 24 }}>Access denied</h1>
       </div>
     )
@@ -75,7 +75,7 @@ export default function AdminSubscriptions() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px 80px', fontFamily: 'var(--font-sans)', color: 'var(--text)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-        <a href="#/admin" style={{ color: 'var(--text-dim)', textDecoration: 'none', fontSize: 12 }}>← Admin</a>
+        <a href="/admin" style={{ color: 'var(--text-dim)', textDecoration: 'none', fontSize: 12 }}>← Admin</a>
       </div>
       <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 40, margin: '4px 0 4px' }}>
         Active subscriptions

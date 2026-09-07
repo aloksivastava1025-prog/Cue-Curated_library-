@@ -346,7 +346,7 @@ export default function Modal({ item, onClose, showToast }) {
 
   const onSubscribe = () => {
     // Route to the site's pricing surface; tests + edge-fn subscription flow live there.
-    window.location.hash = '#/pricing';
+    try { window.history.pushState({}, '', '/pricing'); window.dispatchEvent(new PopStateEvent('popstate')); } catch { window.location.hash = '#/pricing'; }
     onClose();
   };
 
@@ -790,7 +790,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
             <div style={{ fontSize: 12.5, color: 'var(--text-dim)', maxWidth: 340, lineHeight: 1.55 }}>
               Cue+ unlocks unlimited prompts, every future drop, and the full library — $99 lifetime.
             </div>
-            <a href="#/pricing" style={{
+            <a href="/pricing" style={{
               marginTop: 4, padding: '10px 20px', borderRadius: 999,
               background: 'var(--electric)', color: '#fff',
               fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
@@ -827,7 +827,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
           <>
             <button
               onClick={() => {
-                if (outOfFree) { window.location.hash = '#/pricing'; return }
+                if (outOfFree) { try { window.history.pushState({}, '', '/pricing'); window.dispatchEvent(new PopStateEvent('popstate')); } catch { window.location.hash = '#/pricing'; } return }
                 onCopy(active)
               }}
               disabled={isEmpty}
@@ -1014,7 +1014,7 @@ function Paywall({ item, onSubscribe }) {
         )}
       </div>
       <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--text-dimmer)' }}>
-        <a href="#/pricing" style={{ color: 'var(--text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>See what's included →</a>
+        <a href="/pricing" style={{ color: 'var(--text-dim)', textDecoration: 'underline', textUnderlineOffset: 3 }}>See what's included →</a>
       </div>
     </div>
   );

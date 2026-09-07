@@ -40,7 +40,7 @@ function InboxNavLink() {
     return () => { alive = false; clearInterval(id); };
   }, []);
   return (
-    <a href="#/admin/inbox" style={{
+    <a href="/admin/inbox" style={{
       display: 'inline-flex', alignItems: 'center', gap: 8,
       padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 999,
       color: 'var(--text)', textDecoration: 'none', fontSize: 12,
@@ -908,7 +908,7 @@ export default function Admin() {
   if (!isAdmin) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '120px', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
-        <a href="#/" style={{ alignSelf: 'center', marginBottom: '24px', color: 'var(--text-dim)', textDecoration: 'none' }}>← Back to library</a>
+        <a href="/" style={{ alignSelf: 'center', marginBottom: '24px', color: 'var(--text-dim)', textDecoration: 'none' }}>← Back to library</a>
         <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '32px', marginBottom: '16px' }}>Access Denied</h1>
         <p style={{ color: 'var(--text-dim)' }}>Only authorized administrators can access the dashboard.</p>
       </div>
@@ -1388,7 +1388,7 @@ export default function Admin() {
       {/* Nav */}
       <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <a href="#/" style={{ background: 'transparent', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '3px', color: 'var(--text-dim)', textDecoration: 'none', fontSize: '12px' }}>← Library</a>
+          <a href="/" style={{ background: 'transparent', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '3px', color: 'var(--text-dim)', textDecoration: 'none', fontSize: '12px' }}>← Library</a>
           <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: '24px', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></div>
           <span style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600 }}>ADMIN</span>
         </div>
@@ -1442,19 +1442,19 @@ export default function Admin() {
           >
             Restore tags from backup
           </button>
-          <a href="#/admin/subscriptions" style={{
+          <a href="/admin/subscriptions" style={{
             padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
             color: 'var(--text)', textDecoration: 'none',
             fontSize: 11.5, letterSpacing: '0.02em',
             fontFamily: 'var(--font-sans)',
           }}>Subscriptions</a>
-          <a href="#/admin/polls" style={{
+          <a href="/admin/polls" style={{
             padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
             color: 'var(--text)', textDecoration: 'none',
             fontSize: 11.5, letterSpacing: '0.02em',
             fontFamily: 'var(--font-sans)',
           }}>Poll insights</a>
-          <a href="#/admin/custom-packs" style={{
+          <a href="/admin/custom-packs" style={{
             padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 3,
             color: 'var(--text)', textDecoration: 'none',
             fontSize: 11.5, letterSpacing: '0.02em',

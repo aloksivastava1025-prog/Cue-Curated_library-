@@ -417,7 +417,10 @@ export default function FoundingPoll() {
     try { localStorage.removeItem(PROGRESS_KEY) } catch {}
     if (answers.commit === 'yes') {
       setState('gone')
-      window.location.hash = '#/pricing'
+      try {
+        window.history.pushState({}, '', '/pricing')
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      } catch { window.location.hash = '#/pricing' }
       return
     }
     setState('thanks')

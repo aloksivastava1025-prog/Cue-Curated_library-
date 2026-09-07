@@ -82,7 +82,7 @@ export default function CueUserMenu() {
             <span>Manage account</span>
           </button>
 
-          <a className="cue-um-item" href="#/billing">
+          <a className="cue-um-item" href="/billing">
             <IconReceipt />
             <span>Billing &amp; invoices</span>
             {isCuePlus && (
@@ -93,7 +93,7 @@ export default function CueUserMenu() {
             )}
           </a>
 
-          <a className="cue-um-item" href="#/contact">
+          <a className="cue-um-item" href="/contact">
             <IconMail />
             <span>Contact us</span>
           </a>

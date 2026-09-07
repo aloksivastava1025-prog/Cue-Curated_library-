@@ -7,7 +7,7 @@ export default function NotFound() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', flexDirection: 'column' }}>
       <nav style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
-        <a href="#/" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 22, color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></a>
+        <a href="/" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 22, color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></a>
       </nav>
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: 520 }}>
@@ -20,7 +20,7 @@ export default function NotFound() {
           <p style={{ margin: '24px auto 32px', fontSize: 14.5, lineHeight: 1.6, color: 'var(--text-dim)' }}>
             The page you're looking for doesn't exist — or it moved. Head back and browse the collection.
           </p>
-          <a href="#/" style={{ display: 'inline-block', padding: '12px 22px', background: 'var(--electric)', color: '#fff', textDecoration: 'none', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
+          <a href="/" style={{ display: 'inline-block', padding: '12px 22px', background: 'var(--electric)', color: '#fff', textDecoration: 'none', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
             Back to library →
           </a>
         </div>

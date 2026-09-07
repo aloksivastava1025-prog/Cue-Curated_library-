@@ -205,7 +205,7 @@ export default function Pricing() {
     <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)', fontFamily: INTER, fontWeight: 400 }}>
       {/* Nav */}
       <nav style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-        <a href="#/" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, textDecoration: 'none' }}>
+        <a href="/" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, textDecoration: 'none' }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></span>
           <span style={{
             fontSize: 9.5, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase',
@@ -215,7 +215,7 @@ export default function Pricing() {
           }}>Beta</span>
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <a href="#/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
+          <a href="/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
           {!isSignedIn ? (
             <button
               onClick={() => openAuth('sign-in')}
@@ -313,7 +313,7 @@ export default function Pricing() {
                 description="Browse the library. Get a taste of Cue without committing."
                 price={`${P.sym}0`}
                 subLine="No credit card required"
-                cta={<a href="#/" style={btnGhost}>Start browsing</a>}
+                cta={<a href="/" style={btnGhost}>Start browsing</a>}
                 features={[
                   'Browse all 50+ components',
                   'Selected free components unlocked',
@@ -356,8 +356,8 @@ export default function Pricing() {
                 termsCopy={
                   <>
                     By requesting you accept our{' '}
-                    <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
-                    <a href="#/legal/license" style={termsLinkStyle}>License</a>.
+                    <a href="/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
+                    <a href="/legal/license" style={termsLinkStyle}>License</a>.
                   </>
                 }
               />
@@ -418,8 +418,8 @@ export default function Pricing() {
                 termsCopy={
                   <>
                     By claiming you agree to our{' '}
-                    <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
-                    <a href="#/legal/license" style={termsLinkStyle}>License</a>{' '}
+                    <a href="/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
+                    <a href="/legal/license" style={termsLinkStyle}>License</a>{' '}
                     — commercial use, no resell.
                   </>
                 }
@@ -455,8 +455,8 @@ export default function Pricing() {
                 termsCopy={
                   <>
                     By subscribing you accept our{' '}
-                    <a href="#/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
-                    <a href="#/legal/license" style={termsLinkStyle}>License</a>.
+                    <a href="/legal/terms"   style={termsLinkStyle}>Terms</a> &{' '}
+                    <a href="/legal/license" style={termsLinkStyle}>License</a>.
                   </>
                 }
               />

@@ -623,7 +623,7 @@ function MainApp() {
             <span>{isAdmin ? allPrompts.length : bucketCount(allPrompts.length)}</span>
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
-          <a href="#/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
+          <a href="/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
           <button
             onClick={() => openFeedback('nav')}
             className="cue-nav-suggest"
@@ -697,7 +697,7 @@ function MainApp() {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               {isCuePlus && (
                 <a
-                  href="#/billing"
+                  href="/billing"
                   aria-label="Cue+ member — view billing"
                   className="cue-nav-plus-chip"
                   style={{
@@ -794,7 +794,7 @@ function MainApp() {
             }
           `}</style>
           <div className="cue-hero-pill-wrap" style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-            <a href="#/pricing" className="cue-hero-pill" style={{
+            <a href="/pricing" className="cue-hero-pill" style={{
               display: 'inline-flex', alignItems: 'center', gap: 12,       /* gap-3 */
               flexWrap: 'wrap', justifyContent: 'center',
               maxWidth: 'calc(100vw - 24px)',
@@ -958,7 +958,7 @@ function MainApp() {
             marginTop: 14, display: 'flex', justifyContent: 'center',
             fontFamily: 'var(--font-sans)', fontSize: 12,
           }}>
-            <a href="#/pricing" style={{
+            <a href="/pricing" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '5px 12px',
               border: '1px dashed rgba(255,255,255,0.22)',
@@ -1142,7 +1142,7 @@ function MainApp() {
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-dim)', marginBottom: '18px' }}>Empty library</div>
                 <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '44px', fontStyle: 'italic', fontWeight: 400, color: 'var(--electric)', marginBottom: '18px' }}>Add your first resource</h3>
                 <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '520px', margin: '0 auto 32px' }}>Your library is empty. Head to the admin panel to add projects, screenshots, or videos.</p>
-                {isAdmin && <a href="#/admin" style={{ display: 'inline-block', padding: '10px 20px', background: 'var(--electric)', color: '#fff', borderRadius: '3px', textDecoration: 'none', fontSize: '13px', fontWeight: 500, boxShadow: '0 6px 24px -8px rgba(0,0,255,0.6)' }}>Open admin &rarr;</a>}
+                {isAdmin && <a href="/admin" style={{ display: 'inline-block', padding: '10px 20px', background: 'var(--electric)', color: '#fff', borderRadius: '3px', textDecoration: 'none', fontSize: '13px', fontWeight: 500, boxShadow: '0 6px 24px -8px rgba(0,0,255,0.6)' }}>Open admin &rarr;</a>}
               </>
             ) : (
               <>

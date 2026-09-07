@@ -29,12 +29,12 @@ export default function Saved() {
         background: '#060606', borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <a href="#/" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, textDecoration: 'none' }}>
+        <a href="/" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, textDecoration: 'none' }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></span>
         </a>
         <span style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>My Saved</span>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <a href="#/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
+          <a href="/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Library</a>
           {!isSignedIn ? (
             <button
               onClick={() => openAuth('sign-in')}
@@ -76,7 +76,7 @@ export default function Saved() {
         </div>
       ) : saved.length === 0 ? (
         <div style={{ padding: '20px 24px 120px', textAlign: 'center' }}>
-          <a href="#/" style={{ display: 'inline-block', marginTop: 20, padding: '12px 24px', background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 999, fontSize: 13, textDecoration: 'none' }}>
+          <a href="/" style={{ display: 'inline-block', marginTop: 20, padding: '12px 24px', background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 999, fontSize: 13, textDecoration: 'none' }}>
             Browse the library →
           </a>
         </div>

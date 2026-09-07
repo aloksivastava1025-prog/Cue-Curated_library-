@@ -21,7 +21,10 @@ export default class ErrorBoundary extends React.Component {
   }
   reset = () => {
     this.setState({ error: null })
-    window.location.hash = '#/'
+    try {
+      window.history.pushState({}, '', '/')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    } catch { window.location.hash = '#/' }
     window.location.reload()
   }
   render() {

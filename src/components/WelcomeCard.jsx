@@ -132,7 +132,7 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
       window.history.pushState({}, '', '/pricing')
       window.dispatchEvent(new PopStateEvent('popstate'))
     } catch {
-      try { window.location.hash = '#/pricing' } catch {}
+      try { window.location.hash = '#/pricing' } catch { /* super-old browser final fallback */ }
     }
     if (onExploreFree) onExploreFree()
     dismiss()

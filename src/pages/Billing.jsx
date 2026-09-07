@@ -45,7 +45,7 @@ function BillingAccount() {
       <Shell>
         <Eyebrow color="var(--text-dim)">Account</Eyebrow>
         <Title>Sign in to view billing.</Title>
-        <a href="#/" style={ctaStyle}>Back to library</a>
+        <a href="/" style={ctaStyle}>Back to library</a>
       </Shell>
     )
   }
@@ -112,7 +112,7 @@ function BillingAccount() {
               ) : (
                 <>
                   <span style={badgeStyle('free')}>Free</span>
-                  <a href="#/pricing" style={{ fontSize: 12, color: 'var(--electric)', textDecoration: 'none' }}>Upgrade →</a>
+                  <a href="/pricing" style={{ fontSize: 12, color: 'var(--electric)', textDecoration: 'none' }}>Upgrade →</a>
                 </>
               )}
             </span>
@@ -233,8 +233,8 @@ function BillingAccount() {
         {isCuePlus && <ExportLibrarySection />}
 
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, gap: 12, flexWrap: 'wrap' }}>
-          <a href="#/" style={ctaStyle}>Back to library</a>
-          <a href="#/contact" style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
+          <a href="/" style={ctaStyle}>Back to library</a>
+          <a href="/contact" style={{ ...ctaStyle, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>
             Contact support
           </a>
         </div>
@@ -564,7 +564,7 @@ function BillingSuccess() {
             unlocked. All future drops included.
           </Body>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="#/" style={ctaStyle}>Start exploring →</a>
+            <a href="/" style={ctaStyle}>Start exploring →</a>
             {invoice?.paymentId && (
               <a
                 href={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-invoice?payment_id=${encodeURIComponent(invoice.paymentId)}`}
@@ -592,7 +592,7 @@ function BillingSuccess() {
             <br /><br />
             If it takes more than 10 minutes, email <a href="mailto:hello@cuedesign.space" style={{ color: 'var(--electric)' }}>hello@cuedesign.space</a> with your Dodo receipt — we'll fix it manually within an hour.
           </Body>
-          <a href="#/" style={ctaStyle}>Back to library</a>
+          <a href="/" style={ctaStyle}>Back to library</a>
         </>
       )}
       {state === 'error' && (
@@ -618,7 +618,7 @@ function BillingCancel() {
         and no email was sent. Come back when you're ready — founding
         pricing is still open.
       </Body>
-      <a href="#/pricing" style={ctaStyle}>Back to pricing</a>
+      <a href="/pricing" style={ctaStyle}>Back to pricing</a>
     </Shell>
   )
 }
@@ -629,7 +629,7 @@ function Shell({ children }) {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', flexDirection: 'column' }}>
       <nav style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
-        <a href="#/" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 22, color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></a>
+        <a href="/" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500, fontSize: 22, color: 'var(--text)', textDecoration: 'none', letterSpacing: '-0.01em' }}>Cue<span style={{ color: 'var(--electric)' }}>.</span></a>
       </nav>
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
         <div style={{ maxWidth: 520, textAlign: 'center' }}>{children}</div>

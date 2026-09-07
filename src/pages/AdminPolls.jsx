@@ -159,7 +159,7 @@ export default function AdminPolls() {
               Poll responses
             </h1>
           </div>
-          <a href="#/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Home</a>
+          <a href="/" style={{ fontSize: 12, color: 'var(--text-dim)', textDecoration: 'none' }}>← Home</a>
         </div>
 
         {/* Stat tiles */}
