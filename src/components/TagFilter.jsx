@@ -29,19 +29,19 @@ const TAG_ALIASES = {
   'pricing': ['pricing', 'pricing-card', 'pricing-table'],
   'gallery': ['gallery', 'gallery-images', 'grid-gallery', 'image-gallery'],
   'carousel': ['carousel', 'slider', 'sliders', 'marquee'],
-  // Consolidated "text" bucket — folds ALL fragmented text-animation
-  // variants (scramble-text, blur-text, split-text, splittext,
-  // rolling-text, shimmer-text, text-animation, text-scramble,
-  // typography, char/letter/word splits, kinetic type, reveals) into
-  // one canonical "text" tag. Prevents the tag list from splintering
-  // into 10 near-identical text-* / *-text entries.
+  // Consolidated "text" bucket — only for tags that describe
+  // components whose PRIMARY intent is animating text. Technique
+  // names (split-text, letter-split, char-reveal, stagger, etc.) are
+  // deliberately EXCLUDED because they get applied inside non-text
+  // components too (a page transition that reveals text via GSAP
+  // SplitText is still a page transition, not a "text component").
+  // Folding technique tags in here caused Page-Transitions items to
+  // leak into the text filter — user report Sept 2026.
   'text': [
     'typography', 'text-animation', 'text-reveal', 'text-scramble',
-    'scramble-text', 'text-scramble',
+    'scramble-text',
     'blur-text', 'shimmer-text', 'rolling-text',
-    'split-text', 'splittext', 'letter-split', 'word-split',
-    'char-reveal', 'char-animation', 'per-letter-settle',
-    'kinetic-type', 'sentence-reveal',
+    'kinetic-type',
   ],
   'hover': ['hover-interaction', 'hover-reveal', 'hover-scale', 'hover-panel', 'hover'],
   'reveal': ['blur-reveal', 'image-reveal', 'reveal'],  // text-reveal moved to 'text' canonical
