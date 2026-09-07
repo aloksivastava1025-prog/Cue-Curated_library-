@@ -6,8 +6,8 @@ import { useEffect } from 'react'
  * between pages doesn't leak stale metadata.
  */
 const DEFAULTS = {
-  title: 'CUE — Awwwards-tier components for builders who stand out',
-  description: 'An Awwwards-tier component library — best-in-class components hand-picked from across the web. AI prompts today, React source and MCP support coming.',
+  title: 'Cue — the Awwwards-tier UI component library ($99 lifetime)',
+  description: 'Cue is a curated UI component library — Awwwards-tier animations, hero flows, and interactions hand-picked by a founder-designer. Every component ships with an AI prompt for Cursor, v0, Bolt, and Claude. Join Cue+ at $99 lifetime.',
   ogImage: 'https://cuedesign.space/og-image.png',
 }
 

@@ -282,8 +282,8 @@ function MainApp() {
   }, [searchOpen]);
   const savedCount = bookmarkedIds?.size || 0;
   usePageMeta({
-    title: 'Awwwards-tier components for builders who stand out',
-    description: 'An Awwwards-tier component library — best-in-class components hand-picked from across the web. Copy the AI prompt into Bolt, v0, Cursor, Framer, ChatGPT or Claude. React source and MCP support rolling out.',
+    title: 'Cue — the Awwwards-tier UI component library',
+    description: 'Cue is a curated UI component library — Awwwards-tier animations, hero flows, and interactions hand-picked by a founder-designer. Every Cue component ships with an AI prompt for Cursor, v0, Bolt, and Claude. Join Cue+ at $99 lifetime.',
   });
 
   // "Design of the Day" rail — items admin flagged with rail = 'featured'.
