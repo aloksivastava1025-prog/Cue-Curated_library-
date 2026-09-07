@@ -629,6 +629,56 @@ export default function FoundingPoll() {
                 )}
                 {q2IsText ? (
                   <>
+                    {/* Quick-reply chips for the take_now_if branch —
+                        typing is the biggest friction on any survey.
+                        Chips capture the intent in one tap; "Add a
+                        component" / "Missing feature" open the text
+                        field with a tailored placeholder so the user
+                        can add detail. "Lower price" records straight
+                        away — no free text needed. */}
+                    {answers.blocker === 'take_now_if' && (
+                      <div style={{
+                        display: 'flex', flexWrap: 'wrap',
+                        gap: 8, marginBottom: 10,
+                      }}>
+                        <button
+                          type="button"
+                          className="cue-notch-option"
+                          style={{ flex: '0 0 auto' }}
+                          onClick={() => {
+                            setAnswers((a) => ({ ...a, q2: 'lower_price', q2Text: '' }))
+                            recordStep(`q2:${answers.blocker}`, 'lower_price', null)
+                            setState('q3')
+                          }}
+                        >
+                          Lower price
+                        </button>
+                        <button
+                          type="button"
+                          className="cue-notch-option"
+                          style={{ flex: '0 0 auto' }}
+                          onClick={() => setQ2Text('Add this component: ')}
+                        >
+                          Add a component
+                        </button>
+                        <button
+                          type="button"
+                          className="cue-notch-option"
+                          style={{ flex: '0 0 auto' }}
+                          onClick={() => setQ2Text('Missing feature: ')}
+                        >
+                          Missing feature
+                        </button>
+                        <button
+                          type="button"
+                          className="cue-notch-option"
+                          style={{ flex: '0 0 auto' }}
+                          onClick={() => setQ2Text('')}
+                        >
+                          Something else
+                        </button>
+                      </div>
+                    )}
                     <textarea
                       className="cue-notch-textarea"
                       placeholder={q2Config.placeholder || 'Tell me…'}
