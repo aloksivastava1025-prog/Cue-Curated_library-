@@ -330,14 +330,15 @@ export default function EditorialCard({ item, setSelectedItem }) {
             alt={item.title}
             width={640}
             height={480}
-            /* Lazy again — combined with `content-visibility: auto`
-               on the parent card, off-screen thumbs don't fetch
-               until the browser needs them. Explicit width/height
-               above stops the layout from shifting when the image
-               lands (fixes the 46-image "missing dimensions"
-               finding on the perf audit). Aspect-ratio 4:3 matches
-               how the card renders, so no visual distortion. */
-            loading="lazy"
+            /* Eager loading — combined with content-visibility:auto
+               on the card, thumbs used to only fetch when the user
+               scrolled the card into view. Below-the-fold cards
+               painted grey until then. Posters are small JPGs on
+               a fast CDN, so eager loading is cheap and users see
+               every card populated on page load. fetchpriority:low
+               keeps them behind hero + interaction assets. */
+            loading="eager"
+            fetchpriority="low"
             decoding="async"
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
             style={{

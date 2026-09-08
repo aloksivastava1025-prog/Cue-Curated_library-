@@ -88,14 +88,16 @@ export default function CardThumb({ brand, variant = 'sans', thumbSrc, hoverSrc 
             src={posterSrc}
             alt=""
             // Always visible — video overlays on top when hovering.
-            // Previously we faded the img to 0 on hover to reveal the
-            // video underneath, but if the video hadn't buffered yet
-            // the tile showed grey. Keeping the img painted means the
-            // worst case on a cold hover is "still see the thumb"
-            // instead of "see grey until bytes arrive".
+            // loading="eager" so below-the-fold cards paint their
+            // poster immediately instead of showing a grey tile
+            // until the user scrolls them into view. Posters are
+            // small JPGs (from Cloudinary so_0 transform when the
+            // asset is a video, otherwise the raw thumb_src), so
+            // the extra cost of eager loading is negligible.
             style={{ opacity: 1 }}
-            loading="lazy"
+            loading="eager"
             decoding="async"
+            fetchpriority="low"
           />
         )}
         {hoverSrc && everHovered && (
