@@ -288,34 +288,44 @@ export default function EditorialCard({ item, setSelectedItem }) {
         {/* Inner hairline */}
         <div style={{ position: 'absolute', inset: 0, borderRadius: '8px', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04)', pointerEvents: 'none', zIndex: 4 }}></div>
 
-        {/* Badges */}
-        <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 3, display: 'flex', gap: '6px' }}>
-          {isPaid ? (
-            <span style={{ ...pillBase, background: 'var(--electric)', color: '#fff' }}>Cue+</span>
-          ) : isNew ? (
+        {/* Top-left badges — hidden until hover so the card reads
+            clean by default. Cue+ badge removed entirely (was
+            redundant with the paid lock icon at bottom-right).
+            The time-ago chip and the Code chip fade in only when
+            the user hovers, keeping the media itself uncluttered
+            on the grid at rest. */}
+        <div
+          style={{
+            position: 'absolute', top: '10px', left: '10px', zIndex: 3,
+            display: 'flex', gap: '6px',
+            opacity: isHovered ? 1 : 0,
+            transition: 'opacity 0.2s ease',
+            pointerEvents: isHovered ? 'auto' : 'none',
+          }}
+        >
+          {isNew && !isPaid && (
             <span style={{ ...pillBase, background: 'var(--electric)', color: '#fff' }}>New</span>
-          ) : null}
+          )}
           <span style={{ ...pillBase, background: 'rgba(0,0,0,0.78)', color: '#fff', border: '1px solid rgba(255,255,255,0.14)' }}>
             {timeTag}
           </span>
           {hasCode && (
             <span
+              aria-label="Includes React source code"
               title="Includes copy-pasteable React source"
               style={{
-                ...pillBase,
+                width: 22, height: 22,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 background: 'rgba(204,255,0,0.14)',
                 color: '#ccff00',
                 border: '1px solid rgba(204,255,0,0.4)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
+                borderRadius: 999,
               }}
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="16 18 22 12 16 6" />
                 <polyline points="8 6 2 12 8 18" />
               </svg>
-              Code
             </span>
           )}
         </div>
@@ -446,24 +456,51 @@ export default function EditorialCard({ item, setSelectedItem }) {
           />
         )}
 
-        {/* Bottom-right FREE / PAID chip — user feedback: makes tier
-            scannable across the grid without opening a card. Sits on
-            top of the media (zIndex 3) but below the inner hairline. */}
-        <span
-          style={{
-            ...pillBase,
-            position: 'absolute',
-            bottom: 10, right: 10,
-            zIndex: 3,
-            fontSize: '10.5px',
-            padding: '5px 11px',
-            background: isPaid ? 'var(--electric)' : 'rgba(0,0,0,0.78)',
-            color: '#fff',
-            border: `1px solid ${isPaid ? 'transparent' : 'rgba(255,255,255,0.14)'}`,
-          }}
-        >
-          {isPaid ? 'Paid' : 'Free'}
-        </span>
+        {/* Bottom-right tier indicator — paid components show a
+            small locked padlock icon (always visible, communicates
+            "premium" without a word), free components show a subtle
+            "Free" chip only on hover so the tile stays clean. */}
+        {isPaid ? (
+          <span
+            aria-label="Paid — Cue+"
+            title="Paid — unlocks with Cue+"
+            style={{
+              position: 'absolute',
+              bottom: 10, right: 10,
+              zIndex: 3,
+              width: 26, height: 26,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--electric)',
+              color: '#fff',
+              borderRadius: 999,
+              boxShadow: '0 2px 8px rgba(0,0,255,0.35)',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="4" y="11" width="16" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+          </span>
+        ) : (
+          <span
+            style={{
+              ...pillBase,
+              position: 'absolute',
+              bottom: 10, right: 10,
+              zIndex: 3,
+              fontSize: '10.5px',
+              padding: '5px 11px',
+              background: 'rgba(0,0,0,0.78)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.14)',
+              opacity: isHovered ? 1 : 0,
+              transition: 'opacity 0.2s ease',
+              pointerEvents: isHovered ? 'auto' : 'none',
+            }}
+          >
+            Free
+          </span>
+        )}
       </div>
 
       {/* Meta */}
