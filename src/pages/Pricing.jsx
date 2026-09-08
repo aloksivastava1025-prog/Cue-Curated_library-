@@ -403,7 +403,14 @@ export default function Pricing() {
                   'Works with any AI agent',
                   'New drops every week — forever',
                   'React source code',
-                  'Request any component\'s code — I ship it personally',
+                  // "Personal component shipping" is the second
+                  // $99-only feature. Same treatment as MCP in
+                  // promo mode — struck through with a "$99 ONLY"
+                  // chip so users see what they trade off when
+                  // picking the $79 tier.
+                  (couponMode && !promoExpired)
+                    ? { text: "Request any component's code — I ship it personally", strike: true }
+                    : "Request any component's code — I ship it personally",
                   // MCP is the $99-only upsell. In CUE49 promo mode
                   // it's struck through with a "$99 ONLY" chip so the
                   // trade-off is visible on the card without a
