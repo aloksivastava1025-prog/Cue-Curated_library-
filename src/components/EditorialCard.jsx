@@ -118,6 +118,21 @@ export default function EditorialCard({ item, setSelectedItem }) {
     if (!ref.current) return;
     const noHover = typeof window !== 'undefined'
       && window.matchMedia && window.matchMedia('(hover: none)').matches;
+    // Slow-network gate. Hover-videos live on R2 with no transform
+    // pipeline, so they're served at whatever bitrate they were
+    // uploaded at (usually 1080p, 3-8 MB). On 4G that's a 1-3s wait
+    // between the card entering view and the video actually playing —
+    // long enough that users scroll past before it starts. Skip the
+    // <video> mount entirely on 2G / 3G / slow-4g; the poster JPG
+    // already covers the tile, so the card still looks alive.
+    const conn = typeof navigator !== 'undefined' ? navigator.connection : null;
+    const slowNet = conn && (
+      conn.saveData === true ||
+      conn.effectiveType === '2g' ||
+      conn.effectiveType === 'slow-2g' ||
+      conn.effectiveType === '3g'
+    );
+    if (slowNet) { setInViewport(false); return; }
     // Mobile threshold pulled down to 0.15 — on a narrow phone
     // screen the cards fill most of the viewport, so requiring 40%
     // visibility meant playback only kicked in when a card was

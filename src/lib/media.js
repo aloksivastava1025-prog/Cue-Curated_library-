@@ -19,11 +19,24 @@ const CLOUDINARY_HOST = 'res.cloudinary.com'
 // q_auto (no qualifier) = Cloudinary's smart default. Their engine picks
 // quality per-frame based on visual complexity — imperceptible drop for
 // hover previews but roughly 40-50% smaller than the raw upload.
-// w_1600 keeps native-quality on retina modal previews (800-1000px real
-// display × 2x pixel density). Cards render at 300-500px, so 1600 is
-// still 3x — no perceived softness anywhere.
-const VIDEO_TRANSFORM = 'f_auto,q_auto,w_1600'
-const IMAGE_TRANSFORM = 'f_auto,q_auto,w_1600'
+// Desktop w_1600 keeps native-quality on retina modal previews (800-1000px
+// real display × 2x). Mobile card renders at 300-400px real width, so
+// serving 1600px was 4x oversize — video files were 3-5x bigger than
+// needed, which is why cards took 1-3s to start playing on 4G. w_720 on
+// mobile is still 2x the render size (retina-safe) and slashes payload.
+const VIDEO_TRANSFORM_DESKTOP = 'f_auto,q_auto,w_1600'
+const VIDEO_TRANSFORM_MOBILE  = 'f_auto,q_auto,w_720'
+const IMAGE_TRANSFORM_DESKTOP = 'f_auto,q_auto,w_1600'
+const IMAGE_TRANSFORM_MOBILE  = 'f_auto,q_auto,w_720'
+
+// Cheap mobile detector — matches the same `(hover: none)` gate the card
+// components already use to pick their autoplay threshold, so behaviour
+// stays aligned across the app. Falls back to false on SSR/no-window.
+function isMobileViewport() {
+  if (typeof window === 'undefined') return false
+  if (!window.matchMedia) return false
+  return window.matchMedia('(hover: none), (max-width: 767px)').matches
+}
 
 // Cloudinary URL shape:
 //   https://res.cloudinary.com/{cloud}/{resource_type}/{delivery_type}/{transformations?}/{public_id}
@@ -81,9 +94,10 @@ export function optimizeCloudinaryUrl(url) {
     // Already transformed by whoever pasted — leave it.
     if (!needsTransform(nextSeg)) return url
 
+    const mobile = isMobileViewport()
     const transform =
-      resourceType === 'video' ? VIDEO_TRANSFORM :
-      resourceType === 'image' ? IMAGE_TRANSFORM :
+      resourceType === 'video' ? (mobile ? VIDEO_TRANSFORM_MOBILE : VIDEO_TRANSFORM_DESKTOP) :
+      resourceType === 'image' ? (mobile ? IMAGE_TRANSFORM_MOBILE : IMAGE_TRANSFORM_DESKTOP) :
       null
     if (!transform) return url
 
