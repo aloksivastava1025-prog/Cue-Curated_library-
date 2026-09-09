@@ -217,7 +217,13 @@ serve(async (req) => {
     if (rawPrompt.length > 200000) {
       return json({ error: "prompt too long (max 200k chars)" }, 413);
     }
-    const AUTOFILL_MAX_CHARS = 12000;
+    // Metadata (title, category, tags, description, stack) is almost
+    // always derivable from the first ~40 lines of a prompt — the
+    // opening block names the technique + aesthetic. Cutting the model's
+    // input at 3k chars slashes per-call token cost ~70% vs 12k with no
+    // observable loss in suggestion quality. Full prompt still ships to
+    // the DB unchanged; this only affects what Claude sees.
+    const AUTOFILL_MAX_CHARS = 3000;
     const prompt = rawPrompt.length > AUTOFILL_MAX_CHARS
       ? rawPrompt.slice(0, AUTOFILL_MAX_CHARS) + "\n\n[…truncated for metadata extraction]"
       : rawPrompt;
