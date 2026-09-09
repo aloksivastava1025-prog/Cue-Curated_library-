@@ -259,7 +259,7 @@ export default function Pricing() {
           New hand-picked components dropping every week — one purchase, every drop, forever.
         </p>
         <p style={{ margin: '8px auto 0', fontSize: 11, color: 'var(--text-dimmer)', lineHeight: 1.5, maxWidth: 520, letterSpacing: '0.01em' }}>
-          Prices shown are inclusive of applicable taxes · local currency auto-selected at checkout.
+          Prices shown are in USD. Applicable local taxes (GST for India, VAT for UK/EU, sales tax where applicable) are added at checkout · local currency auto-selected at checkout.
         </p>
 
         {/* Founding counter — currency toggle removed. Site shows USD

@@ -1222,13 +1222,31 @@ const supabaseAdapter = {
     // up from the browser and pass it explicitly. Cloudflare's trace
     // endpoint is CORS-open, tiny, and returns accurate geo. Non-fatal:
     // if it fails, edge function will just fall back to 'IN'.
-    let buyerCountry = ''
-    try {
-      const resp = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { cache: 'no-store' })
-      const text = await resp.text()
-      const m = text.match(/^loc=([A-Z]{2})$/m)
-      if (m) buyerCountry = m[1]
-    } catch { /* fall through to server default */ }
+    // Two-source geo detection so ad-blockers don't force everyone
+    // into the server-side fallback. Cloudflare's cdn-cgi/trace is
+    // blocked by uBlock / Brave / Firefox-strict for ~20-40% of users,
+    // and when it silently fails the server defaulted to 'IN' — which
+    // is why non-Indian buyers were seeing INR pricing on Dodo.
+    //   Tier 1: Cloudflare trace (fast, no rate limit)
+    //   Tier 2: ipwho.is (open API, not on ad-blocker blocklists)
+    // Both time out at 1.5s so checkout never hangs on a slow lookup.
+    const geoFetch = (url, parse) => new Promise((resolve) => {
+      const ctrl = new AbortController()
+      const to = setTimeout(() => { ctrl.abort(); resolve('') }, 1500)
+      fetch(url, { cache: 'no-store', signal: ctrl.signal })
+        .then((r) => r.text()).then((t) => { clearTimeout(to); resolve(parse(t) || '') })
+        .catch(() => { clearTimeout(to); resolve('') })
+    })
+    let buyerCountry = await geoFetch(
+      'https://www.cloudflare.com/cdn-cgi/trace',
+      (t) => (t.match(/^loc=([A-Z]{2})$/m) || [])[1]
+    )
+    if (!buyerCountry) {
+      buyerCountry = await geoFetch(
+        'https://ipwho.is/?fields=country_code',
+        (t) => { try { return JSON.parse(t)?.country_code } catch { return '' } }
+      )
+    }
 
     const cleanCoupon = typeof couponCode === 'string' ? couponCode.trim().toUpperCase() : ''
     const { data, error } = await supabase.functions.invoke('create-checkout', {
