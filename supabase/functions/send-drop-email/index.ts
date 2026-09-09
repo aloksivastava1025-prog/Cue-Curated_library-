@@ -187,7 +187,7 @@ serve(async (req) => {
     // Supabase doesn't do cross-table UNION at the REST level.
     const [{ data: freeUsers, error: usersErr }, { data: waitlist, error: wlErr }] = await Promise.all([
       supabase.from('user_profiles')
-        .select('user_id, email, first_name, plan')
+        .select('user_id, email, full_name, plan')
         .not('email', 'is', null)
         .or('plan.is.null,plan.eq.free'),
       supabase.from('waitlist_emails')
@@ -219,10 +219,16 @@ serve(async (req) => {
       const em = String(u.email || '').toLowerCase().trim()
       if (!em || seen.has(em) || unsubSet.has(em)) continue
       seen.add(em)
+      // Derive a first name: user_profiles.full_name first word →
+      // else the local-part of the email → else fallback 'there'.
+      const fullName = String(u.full_name || '').trim()
+      const firstFromFull = fullName ? fullName.split(/\s+/)[0] : ''
+      const firstFromEmail = em.split('@')[0].replace(/[._+-]/g, ' ').split(' ')[0]
+      const firstName = firstFromFull || firstFromEmail || 'there'
       recipients.push({
         user_id: String(u.user_id || ''),
         email: em,
-        first_name: String(u.first_name || '').trim() || 'there',
+        first_name: firstName,
       })
     }
     // Add waitlist emails that aren't already in the signed-up set.
