@@ -4,8 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0A0A0A" />
+    <!-- Favicon set — Google Search specifically fetches /favicon.ico
+         at the root path AND a PNG for the search result thumbnail;
+         serving both plus the SVG covers every browser + crawler.
+         96x96 PNG is above Google's 48x48 minimum and is what they
+         downscale from. Order matters — SVG last so modern browsers
+         pick that first, but /favicon.ico stays the Google default. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <title>Cue — the Awwwards-tier UI component library ($99 lifetime)</title>
     <meta name="description" content="Cue is a curated UI component library — Awwwards-tier animations, hero flows, and interactions hand-picked by a founder-designer. Each component ships with an AI prompt for Cursor, v0, Bolt, and Claude. Join Cue+ at $99 lifetime." />
