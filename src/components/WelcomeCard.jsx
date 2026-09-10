@@ -27,14 +27,10 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
   const { isSignedIn } = useUser()
   const [visible, setVisible] = useState(false)
   const [dismissing, setDismissing] = useState(false)
-  // Live-ticking 24h coupon window countdown. Reads the same start
-  // timestamp the hero pill and the CouponTimer component use so
-  // everything shows the same number to the second.
-  const [timeLeft, setTimeLeft] = useState(() => readTimeLeft())
-  useEffect(() => {
-    const id = setInterval(() => setTimeLeft(readTimeLeft()), 1000)
-    return () => clearInterval(id)
-  }, [])
+  // CUE49 coupon countdown removed — the modal now leads with a
+  // "pricing going up soon" heads-up instead of a coupon urgency
+  // stunt. Timer state, ticker, storage read, and formatter all
+  // deleted below to keep this file honest to what actually ships.
   // IDs of tiles whose image URL failed to load — hidden from render
   // so a stale/404 thumbnail doesn't leave a black square in the mosaic.
   const [brokenIds, setBrokenIds] = useState(() => new Set())
@@ -246,27 +242,6 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
           font-size: 12.5px; line-height: 1.5;
           margin: 0 0 14px 0; max-width: 340px;
         }
-        .cue-welcome-timer {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 8px 12px;
-          border-radius: 999px;
-          background: rgba(204,255,0,0.08);
-          border: 1px solid rgba(204,255,0,0.30);
-          font-family: 'SF Mono', ui-monospace, Menlo, monospace;
-          font-size: 12px; font-weight: 600;
-          color: #ccff00;
-          letter-spacing: 0.04em;
-          margin-bottom: 14px;
-        }
-        .cue-welcome-timer-dot {
-          width: 6px; height: 6px; border-radius: 999px;
-          background: #ccff00;
-          animation: cue-welcome-timer-pulse 1.4s ease-in-out infinite;
-        }
-        @keyframes cue-welcome-timer-pulse {
-          0%, 100% { opacity: 0.35; }
-          50%      { opacity: 1; }
-        }
         .cue-welcome-cta {
           display: inline-flex; align-items: center; gap: 8px;
           padding: 11px 22px; border-radius: 8px;
@@ -349,31 +324,38 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
             <h3 className="cue-welcome-title">
               Welcome to Cue<span className="dot">.</span>
             </h3>
+            {/* Pricing heads-up leads the modal — this is the ONE
+                thing every visitor needs to see right now. Founder
+                voice, no urgency stunt, no countdown. */}
+            <p style={{
+              margin: '0 0 14px', padding: '12px 14px',
+              background: 'rgba(204,255,0,0.06)',
+              border: '1px solid rgba(204,255,0,0.25)',
+              borderRadius: 8,
+              fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.92)',
+            }}>
+              <strong style={{ color: '#ccff00', fontWeight: 600 }}>Heads-up on pricing:</strong>{' '}
+              Founding is <strong style={{ color: '#fff' }}>$99 lifetime</strong> — full library, MCP access, and every future drop. Going up to <strong style={{ color: '#fff' }}>$149 / $199</strong> soon. No countdown, just letting you know before I flip it.
+            </p>
             <p className="cue-welcome-sub">
               A curated library of Awwwards-tier UI components. Every card ships with the copy-paste prompt for Cursor / v0 / Bolt, plus React source for the ones that need it.
-              <br /><br />
-              <strong style={{ color: '#ccff00', fontWeight: 600 }}>New month special:</strong>{' '}
-              use code <strong style={{ color: '#fff' }}>CUE49</strong> for <strong style={{ color: '#fff' }}>$79 lifetime</strong> (was $99). First 20 seats only.
             </p>
-            {/* $12 single-component nudge — new experiment. Tells
-                visitors who might balk at the subscription that
-                there's a smaller entry point for people who only
-                want one specific component. */}
+            {/* $12 single-component nudge — smaller entry point for
+                visitors who only want one specific component. */}
             <p style={{
               margin: '10px 0 0', fontSize: 12.5, lineHeight: 1.6,
               color: 'rgba(255,255,255,0.65)', fontStyle: 'italic',
             }}>
-              Or if only one component catches your eye — <strong style={{ color: '#fff', fontWeight: 500 }}>pay just $12 for it</strong>. No subscription, lifetime access. <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>(experiment · a few days only)</span>
+              Or grab just one — <strong style={{ color: '#fff', fontWeight: 500 }}>$12 for a single component</strong>, lifetime, no subscription.
             </p>
-            {timeLeft > 0 && (
-              <div className="cue-welcome-timer" aria-label="Time left on CUE49 promo">
-                <span className="cue-welcome-timer-dot" />
-                <span>CUE49 · {formatTimeLeft(timeLeft)}</span>
-              </div>
-            )}
+            {/* CUE49 timer removed — the pricing heads-up above is the
+                current urgency signal. Running a coupon countdown while
+                also announcing "price going up soon" reads as
+                contradictory promo noise. Reintroduce only if we bring
+                back a real coupon-tied promo window. */}
             <div className="cue-welcome-actions">
               <button className="cue-welcome-cta" onClick={onPrimary}>
-                {timeLeft > 0 ? 'Grab CUE49' : 'Begin the hunt'}
+                Grab $99 lifetime
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14M13 5l7 7-7 7" />
                 </svg>
@@ -403,33 +385,3 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
   )
 }
 
-const COUPON_WINDOW_MS = 24 * 60 * 60 * 1000
-
-function readTimeLeft() {
-  // Unified promo expiry key — same one Pricing.jsx PromoToggle and
-  // App.jsx useCouponHeroLabel write. Every surface (hero pill,
-  // pricing toggle, welcome modal) shows the same second-accurate
-  // countdown so the promise feels consistent across the site.
-  try {
-    const raw = localStorage.getItem('cue.promo.newmonth.expiry')
-    const parsed = raw ? parseInt(raw, 10) : NaN
-    let expiry = Number.isFinite(parsed) && parsed > Date.now() ? parsed : 0
-    if (!expiry) {
-      expiry = Date.now() + COUPON_WINDOW_MS
-      localStorage.setItem('cue.promo.newmonth.expiry', String(expiry))
-    }
-    return Math.max(0, expiry - Date.now())
-  } catch {
-    return COUPON_WINDOW_MS
-  }
-}
-
-function formatTimeLeft(ms) {
-  if (ms <= 0) return '00:00:00'
-  const totalSec = Math.floor(ms / 1000)
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  const s = totalSec % 60
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${pad(h)}:${pad(m)}:${pad(s)} left`
-}
