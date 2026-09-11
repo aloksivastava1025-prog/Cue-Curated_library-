@@ -17,7 +17,7 @@ function formatCount(n) {
 const modalActionBtn = (active, color) => ({
   display: 'inline-flex', alignItems: 'center', gap: 6,
   padding: '6px 12px', borderRadius: 999,
-  background: active ? 'rgba(0,0,255,0.06)' : 'transparent',
+  background: active ? 'rgba(61,80,232,0.06)' : 'transparent',
   border: '1px solid ' + (active ? color : 'var(--border)'),
   color,
   fontFamily: 'var(--font-sans)',
@@ -515,7 +515,7 @@ export default function Modal({ item, onClose, showToast }) {
                   <span key={`t-${t}`} style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text-dim)', fontSize: 10.5, letterSpacing: '0.04em', textTransform: 'lowercase' }}>{t}</span>
                 ))}
                 {(item.stack || []).slice(0, 4).map((s) => (
-                  <span key={`s-${s}`} style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(0,0,255,0.08)', border: '1px solid rgba(0,0,255,0.22)', color: 'var(--text)', fontSize: 10.5, letterSpacing: '0.04em' }}>{s}</span>
+                  <span key={`s-${s}`} style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(61,80,232,0.08)', border: '1px solid rgba(61,80,232,0.22)', color: 'var(--text)', fontSize: 10.5, letterSpacing: '0.04em' }}>{s}</span>
                 ))}
               </div>
             )}
@@ -751,7 +751,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
           }}>
             <div style={{
               width: 40, height: 40, borderRadius: 999,
-              background: 'rgba(0,0,255,0.14)', border: '1px solid rgba(0,0,255,0.45)',
+              background: 'rgba(61,80,232,0.14)', border: '1px solid rgba(61,80,232,0.45)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff',
             }}>
@@ -796,7 +796,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
               fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
               textDecoration: 'none',
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 6px 20px -6px rgba(0,0,255,0.6)',
+              boxShadow: '0 6px 20px -6px rgba(61,80,232,0.6)',
             }}>
               Upgrade to Cue+ <span style={{ fontSize: 15 }}>→</span>
             </a>
@@ -839,7 +839,7 @@ function FreeTabs({ tab, setTab, hasCode, hasPrompt, hasUseCase, loading, codeTe
                 fontSize: 13.5, fontWeight: 600, letterSpacing: '0.02em',
                 cursor: isEmpty ? 'not-allowed' : 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: disabled ? 'none' : '0 6px 24px -8px rgba(0,0,255,0.55)',
+                boxShadow: disabled ? 'none' : '0 6px 24px -8px rgba(61,80,232,0.55)',
                 transition: 'transform 0.15s ease, background 0.2s ease',
               }}
             >
@@ -934,8 +934,8 @@ function Paywall({ item, onSubscribe }) {
     <div style={{
       display: 'flex', flexDirection: 'column',
       padding: '28px 20px',
-      border: '1px solid rgba(0,0,255,0.22)',
-      background: 'linear-gradient(180deg, rgba(0,0,255,0.05) 0%, rgba(0,0,255,0.01) 100%)',
+      border: '1px solid rgba(61,80,232,0.22)',
+      background: 'linear-gradient(180deg, rgba(61,80,232,0.05) 0%, rgba(61,80,232,0.01) 100%)',
       borderRadius: 12,
       textAlign: 'center',
       gap: 14,
@@ -969,7 +969,7 @@ function Paywall({ item, onSubscribe }) {
             padding: '14px 20px',
             background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: 8,
             fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em',
-            boxShadow: '0 6px 24px -8px rgba(0,0,255,0.55)',
+            boxShadow: '0 6px 24px -8px rgba(61,80,232,0.55)',
           }}
         >
           Subscribe to Cue+ — <b style={{ fontWeight: 700 }}>lifetime for $99</b> →

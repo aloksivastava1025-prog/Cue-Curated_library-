@@ -591,21 +591,21 @@ function MainApp() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '4px 10px', borderRadius: 999,
-              background: 'rgba(0,0,255,0.10)',
-              border: '1px solid rgba(0,0,255,0.35)',
+              background: 'rgba(61,80,232,0.10)',
+              border: '1px solid rgba(61,80,232,0.35)',
               color: '#9b9bff',
               fontSize: 11.5, fontFamily: 'var(--font-sans)',
               letterSpacing: '0.02em', cursor: 'pointer',
               transition: 'background 120ms ease, border-color 120ms ease, color 120ms ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,255,0.18)'
-              e.currentTarget.style.borderColor = 'rgba(0,0,255,0.55)'
+              e.currentTarget.style.background = 'rgba(61,80,232,0.18)'
+              e.currentTarget.style.borderColor = 'rgba(61,80,232,0.55)'
               e.currentTarget.style.color = '#c9c9ff'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,255,0.10)'
-              e.currentTarget.style.borderColor = 'rgba(0,0,255,0.35)'
+              e.currentTarget.style.background = 'rgba(61,80,232,0.10)'
+              e.currentTarget.style.borderColor = 'rgba(61,80,232,0.35)'
               e.currentTarget.style.color = '#9b9bff'
             }}
           >
@@ -924,23 +924,23 @@ function MainApp() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 10,
                 padding: '9px 18px',
-                background: 'var(--electric, #0000ff)',
+                background: 'var(--electric, #3D50E8)',
                 border: 'none',
                 borderRadius: 999,
                 color: '#fff',
                 fontSize: 13, fontWeight: 600,
                 cursor: 'pointer',
                 letterSpacing: '0.02em',
-                boxShadow: '0 8px 24px rgba(0,0,255,0.28)',
+                boxShadow: '0 8px 24px rgba(61,80,232,0.28)',
                 transition: 'transform 120ms ease, box-shadow 120ms ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,255,0.38)'
+                e.currentTarget.style.boxShadow = '0 12px 28px rgba(61,80,232,0.38)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,255,0.28)'
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(61,80,232,0.28)'
               }}
             >
               <span aria-hidden="true" style={{
@@ -980,7 +980,7 @@ function MainApp() {
             }}>
               <span style={{
                 display: 'inline-block', width: 6, height: 6, borderRadius: 999,
-                background: 'var(--electric, #0000ff)',
+                background: 'var(--electric, #3D50E8)',
               }} />
               New — Custom pricing · pay only for the components you pick →
             </a>
@@ -1098,7 +1098,7 @@ function MainApp() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '4px 10px 4px 12px', borderRadius: 999,
-                background: 'rgba(0,0,255,0.10)', border: '1px solid rgba(0,0,255,0.35)',
+                background: 'rgba(61,80,232,0.10)', border: '1px solid rgba(61,80,232,0.35)',
                 color: 'var(--text)', fontSize: 11.5, cursor: 'pointer',
                 fontFamily: 'var(--font-sans)',
               }}
@@ -1144,7 +1144,7 @@ function MainApp() {
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-dim)', marginBottom: '18px' }}>Empty library</div>
                 <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '44px', fontStyle: 'italic', fontWeight: 400, color: 'var(--electric)', marginBottom: '18px' }}>Add your first resource</h3>
                 <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '520px', margin: '0 auto 32px' }}>Your library is empty. Head to the admin panel to add projects, screenshots, or videos.</p>
-                {isAdmin && <a href="/admin" style={{ display: 'inline-block', padding: '10px 20px', background: 'var(--electric)', color: '#fff', borderRadius: '3px', textDecoration: 'none', fontSize: '13px', fontWeight: 500, boxShadow: '0 6px 24px -8px rgba(0,0,255,0.6)' }}>Open admin &rarr;</a>}
+                {isAdmin && <a href="/admin" style={{ display: 'inline-block', padding: '10px 20px', background: 'var(--electric)', color: '#fff', borderRadius: '3px', textDecoration: 'none', fontSize: '13px', fontWeight: 500, boxShadow: '0 6px 24px -8px rgba(61,80,232,0.6)' }}>Open admin &rarr;</a>}
               </>
             ) : (
               <>
@@ -1440,7 +1440,7 @@ export default function App() {
           <div style={{
             width: 40, height: 40, borderRadius: '50%',
             border: '2px solid rgba(255,255,255,0.12)',
-            borderTopColor: '#0000FF',
+            borderTopColor: '#3D50E8',
             animation: 'cue-spin 900ms linear infinite',
           }} />
           <div style={{

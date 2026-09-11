@@ -135,7 +135,7 @@ export default function CueUserMenu() {
           border-radius: 999px;
           padding: 2px;
           box-sizing: border-box;
-          background: conic-gradient(from 220deg, #0000FF 0deg, #4d4dff 90deg, #ccff00 200deg, #0000FF 360deg);
+          background: conic-gradient(from 220deg, #3D50E8 0deg, #4d4dff 90deg, #ccff00 200deg, #3D50E8 360deg);
           display: inline-flex;
           align-items: center;
           justify-content: center;

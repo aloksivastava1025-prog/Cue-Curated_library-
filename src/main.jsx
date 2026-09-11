@@ -25,7 +25,7 @@ if (!PUBLISHABLE_KEY) {
 const clerkAppearance = {
   baseTheme: dark,
   variables: {
-    colorPrimary:         '#0000FF',            // CUE electric blue
+    colorPrimary:         '#3D50E8',            // CUE electric blue
     colorBackground:      '#0e0e10',            // Card bg
     colorInputBackground: '#0b0b0d',
     colorText:            '#f2f2ef',
@@ -58,14 +58,14 @@ const clerkAppearance = {
     },
     // Buttons — primary is electric, socials + secondary have subtle bg
     formButtonPrimary: {
-      backgroundColor: '#0000FF',
+      backgroundColor: '#3D50E8',
       color: '#fff',
       fontWeight: 500,
       borderRadius: '8px',
       textTransform: 'none',
       letterSpacing: '0.01em',
       '&:hover': { backgroundColor: '#1a1aff' },
-      '&:focus':  { boxShadow: '0 0 0 3px rgba(0,0,255,0.35)' },
+      '&:focus':  { boxShadow: '0 0 0 3px rgba(61,80,232,0.35)' },
     },
     socialButtonsBlockButton: {
       backgroundColor: 'transparent',
@@ -77,7 +77,7 @@ const clerkAppearance = {
       backgroundColor: '#0b0b0d',
       border: '1px solid rgba(255,255,255,0.08)',
       color: '#f2f2ef',
-      '&:focus': { borderColor: '#0000FF', boxShadow: '0 0 0 2px rgba(0,0,255,0.25)' },
+      '&:focus': { borderColor: '#3D50E8', boxShadow: '0 0 0 2px rgba(61,80,232,0.25)' },
     },
     formFieldLabel: {
       color: '#f2f2ef',
@@ -92,7 +92,7 @@ const clerkAppearance = {
     },
     footerActionText: { color: '#8a8a82', fontSize: '12px' },
     footerActionLink: {
-      color: '#0000FF',
+      color: '#3D50E8',
       fontWeight: 500,
       '&:hover': { color: '#3333ff' },
     },
@@ -100,7 +100,7 @@ const clerkAppearance = {
     // preview does not look like a dev sandbox to visitors.
     footerPagesLink: { color: '#8a8a82' },
     identityPreviewText:     { color: '#f2f2ef' },
-    identityPreviewEditButton: { color: '#0000FF' },
+    identityPreviewEditButton: { color: '#3D50E8' },
     userButtonPopoverCard: {
       backgroundColor: '#0e0e10',
       border: '1px solid rgba(255,255,255,0.08)',

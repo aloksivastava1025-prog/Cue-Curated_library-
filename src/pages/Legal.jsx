@@ -195,7 +195,7 @@ export default function Legal({ slug }) {
             return (
               <a key={l.slug} href={`#/legal/${l.slug}`} style={{
                 padding: '6px 12px', borderRadius: 999,
-                background: on ? 'rgba(0,0,255,0.12)' : 'transparent',
+                background: on ? 'rgba(61,80,232,0.12)' : 'transparent',
                 border: `1px solid ${on ? 'var(--electric)' : 'var(--border)'}`,
                 color: on ? '#fff' : 'var(--text-dim)',
                 fontSize: 12, textDecoration: 'none', letterSpacing: '0.02em',

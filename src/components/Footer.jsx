@@ -56,7 +56,7 @@ export default function Footer({ onSuggest }) {
         <nav style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
           {links.map((l, i) => {
             const style = l.accent
-              ? { ...(l.onClick ? btnStyle : linkStyle), color: 'var(--electric, #0000ff)', fontWeight: 600 }
+              ? { ...(l.onClick ? btnStyle : linkStyle), color: 'var(--electric, #3D50E8)', fontWeight: 600 }
               : (l.onClick ? btnStyle : linkStyle)
             return l.onClick ? (
               <button key={i} type="button" onClick={l.onClick} style={style}>{l.label}</button>

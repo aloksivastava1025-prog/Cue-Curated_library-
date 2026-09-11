@@ -161,7 +161,7 @@ export default function FeedbackModal({ open, onClose, source }) {
                     onClick={() => setKind(t.key)}
                     style={{
                       padding: '10px 12px',
-                      background: on ? 'rgba(0,0,255,0.08)' : '#0e0e10',
+                      background: on ? 'rgba(61,80,232,0.08)' : '#0e0e10',
                       border: `1px solid ${on ? 'var(--electric)' : 'var(--border)'}`,
                       color: on ? '#fff' : 'var(--text-dim)',
                       borderRadius: 8,

@@ -507,7 +507,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
                 {isSignIn ? "Don't have an account? " : 'Already have an account? '}
                 <button
                   type="button" onClick={toggleMode}
-                  style={{ background: 'transparent', border: 'none', color: '#0000FF', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  style={{ background: 'transparent', border: 'none', color: '#3D50E8', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}
                 >
                   {isSignIn ? 'Sign up' : 'Sign in'}
                 </button>
@@ -539,7 +539,7 @@ export default function SignInCard({ open, mode = 'sign-in', onClose }) {
                 <button type="button" onClick={() => { clearPending(); setStep('email'); setCode('') }} style={{ background: 'transparent', border: 'none', color: P.textMuted, fontSize: 12, cursor: 'pointer', padding: 0 }}>
                   ← Use a different email
                 </button>
-                <button type="button" onClick={resendCode} disabled={busy} style={{ background: 'transparent', border: 'none', color: '#0000FF', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                <button type="button" onClick={resendCode} disabled={busy} style={{ background: 'transparent', border: 'none', color: '#3D50E8', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
                   Resend code
                 </button>
               </div>

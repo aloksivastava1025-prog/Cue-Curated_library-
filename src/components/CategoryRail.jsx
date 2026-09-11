@@ -172,9 +172,9 @@ function GateCard({ hiddenCount, onOpenAuth }) {
       onClick={onOpenAuth}
       style={{
         scrollSnapAlign: 'start',
-        background: 'linear-gradient(180deg, rgba(0,0,255,0.10) 0%, rgba(0,0,255,0.02) 100%), #0e0e10',
+        background: 'linear-gradient(180deg, rgba(61,80,232,0.10) 0%, rgba(61,80,232,0.02) 100%), #0e0e10',
         borderRadius: '14px',
-        border: '1px dashed rgba(0,0,255,0.35)',
+        border: '1px dashed rgba(61,80,232,0.35)',
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'transform 220ms ease, border-color 220ms ease',
@@ -182,11 +182,11 @@ function GateCard({ hiddenCount, onOpenAuth }) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)'
-        e.currentTarget.style.borderColor = 'rgba(0,0,255,0.6)'
+        e.currentTarget.style.borderColor = 'rgba(61,80,232,0.6)'
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)'
-        e.currentTarget.style.borderColor = 'rgba(0,0,255,0.35)'
+        e.currentTarget.style.borderColor = 'rgba(61,80,232,0.35)'
       }}
     >
       <div style={{
@@ -197,8 +197,8 @@ function GateCard({ hiddenCount, onOpenAuth }) {
       }}>
         <div style={{
           width: 48, height: 48, borderRadius: 999,
-          background: 'rgba(0,0,255,0.15)',
-          border: '1px solid rgba(0,0,255,0.35)',
+          background: 'rgba(61,80,232,0.15)',
+          border: '1px solid rgba(61,80,232,0.35)',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--electric)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

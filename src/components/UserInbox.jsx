@@ -169,8 +169,8 @@ export default function UserInbox() {
               const isOpen = active === t.id
               return (
                 <li key={t.id} style={{
-                  background: newAdmin ? 'rgba(0,0,255,0.06)' : '#0e0e10',
-                  border: `1px solid ${newAdmin ? 'rgba(0,0,255,0.35)' : 'var(--border)'}`,
+                  background: newAdmin ? 'rgba(61,80,232,0.06)' : '#0e0e10',
+                  border: `1px solid ${newAdmin ? 'rgba(61,80,232,0.35)' : 'var(--border)'}`,
                   borderRadius: 8, padding: '10px 12px',
                 }}>
                   <button
@@ -199,8 +199,8 @@ export default function UserInbox() {
                         {(t.messages || []).map((m) => (
                           <div key={m.id} style={{
                             padding: '8px 10px', borderRadius: 6,
-                            background: m.author === 'admin' ? 'rgba(0,0,255,0.10)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${m.author === 'admin' ? 'rgba(0,0,255,0.28)' : 'var(--border)'}`,
+                            background: m.author === 'admin' ? 'rgba(61,80,232,0.10)' : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${m.author === 'admin' ? 'rgba(61,80,232,0.28)' : 'var(--border)'}`,
                           }}>
                             <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: m.author === 'admin' ? 'var(--electric)' : 'var(--text-dim)', marginBottom: 2 }}>
                               {m.author === 'admin' ? 'CUE' : 'You'} · <span style={{ opacity: 0.7, fontWeight: 400 }}>{fmtDate(m.created_at)}</span>

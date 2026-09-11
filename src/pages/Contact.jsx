@@ -115,14 +115,14 @@ export default function Contact() {
               <SocialPill
                 href="https://x.com/Alok619308"
                 aria="X / Twitter"
-                bg="#0000FF"
+                bg="#3D50E8"
               >
                 <IconX />
               </SocialPill>
               <SocialPill
                 href="mailto:hello@cuedesign.space"
                 aria="Email"
-                bg="#0000FF"
+                bg="#3D50E8"
               >
                 <IconEmail />
               </SocialPill>
@@ -168,7 +168,7 @@ export default function Contact() {
               disabled={sending || !message.trim()}
               style={{
                 marginTop: 6, padding: '15px 22px', borderRadius: 8,
-                background: (sending || !message.trim()) ? 'rgba(0,0,255,0.4)' : 'var(--electric)',
+                background: (sending || !message.trim()) ? 'rgba(61,80,232,0.4)' : 'var(--electric)',
                 color: '#fff',
                 border: 'none',
                 cursor: (sending || !message.trim()) ? 'not-allowed' : 'pointer',

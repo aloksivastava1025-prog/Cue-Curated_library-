@@ -234,7 +234,7 @@ Just reply — reading every one.
           onClick={() => send('bulk')} disabled={busy}
           style={{
             padding: '10px 16px', borderRadius: 8,
-            background: busy ? 'rgba(0,0,255,0.4)' : 'var(--electric)',
+            background: busy ? 'rgba(61,80,232,0.4)' : 'var(--electric)',
             color: '#fff', border: 'none',
             fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
             cursor: busy ? 'not-allowed' : 'pointer',
@@ -326,7 +326,7 @@ function GrantSingleComponentPanel({ allPrompts }) {
     <div style={{
       padding: '20px 22px', margin: '0 0 28px',
       border: '1px solid var(--border)', borderRadius: 10,
-      background: 'linear-gradient(180deg, rgba(0,0,255,0.04) 0%, transparent 100%)',
+      background: 'linear-gradient(180deg, rgba(61,80,232,0.04) 0%, transparent 100%)',
     }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>
@@ -402,7 +402,7 @@ function GrantSingleComponentPanel({ allPrompts }) {
           disabled={busy}
           style={{
             padding: '10px 18px', borderRadius: 8,
-            background: busy ? 'rgba(0,0,255,0.4)' : 'var(--electric)',
+            background: busy ? 'rgba(61,80,232,0.4)' : 'var(--electric)',
             color: '#fff', border: 'none',
             fontSize: 13, fontWeight: 600, letterSpacing: '0.02em',
             cursor: busy ? 'not-allowed' : 'pointer',
@@ -507,8 +507,8 @@ function ChipInput({ value = [], onChange, placeholder, suggestions = [] }) {
         {value.map((tag, i) => (
           <span key={`${tag}-${i}`} style={{
             display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '3px 8px', background: 'rgba(0,0,255,0.12)', color: 'var(--text)',
-            border: '1px solid rgba(0,0,255,0.28)', borderRadius: '999px',
+            padding: '3px 8px', background: 'rgba(61,80,232,0.12)', color: 'var(--text)',
+            border: '1px solid rgba(61,80,232,0.28)', borderRadius: '999px',
             fontSize: '11px', fontWeight: 500, letterSpacing: '0.02em'
           }}>
             {tag}
@@ -685,7 +685,7 @@ function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBack
       gap: '16px',
       padding: '14px 18px',
       alignItems: 'center',
-      background: isActive ? 'rgba(0,0,255,0.05)' : 'var(--card-bg)',
+      background: isActive ? 'rgba(61,80,232,0.05)' : 'var(--card-bg)',
       border: `1px solid ${isActive ? 'var(--electric)' : 'var(--border)'}`,
       borderRadius: '6px',
     }}>
@@ -705,7 +705,7 @@ function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBack
             <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '3px', letterSpacing: '0.08em' }}>INTERACTION</span>
           )}
           {isFeatured && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(204,255,0,0.14)', color: '#ccff00', border: '1px solid rgba(204,255,0,0.5)', borderRadius: '3px', letterSpacing: '0.08em' }}>★ FEATURED</span>}
-          {isPaid && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(0,0,255,0.15)', color: 'var(--electric)', border: '1px solid rgba(0,0,255,0.4)', borderRadius: '3px' }}>🔒 Cue+</span>}
+          {isPaid && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(61,80,232,0.15)', color: 'var(--electric)', border: '1px solid rgba(61,80,232,0.4)', borderRadius: '3px' }}>🔒 Cue+</span>}
           {isDraft && <span style={{ fontSize: '9px', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px' }}>DRAFT</span>}
           {justBackfilled && (
             <span style={{
@@ -723,8 +723,8 @@ function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBack
           {justRetagged && (
             <span style={{
               fontSize: '9px', padding: '2px 6px',
-              background: 'rgba(0,0,255,0.12)', color: 'var(--electric)',
-              border: '1px solid rgba(0,0,255,0.4)', borderRadius: '3px',
+              background: 'rgba(61,80,232,0.12)', color: 'var(--electric)',
+              border: '1px solid rgba(61,80,232,0.4)', borderRadius: '3px',
               letterSpacing: '0.06em', display: 'inline-flex', alignItems: 'center', gap: 4,
             }}>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -779,7 +779,7 @@ function ResourceRow({ p, isActive, onEdit, onDelete, onToggleFeatured, justBack
           </svg>
         </button>
 
-        <button onClick={() => onEdit(p)} style={{ padding: '6px 12px', background: 'transparent', color: 'var(--electric)', border: '1px solid rgba(0,0,255,0.35)', borderRadius: '3px', fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Edit</button>
+        <button onClick={() => onEdit(p)} style={{ padding: '6px 12px', background: 'transparent', color: 'var(--electric)', border: '1px solid rgba(61,80,232,0.35)', borderRadius: '3px', fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Edit</button>
         <button onClick={() => onDelete(p.id)} style={{ padding: '6px 12px', background: 'transparent', color: 'var(--danger)', border: '1px solid rgba(255,77,77,0.25)', borderRadius: '3px', fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Delete</button>
       </div>
     </div>
@@ -827,7 +827,7 @@ function AutofillPreview({ suggestions, current, onApply, onCancel }) {
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
           {rows.map(({ field, nowStr, nextStr, same }) => (
-            <div key={field} style={{ padding: '12px 14px', background: '#0e0e10', border: `1px solid ${same ? 'var(--border)' : 'rgba(0,0,255,0.28)'}`, borderRadius: '4px' }}>
+            <div key={field} style={{ padding: '12px 14px', background: '#0e0e10', border: `1px solid ${same ? 'var(--border)' : 'rgba(61,80,232,0.28)'}`, borderRadius: '4px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: same ? 'default' : 'pointer' }}>
                 <input
                   type="checkbox"
@@ -1498,7 +1498,7 @@ export default function Admin() {
                     padding: '6px 12px',
                     background: autofilling ? '#1c1c1e' : 'transparent',
                     color: form.prompt?.trim() ? 'var(--electric)' : 'var(--text-dimmer)',
-                    border: `1px solid ${form.prompt?.trim() ? 'rgba(0,0,255,0.35)' : 'var(--border)'}`,
+                    border: `1px solid ${form.prompt?.trim() ? 'rgba(61,80,232,0.35)' : 'var(--border)'}`,
                     borderRadius: '3px',
                     fontSize: '11px',
                     letterSpacing: '0.06em',
@@ -1643,11 +1643,11 @@ export default function Admin() {
             <div>
               <label style={labelStyle}>Type <span style={{ textTransform: 'none', color: 'var(--text-dimmer)', letterSpacing: 0 }}>(where does it belong on the site)</span></label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div onClick={() => set({ component_type: 'section' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.component_type === 'section' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.component_type === 'section' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ component_type: 'section' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.component_type === 'section' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.component_type === 'section' ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Section</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Self-contained page piece — hero, nav, form, footer, gallery, pricing block</div>
                 </div>
-                <div onClick={() => set({ component_type: 'interaction' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.component_type === 'interaction' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.component_type === 'interaction' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ component_type: 'interaction' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.component_type === 'interaction' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.component_type === 'interaction' ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Interaction</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Smaller effect / animation / behavior — hover, cursor, scroll reveal, text anim</div>
                 </div>
@@ -1659,7 +1659,7 @@ export default function Admin() {
             <div>
               <label style={labelStyle}>Design of the Day <span style={{ textTransform: 'none', color: 'var(--text-dimmer)', letterSpacing: 0 }}>(homepage featured rail)</span></label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div onClick={() => set({ rail: null })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${!form.rail ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: !form.rail ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ rail: null })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${!form.rail ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: !form.rail ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Regular</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Only in the main grid</div>
                 </div>
@@ -1704,11 +1704,11 @@ export default function Admin() {
             <div>
               <label style={labelStyle}>Access Tier</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div onClick={() => set({ tier: 'free' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.tier === 'free' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.tier === 'free' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ tier: 'free' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.tier === 'free' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.tier === 'free' ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Free</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>All users can view prompt</div>
                 </div>
-                <div onClick={() => set({ tier: 'paid' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.tier === 'paid' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.tier === 'paid' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ tier: 'paid' })} style={{ cursor: 'pointer', padding: '14px 16px', border: `1px solid ${form.tier === 'paid' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.tier === 'paid' ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Paid <span style={{ background: 'var(--electric)', padding: '2px 4px', borderRadius: '3px', fontSize: '9px', marginLeft: '4px' }}>Cue+</span></div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Locked to subscribers</div>
                 </div>
@@ -1719,11 +1719,11 @@ export default function Admin() {
             <div>
               <label style={labelStyle}>Status</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div onClick={() => set({ status: 'draft' })} style={{ cursor: 'pointer', padding: '12px 14px', border: `1px solid ${form.status === 'draft' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.status === 'draft' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ status: 'draft' })} style={{ cursor: 'pointer', padding: '12px 14px', border: `1px solid ${form.status === 'draft' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.status === 'draft' ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '13px', fontWeight: 600 }}>Draft</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>Not visible in library</div>
                 </div>
-                <div onClick={() => set({ status: 'published' })} style={{ cursor: 'pointer', padding: '12px 14px', border: `1px solid ${form.status === 'published' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.status === 'published' ? 'rgba(0,0,255,0.06)' : '#0e0e10' }}>
+                <div onClick={() => set({ status: 'published' })} style={{ cursor: 'pointer', padding: '12px 14px', border: `1px solid ${form.status === 'published' ? 'var(--electric)' : 'var(--border)'}`, borderRadius: '3px', background: form.status === 'published' ? 'rgba(61,80,232,0.06)' : '#0e0e10' }}>
                   <div style={{ fontSize: '13px', fontWeight: 600 }}>Published</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>Live in library</div>
                 </div>
@@ -1731,7 +1731,7 @@ export default function Admin() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-              <button onClick={() => onSubmit()} disabled={saving} style={{ flex: 1, padding: '14px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px -8px rgba(0,0,255,0.5)', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving...' : isEditing ? 'Save & publish' : 'Publish to library'}</button>
+              <button onClick={() => onSubmit()} disabled={saving} style={{ flex: 1, padding: '14px', background: 'var(--electric)', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px -8px rgba(61,80,232,0.5)', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving...' : isEditing ? 'Save & publish' : 'Publish to library'}</button>
               <button onClick={() => onSubmit({ asDraft: true })} disabled={saving} style={{ padding: '14px', background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px', fontSize: '14px', cursor: 'pointer' }}>Save as draft</button>
               <button onClick={cancelEdit} style={{ padding: '14px', background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '3px', fontSize: '14px', cursor: 'pointer' }}>{isEditing ? 'Cancel edit' : 'Clear'}</button>
             </div>

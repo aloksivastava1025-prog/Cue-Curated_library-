@@ -121,8 +121,8 @@ export default function WaitlistCTA({ source = 'newsletter-hero' }) {
 
       <style>{`
         .cue-waitlist-form:focus-within {
-          border-color: rgba(0,0,255,0.5);
-          background: rgba(0,0,255,0.04);
+          border-color: rgba(61,80,232,0.5);
+          background: rgba(61,80,232,0.04);
         }
       `}</style>
     </div>

@@ -38,7 +38,7 @@ export default class ErrorBoundary extends React.Component {
         padding: '48px 24px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: 560 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#0000ff', fontWeight: 700, marginBottom: 14 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#3D50E8', fontWeight: 700, marginBottom: 14 }}>
             Something broke
           </div>
           <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(40px, 7vw, 68px)', letterSpacing: '-0.03em', margin: '0 0 16px', lineHeight: 1 }}>
@@ -48,7 +48,7 @@ export default class ErrorBoundary extends React.Component {
             The library hit a bump. It's been logged. Try refreshing — if it keeps happening, drop us a note at hello@cuedesign.space.
           </p>
           <button onClick={this.reset} style={{
-            padding: '12px 22px', background: '#0000ff', color: '#fff',
+            padding: '12px 22px', background: '#3D50E8', color: '#fff',
             border: 'none', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>Reload CUE</button>
           {isDev && (

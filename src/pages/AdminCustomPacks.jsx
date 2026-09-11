@@ -111,8 +111,8 @@ export default function AdminCustomPacks() {
             key={k}
             onClick={() => setFilter(k)}
             style={{
-              background: filter === k ? 'rgba(0,0,255,0.14)' : 'transparent',
-              border: '1px solid ' + (filter === k ? 'rgba(0,0,255,0.5)' : 'var(--border)'),
+              background: filter === k ? 'rgba(61,80,232,0.14)' : 'transparent',
+              border: '1px solid ' + (filter === k ? 'rgba(61,80,232,0.5)' : 'var(--border)'),
               color: filter === k ? 'var(--electric, #fff)' : 'var(--text-dim)',
               padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12,
               letterSpacing: '0.02em',
@@ -260,7 +260,7 @@ function RequestCard({ row, promptById, onChangeStatus, onSaveNote }) {
 function statusColour(s) {
   switch (s) {
     case 'pending':  return { bg: 'rgba(255,180,0,0.14)',  fg: '#ffb400', bd: 'rgba(255,180,0,0.4)' }
-    case 'quoted':   return { bg: 'rgba(0,0,255,0.14)',   fg: '#a3a3ff', bd: 'rgba(0,0,255,0.5)'  }
+    case 'quoted':   return { bg: 'rgba(61,80,232,0.14)',   fg: '#a3a3ff', bd: 'rgba(61,80,232,0.5)'  }
     case 'paid':     return { bg: 'rgba(34,197,94,0.14)', fg: '#22c55e', bd: 'rgba(34,197,94,0.5)' }
     case 'declined': return { bg: 'rgba(255,107,107,0.14)', fg: '#ff6b6b', bd: 'rgba(255,107,107,0.5)' }
     default:         return { bg: 'transparent', fg: 'var(--text-dim)', bd: 'var(--border)' }

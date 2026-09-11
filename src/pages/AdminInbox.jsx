@@ -48,7 +48,7 @@ const KIND_LABEL = {
   other: 'Other',
 };
 const KIND_COLOR = {
-  improvement: 'rgba(0,0,255,0.14)',
+  improvement: 'rgba(61,80,232,0.14)',
   component_request: 'rgba(204,255,0,0.14)',
   other: 'rgba(255,255,255,0.08)',
 };
@@ -233,8 +233,8 @@ export default function AdminInbox() {
             const _new = isNew(r);
             return (
               <li key={`${kind}-${r.id || rowCreatedAt(r)}`} style={{
-                background: _new ? 'rgba(0,0,255,0.05)' : '#0e0e10',
-                border: `1px solid ${_new ? 'rgba(0,0,255,0.35)' : 'var(--border)'}`,
+                background: _new ? 'rgba(61,80,232,0.05)' : '#0e0e10',
+                border: `1px solid ${_new ? 'rgba(61,80,232,0.35)' : 'var(--border)'}`,
                 borderRadius: 8, padding: '14px 16px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: isFb && r.message ? 8 : 0 }}>
@@ -243,7 +243,7 @@ export default function AdminInbox() {
                     background: isFb
                       ? (KIND_COLOR[r.kind] || KIND_COLOR.other)
                       : isMonthly
-                        ? 'rgba(0,0,255,0.14)'
+                        ? 'rgba(61,80,232,0.14)'
                         : 'rgba(255,255,255,0.06)',
                     color: 'var(--text)', letterSpacing: '0.08em', textTransform: 'uppercase',
                   }}>
@@ -353,8 +353,8 @@ function FeedbackThread({ feedback }) {
                 <div key={m.id} style={{
                   padding: '10px 12px',
                   borderRadius: 8,
-                  background: m.author === 'admin' ? 'rgba(0,0,255,0.10)' : 'rgba(204,255,0,0.06)',
-                  border: `1px solid ${m.author === 'admin' ? 'rgba(0,0,255,0.28)' : 'rgba(204,255,0,0.22)'}`,
+                  background: m.author === 'admin' ? 'rgba(61,80,232,0.10)' : 'rgba(204,255,0,0.06)',
+                  border: `1px solid ${m.author === 'admin' ? 'rgba(61,80,232,0.28)' : 'rgba(204,255,0,0.22)'}`,
                   alignSelf: m.author === 'admin' ? 'flex-end' : 'flex-start',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -466,7 +466,7 @@ function ComposeToUser({ onSent }) {
         >
           <span style={{
             width: 22, height: 22, borderRadius: 999,
-            background: 'rgba(0,0,255,0.16)', color: '#fff',
+            background: 'rgba(61,80,232,0.16)', color: '#fff',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 13, fontWeight: 700,
           }}>✉</span>

@@ -11,7 +11,7 @@ import { friendlyError } from '../lib/friendlyError.js'
  * then avatar upload row, display name input, Continue button. Pop-in
  * animation on mount for the "fun way" moment.
  */
-const HERO_GRADIENT = 'radial-gradient(120% 100% at 20% 10%, #6a5cff 0%, #0000ff 40%, #ff5e93 70%, #ffb84a 100%)'
+const HERO_GRADIENT = 'radial-gradient(120% 100% at 20% 10%, #6a5cff 0%, #3D50E8 40%, #ff5e93 70%, #ffb84a 100%)'
 
 export default function OnboardingCard({ open, onClose, onComplete }) {
   const { user } = useUser()
@@ -151,7 +151,7 @@ export default function OnboardingCard({ open, onClose, onComplete }) {
           }}>
             <div style={{
               width: 44, height: 44, borderRadius: 999, overflow: 'hidden',
-              background: avatarUrl ? '#000' : 'linear-gradient(135deg, rgba(0,0,255,0.3), rgba(204,255,0,0.25))',
+              background: avatarUrl ? '#000' : 'linear-gradient(135deg, rgba(61,80,232,0.3), rgba(204,255,0,0.25))',
               border: '1px solid var(--border)', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -214,7 +214,7 @@ export default function OnboardingCard({ open, onClose, onComplete }) {
                   fontFamily: 'var(--font-sans)', outline: 'none',
                   transition: 'border-color 0.15s ease',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(0,0,255,0.45)' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(61,80,232,0.45)' }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
               />
             </div>
@@ -238,7 +238,7 @@ export default function OnboardingCard({ open, onClose, onComplete }) {
               fontSize: 14, fontWeight: 500, letterSpacing: '0.01em',
               fontFamily: 'var(--font-sans)',
               transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              boxShadow: saving ? 'none' : '0 8px 24px -8px rgba(0,0,255,0.5)',
+              boxShadow: saving ? 'none' : '0 8px 24px -8px rgba(61,80,232,0.5)',
             }}
             onMouseEnter={(e) => { if (!saving) e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}

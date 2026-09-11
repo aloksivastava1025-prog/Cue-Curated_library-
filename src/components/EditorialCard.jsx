@@ -488,7 +488,7 @@ export default function EditorialCard({ item, setSelectedItem }) {
               background: 'var(--electric)',
               color: '#fff',
               borderRadius: 999,
-              boxShadow: '0 2px 8px rgba(0,0,255,0.35)',
+              boxShadow: '0 2px 8px rgba(61,80,232,0.35)',
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

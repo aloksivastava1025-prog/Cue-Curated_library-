@@ -1,5 +1,11 @@
 :root {
-  --electric:      #0000FF;
+  /* Pure #3D50E8 was reported as eye-straining on dark backgrounds —
+     max hue + max saturation + max value hammers the retina after
+     30+ seconds of use. Softened to #3D50E8: same visual identity
+     (still recognisably Cue blue), ~70% saturation, ~91% value.
+     Passes WCAG AA against #060606, and looks brighter/cleaner in
+     Firefox and Safari where #3D50E8 was over-blooming. */
+  --electric:      #3D50E8;
   --bg:            #060606;
   --card-bg:       #1c1c1e;
   --card-img-bg:   #2a2a2c;

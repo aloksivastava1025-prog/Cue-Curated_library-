@@ -144,7 +144,7 @@ export default function AdminSubscriptions() {
               display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.4fr 1.4fr',
               padding: '14px 16px', borderTop: '1px solid var(--border)',
               alignItems: 'center', fontSize: 13,
-              background: cls.filtered ? 'transparent' : 'rgba(0,0,255,0.04)',
+              background: cls.filtered ? 'transparent' : 'rgba(61,80,232,0.04)',
             }}>
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.email || '(no email)'}</div>
               <div style={{ color: 'var(--text-dim)' }}>{r.plan}</div>
@@ -154,9 +154,9 @@ export default function AdminSubscriptions() {
                 <span style={{
                   fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700,
                   padding: '4px 9px', borderRadius: 999,
-                  background: cls.tone === 'accent' ? 'rgba(0,0,255,0.16)' : 'rgba(255,255,255,0.05)',
+                  background: cls.tone === 'accent' ? 'rgba(61,80,232,0.16)' : 'rgba(255,255,255,0.05)',
                   color: cls.tone === 'accent' ? 'var(--electric)' : 'var(--text-dim)',
-                  border: '1px solid ' + (cls.tone === 'accent' ? 'rgba(0,0,255,0.35)' : 'var(--border)'),
+                  border: '1px solid ' + (cls.tone === 'accent' ? 'rgba(61,80,232,0.35)' : 'var(--border)'),
                 }}>{cls.label}</span>
               </div>
             </div>
@@ -229,8 +229,8 @@ function Stat({ label, value, accent }) {
   return (
     <div style={{
       padding: '12px 18px', borderRadius: 8,
-      border: '1px solid ' + (accent ? 'rgba(0,0,255,0.35)' : 'var(--border)'),
-      background: accent ? 'rgba(0,0,255,0.08)' : 'transparent',
+      border: '1px solid ' + (accent ? 'rgba(61,80,232,0.35)' : 'var(--border)'),
+      background: accent ? 'rgba(61,80,232,0.08)' : 'transparent',
       minWidth: 160,
     }}>
       <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>{label}</div>

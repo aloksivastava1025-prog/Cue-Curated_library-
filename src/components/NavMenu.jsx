@@ -82,7 +82,7 @@ export default function NavMenu({ items = [], label = 'Menu' }) {
                   {item.badge > 0 && (
                     <span style={{
                       minWidth: 18, height: 18, padding: '0 6px', borderRadius: 999,
-                      background: 'rgba(0,0,255,0.16)', border: '1px solid rgba(0,0,255,0.36)',
+                      background: 'rgba(61,80,232,0.16)', border: '1px solid rgba(61,80,232,0.36)',
                       fontSize: 10, fontWeight: 700, color: 'var(--text)',
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     }}>{item.badge}</span>

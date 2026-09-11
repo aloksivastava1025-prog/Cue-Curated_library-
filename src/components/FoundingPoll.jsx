@@ -801,7 +801,7 @@ export default function FoundingPoll() {
                   }
                   .cue-rating-fill {
                     position: absolute; left: 0; top: 0; bottom: 0;
-                    background: #0000ff;
+                    background: #3D50E8;
                     transition: width 60ms ease;
                   }
                   .cue-rating-handle {

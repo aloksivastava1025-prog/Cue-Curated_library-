@@ -477,7 +477,7 @@ export default function Pricing() {
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '5px 12px',
-          background: 'rgba(0,0,255,0.08)', border: '1px solid rgba(0,0,255,0.28)',
+          background: 'rgba(61,80,232,0.08)', border: '1px solid rgba(61,80,232,0.28)',
           marginBottom: 28,
         }}>
           <span style={{ width: 6, height: 6, background: 'var(--electric)' }} />
@@ -793,7 +793,7 @@ function Col({
     <div style={{
       display: 'flex', flexDirection: 'column',
       opacity: muted ? 0.85 : 1,
-      background: highlight ? 'rgba(0,0,255,0.04)' : 'transparent',
+      background: highlight ? 'rgba(61,80,232,0.04)' : 'transparent',
     }}>
       {/* Top block — FIXED height so CTAs align across all three columns */}
       <div className="cue-col-top" style={{ padding: 40, display: 'flex', flexDirection: 'column', height: 380, boxSizing: 'border-box' }}>
@@ -802,8 +802,8 @@ function Col({
           {badge && (
             <span style={{
               padding: '4px 8px',
-              background: 'rgba(0,0,255,0.18)',
-              color: '#fff', border: '1px solid rgba(0,0,255,0.4)',
+              background: 'rgba(61,80,232,0.18)',
+              color: '#fff', border: '1px solid rgba(61,80,232,0.4)',
               fontSize: 9.5, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase',
               whiteSpace: 'nowrap',
             }}>{badge}</span>

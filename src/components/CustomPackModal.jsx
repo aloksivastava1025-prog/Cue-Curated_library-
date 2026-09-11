@@ -336,7 +336,7 @@ export default function CustomPackModal({ open, onClose }) {
                       onClick={submit}
                       disabled={submitting || !ready}
                       style={{
-                        background: 'var(--electric, #0000ff)',
+                        background: 'var(--electric, #3D50E8)',
                         color: '#fff',
                         border: 'none',
                         padding: '10px 20px',
@@ -373,7 +373,7 @@ function PickerCard({ row, picked, onToggle }) {
         borderRadius: 10,
         overflow: 'hidden',
         cursor: 'pointer',
-        border: picked ? '2px solid var(--electric, #0000ff)' : '1px solid rgba(255,255,255,0.10)',
+        border: picked ? '2px solid var(--electric, #3D50E8)' : '1px solid rgba(255,255,255,0.10)',
         background: '#111',
         padding: 0,
         outline: 'none',
@@ -393,7 +393,7 @@ function PickerCard({ row, picked, onToggle }) {
       <div style={{
         position: 'absolute', top: 8, right: 8,
         width: 22, height: 22, borderRadius: '50%',
-        background: picked ? 'var(--electric, #0000ff)' : 'rgba(0,0,0,0.55)',
+        background: picked ? 'var(--electric, #3D50E8)' : 'rgba(0,0,0,0.55)',
         border: picked ? 'none' : '1px solid rgba(255,255,255,0.4)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         color: '#fff', fontSize: 13, fontWeight: 700,
@@ -446,7 +446,7 @@ function SuccessScreen({ count, onClose }) {
         onClick={onClose}
         style={{
           marginTop: 26,
-          background: 'var(--electric, #0000ff)', color: '#fff', border: 'none',
+          background: 'var(--electric, #3D50E8)', color: '#fff', border: 'none',
           padding: '10px 22px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
         }}
       >

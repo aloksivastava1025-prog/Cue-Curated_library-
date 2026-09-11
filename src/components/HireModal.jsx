@@ -149,7 +149,7 @@ export default function HireModal({ open, onClose }) {
             </div>
             <button
               onClick={onClose}
-              style={{ marginTop: 24, background: 'var(--electric, #0000ff)', color: '#fff', border: 'none', padding: '10px 22px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={{ marginTop: 24, background: 'var(--electric, #3D50E8)', color: '#fff', border: 'none', padding: '10px 22px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               Back to library
             </button>
@@ -220,7 +220,7 @@ export default function HireModal({ open, onClose }) {
                   onClick={submit}
                   disabled={submitting}
                   style={{
-                    background: 'var(--electric, #0000ff)', color: '#fff', border: 'none',
+                    background: 'var(--electric, #3D50E8)', color: '#fff', border: 'none',
                     padding: '10px 20px', borderRadius: 8,
                     fontSize: 13, fontWeight: 600,
                     cursor: submitting ? 'wait' : 'pointer',
@@ -255,8 +255,8 @@ function Radio({ label, value, onChange, options }) {
               onClick={() => onChange(o.v)}
               style={{
                 padding: '6px 12px',
-                background: on ? 'rgba(0,0,255,0.14)' : 'rgba(255,255,255,0.04)',
-                border: '1px solid ' + (on ? 'rgba(0,0,255,0.5)' : 'rgba(255,255,255,0.10)'),
+                background: on ? 'rgba(61,80,232,0.14)' : 'rgba(255,255,255,0.04)',
+                border: '1px solid ' + (on ? 'rgba(61,80,232,0.5)' : 'rgba(255,255,255,0.10)'),
                 color: on ? '#fff' : 'var(--text-dim, rgba(255,255,255,0.65))',
                 borderRadius: 8,
                 fontSize: 12, cursor: 'pointer',

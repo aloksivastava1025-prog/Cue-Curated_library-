@@ -530,14 +530,14 @@ export default function FounderDock() {
         .cue-founder-btn-hire {
           width: 100%;
           margin-top: 10px;
-          background: #0000ff;
+          background: #3D50E8;
           color: #fff;
-          border: 1px solid #0000ff;
-          box-shadow: 0 6px 18px -6px rgba(0,0,255,0.55);
+          border: 1px solid #3D50E8;
+          box-shadow: 0 6px 18px -6px rgba(61,80,232,0.55);
         }
         .cue-founder-btn-hire:hover {
           transform: translateY(-1px);
-          box-shadow: 0 12px 22px -6px rgba(0,0,255,0.65);
+          box-shadow: 0 12px 22px -6px rgba(61,80,232,0.65);
           background: #1a1aff;
           border-color: #1a1aff;
         }

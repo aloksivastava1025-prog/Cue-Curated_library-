@@ -205,8 +205,8 @@ export default function TagFilter({ items = [], selected = [], onChange }) {
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '8px 14px', height: 34,
-          background: selected.length ? 'rgba(0,0,255,0.08)' : 'transparent',
-          border: `1px solid ${selected.length ? 'rgba(0,0,255,0.35)' : 'var(--border)'}`,
+          background: selected.length ? 'rgba(61,80,232,0.08)' : 'transparent',
+          border: `1px solid ${selected.length ? 'rgba(61,80,232,0.35)' : 'var(--border)'}`,
           color: 'var(--text)', borderRadius: 999,
           fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600,
           letterSpacing: '0.05em', textTransform: 'uppercase',
@@ -275,7 +275,7 @@ export default function TagFilter({ items = [], selected = [], onChange }) {
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                     padding: '9px 10px', borderRadius: 6,
-                    background: on ? 'rgba(0,0,255,0.10)' : 'transparent',
+                    background: on ? 'rgba(61,80,232,0.10)' : 'transparent',
                     border: 'none', color: 'var(--text)',
                     fontFamily: 'var(--font-sans)', fontSize: 13, cursor: 'pointer',
                     textAlign: 'left',

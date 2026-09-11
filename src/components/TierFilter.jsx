@@ -38,8 +38,8 @@ export default function TierFilter({ value = 'all', counts = {}, onChange }) {
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '8px 14px', height: 34,
-          background: isFiltered ? 'rgba(0,0,255,0.10)' : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${isFiltered ? 'rgba(0,0,255,0.45)' : 'rgba(255,255,255,0.15)'}`,
+          background: isFiltered ? 'rgba(61,80,232,0.10)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isFiltered ? 'rgba(61,80,232,0.45)' : 'rgba(255,255,255,0.15)'}`,
           color: 'var(--text)', borderRadius: 999,
           fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600,
           letterSpacing: '0.05em', textTransform: 'uppercase',
@@ -47,7 +47,7 @@ export default function TierFilter({ value = 'all', counts = {}, onChange }) {
           transition: 'background 0.15s ease, border-color 0.15s ease',
         }}
         onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.32)' }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = isFiltered ? 'rgba(0,0,255,0.45)' : 'rgba(255,255,255,0.15)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = isFiltered ? 'rgba(61,80,232,0.45)' : 'rgba(255,255,255,0.15)' }}
       >
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ opacity: 0.7 }}>
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
@@ -82,7 +82,7 @@ export default function TierFilter({ value = 'all', counts = {}, onChange }) {
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                       padding: '9px 12px', borderRadius: 6,
-                      background: on ? 'rgba(0,0,255,0.10)' : 'transparent',
+                      background: on ? 'rgba(61,80,232,0.10)' : 'transparent',
                       border: 'none', color: 'var(--text)',
                       fontFamily: 'var(--font-sans)', fontSize: 13, cursor: 'pointer',
                       textAlign: 'left',
