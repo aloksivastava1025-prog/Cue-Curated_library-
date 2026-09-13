@@ -663,21 +663,35 @@ function MainApp() {
             src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1248790&theme=light&t=1789279549631"
             style={{ display: 'block' }}
           />
-          {/* Cover the "???" count digits sitting just under the
-              upvote arrow. Previous 34x12 mask only covered the
-              bottom half — the count text was still peeking through.
-              Bigger box tuned to the full count-line area, anchored
-              from the top so the arrow above it stays untouched. */}
+          {/* Mask + custom arrow (Sep 13 2026, Alok — badge's own
+              arrow sits stuck at the top of the upvote box; user
+              wanted it centred). Cover the entire right upvote box
+              (arrow + "???" count) with a white block, then paint
+              a fresh orange triangle vertically centred inside it.
+              Result: single crisp arrow, no phantom count. */}
           <span style={{
             position: 'absolute',
             right: 3,
-            top: 20,
+            top: 3,
+            bottom: 3,
             width: 40,
-            height: 17,
             background: '#FFFFFF',
             borderRadius: 3,
             pointerEvents: 'none',
-          }} />
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              style={{ display: 'block' }}
+            >
+              <path d="M12 5 L20 18 H4 Z" fill="#DA5536" />
+            </svg>
+          </span>
         </span>
         </a>
 
