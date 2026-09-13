@@ -32,6 +32,7 @@ import FeedbackModal from './components/FeedbackModal.jsx';
 import UserInbox from './components/UserInbox.jsx';
 import NavMenu from './components/NavMenu.jsx';
 import FloatingNav from './components/FloatingNav.jsx';
+import LanguageNudge from './components/LanguageNudge.jsx';
 import SignInCard from './components/SignInCard.jsx';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
@@ -1510,6 +1511,12 @@ function MainApp() {
         savedCount={savedCount}
         isAdmin={isAdmin}
       />
+
+      {/* Small language nudge for non-English browsers — shows a
+          Google-Translate shortcut for Chinese users while a proper
+          /zh landing page doesn't exist. Renders nothing when the
+          browser is already English, or after dismiss. */}
+      <LanguageNudge />
 
       <WelcomeCard
         onExploreFree={() => {

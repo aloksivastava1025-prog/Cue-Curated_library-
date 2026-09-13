@@ -22,6 +22,14 @@
     <meta name="author" content="Cue" />
     <link rel="canonical" href="https://cuedesign.space/" />
 
+    <!-- Multi-language SEO signals (Sep 13 2026). Content is English
+         today; hreflang tells Google we're aware of the multi-locale
+         world and points x-default at the English page. As soon as a
+         /zh variant ships, add <link hreflang="zh" href=".../zh/" />
+         and Google will surface the right locale in Chinese search. -->
+    <link rel="alternate" hreflang="en" href="https://cuedesign.space/" />
+    <link rel="alternate" hreflang="x-default" href="https://cuedesign.space/" />
+
     <!-- Open Graph -->
     <meta property="og:title" content="Cue — the Awwwards-tier UI component library" />
     <meta property="og:description" content="Cue is a curated UI component library — Awwwards-tier animations, hero flows, interactions. Every component ships with an AI prompt for Cursor, v0, Bolt, Claude. Join Cue+ at $99 lifetime." />
