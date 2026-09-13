@@ -627,13 +627,18 @@ function MainApp() {
           display: 'inline-flex', alignItems: 'baseline', gap: 5,
           overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          <span style={{ color: '#14110E', fontWeight: 600 }}>Live today.</span>
-          <span style={{ color: 'rgba(20,17,14,0.65)' }}>Upvote &amp; share how Cue felt —</span>
+          {/* Re-ordered Sep 13 2026 (Alok — mobile users were losing
+              the whole message when the tail spans hid). Now the two
+              non-negotiable pieces — "Live on Product Hunt" and
+              "Upvote + DM me on X" — sit in spans that stay visible
+              at every width; only the descriptive tail trims. */}
+          <span style={{ color: '#14110E', fontWeight: 600 }}>Live on Product Hunt today.</span>
+          <span style={{ color: 'rgba(20,17,14,0.65)' }}>Upvote &amp; DM me on X —</span>
           <span style={{
             fontFamily: 'var(--font-serif)', fontStyle: 'italic',
             color: '#14110E', fontWeight: 400,
-          }}>DM me on X with your email,</span>
-          <span style={{ color: 'rgba(20,17,14,0.65)' }}>I&apos;ll unlock one premium component, free.</span>
+          }}>I&apos;ll unlock one premium component,</span>
+          <span style={{ color: 'rgba(20,17,14,0.65)' }}>free.</span>
         </span>
 
         {/* Official PH widget — full 180x39. The auto-fetched upvote
@@ -659,16 +664,16 @@ function MainApp() {
             style={{ display: 'block' }}
           />
           {/* Cover the "???" count digits sitting just under the
-              upvote arrow on the right side of the badge. Colour
-              matches the badge's own white bg so the seam is
-              invisible. Sized to hide only the count row, not the
-              arrow above it. */}
+              upvote arrow. Previous 34x12 mask only covered the
+              bottom half — the count text was still peeking through.
+              Bigger box tuned to the full count-line area, anchored
+              from the top so the arrow above it stays untouched. */}
           <span style={{
             position: 'absolute',
-            right: 4,
-            bottom: 3,
-            width: 34,
-            height: 12,
+            right: 3,
+            top: 20,
+            width: 40,
+            height: 17,
             background: '#FFFFFF',
             borderRadius: 3,
             pointerEvents: 'none',
@@ -735,7 +740,7 @@ function MainApp() {
               <rect x="4" y="10" width="16" height="10" rx="2" />
               <path d="M8 10V7a4 4 0 0 1 8 0v3" />
             </svg>
-            Upvote first to unlock
+            Upvote first · then DM on X
           </button>
         )}
       </div>
