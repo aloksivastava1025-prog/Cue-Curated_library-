@@ -200,6 +200,20 @@ function MainApp() {
   // Keeps notifications alive but the top nav uncluttered.
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxUnread, setInboxUnread] = useState(0);
+  // Sequential unlock for the top banner (Sep 13 2026, Alok):
+  // the "DM me on X" pill stays disabled until the visitor has
+  // actually clicked over to Product Hunt. Cheap deterrent that
+  // stops people from DMing "gimme a free component" without ever
+  // touching the PH page. Persisted so the state survives reloads.
+  const [phBadgeClicked, setPhBadgeClicked] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('cue.topbanner.ph_clicked') === '1'; } catch { return false; }
+  });
+  const markPhClicked = () => {
+    setPhBadgeClicked(true);
+    try { localStorage.setItem('cue.topbanner.ph_clicked', '1'); } catch {}
+    try { window.posthog?.capture?.('topbanner_producthunt_click'); } catch {}
+  };
   useEffect(() => {
     let alive = true;
     backend.getFoundingCount()
@@ -591,9 +605,7 @@ function MainApp() {
           href="https://www.producthunt.com/products/cue-21?embed=true&utm_source=cue-topbanner&utm_medium=banner&utm_campaign=badge-cue-b7700868-7d87-400e-ac0d-92e996ef82c4"
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => {
-            try { window.posthog?.capture?.('topbanner_producthunt_click') } catch {}
-          }}
+          onClick={markPhClicked}
           aria-label="Cue is live on Product Hunt — click to upvote"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 16,
@@ -648,39 +660,68 @@ function MainApp() {
         </span>
         </a>
 
-        {/* Right pill — direct link to Alok's X so the DM path is a
-            single click. Was 'Upvote Cue →' which went to PH like
-            everything else on the left; that redundancy is what Alok
-            flagged Sep 13 2026. Now the two clusters resolve to two
-            different destinations: content = Product Hunt, right pill
-            = X DMs. Same X handle used in the banner copy above. */}
-        <a
-          href="https://x.com/Alok619308"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => {
-            try { window.posthog?.capture?.('topbanner_x_click') } catch {}
-          }}
-          className="cue-topbanner-cta"
-          aria-label="DM Alok on X to claim your free component"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            color: '#14110E',
-            background: 'rgba(255,255,255,0.55)',
-            padding: '5px 14px',
-            borderRadius: 999,
-            border: '1px solid rgba(20,17,14,0.12)',
-            fontSize: 11.5, fontWeight: 600, letterSpacing: '0.02em',
-            textDecoration: 'none',
-            transition: 'background 180ms, border-color 180ms, transform 180ms cubic-bezier(0.19,1,0.22,1)',
-            flexShrink: 0,
-          }}
-        >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
-          DM me on X
-        </a>
+        {/* Right pill — links to Alok's X for the DM/claim step. Gated
+            on phBadgeClicked: until the visitor has actually clicked
+            over to the Product Hunt page, this stays disabled with a
+            "Upvote first" tooltip. Cheap sequential unlock — stops
+            drive-by DMs asking for a free component with no PH visit.
+            Persisted in localStorage so re-opening the site preserves
+            the unlocked state. */}
+        {phBadgeClicked ? (
+          <a
+            href="https://x.com/Alok619308"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              try { window.posthog?.capture?.('topbanner_x_click') } catch {}
+            }}
+            className="cue-topbanner-cta cue-topbanner-cta-active"
+            aria-label="DM Alok on X to claim your free component"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              color: '#14110E',
+              background: 'rgba(255,255,255,0.85)',
+              padding: '5px 14px',
+              borderRadius: 999,
+              border: '1px solid rgba(20,17,14,0.24)',
+              fontSize: 11.5, fontWeight: 600, letterSpacing: '0.02em',
+              textDecoration: 'none',
+              transition: 'background 180ms, border-color 180ms, transform 180ms cubic-bezier(0.19,1,0.22,1)',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            DM me on X
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="cue-topbanner-cta cue-topbanner-cta-locked"
+            aria-disabled="true"
+            title="Upvote on Product Hunt first — the badge on the left. Then this unlocks and you can DM me for your free component."
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              color: 'rgba(20,17,14,0.35)',
+              background: 'rgba(255,255,255,0.30)',
+              padding: '5px 14px',
+              borderRadius: 999,
+              border: '1px dashed rgba(20,17,14,0.20)',
+              fontSize: 11.5, fontWeight: 600, letterSpacing: '0.02em',
+              cursor: 'not-allowed',
+              fontFamily: 'inherit',
+              flexShrink: 0,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            </svg>
+            Upvote first to unlock
+          </button>
+        )}
       </div>
       <style>{`
         @keyframes cueTopbannerPulse {

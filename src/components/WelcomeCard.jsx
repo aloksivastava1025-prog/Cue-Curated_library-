@@ -324,19 +324,52 @@ export default function WelcomeCard({ onExploreFree, onSuggest }) {
             <h3 className="cue-welcome-title">
               Welcome to Cue<span className="dot">.</span>
             </h3>
-            {/* Pricing heads-up leads the modal — this is the ONE
-                thing every visitor needs to see right now. Founder
-                voice, no urgency stunt, no countdown. */}
-            <p style={{
-              margin: '0 0 14px', padding: '12px 14px',
-              background: 'rgba(204,255,0,0.06)',
-              border: '1px solid rgba(204,255,0,0.25)',
-              borderRadius: 8,
-              fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.92)',
-            }}>
-              <strong style={{ color: '#ccff00', fontWeight: 600 }}>Heads-up on pricing:</strong>{' '}
-              Founding is <strong style={{ color: '#fff' }}>$99 lifetime</strong> — full library, MCP access, and every future drop. Going up to <strong style={{ color: '#fff' }}>$149 / $199</strong> soon. No countdown, just letting you know before I flip it.
-            </p>
+            {/* Product Hunt launch — leads the modal today (Sep 13
+                2026, Alok). Overrides the previous pricing heads-up
+                for launch week; swap back once the PH moment cools
+                down. Muted blue tint matches the top-of-page banner
+                so the two announcements read as the same message. */}
+            <a
+              href="https://www.producthunt.com/products/cue-21?embed=true&utm_source=cue-welcome&utm_medium=modal&utm_campaign=badge-cue-b7700868-7d87-400e-ac0d-92e996ef82c4"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                try { window.posthog?.capture?.('welcome_producthunt_click') } catch {}
+                try { localStorage.setItem('cue.topbanner.ph_clicked', '1') } catch {}
+              }}
+              style={{
+                display: 'block',
+                margin: '0 0 14px', padding: '12px 14px',
+                background: 'linear-gradient(90deg, rgba(61,80,232,0.12) 0%, rgba(61,80,232,0.05) 100%)',
+                border: '1px solid rgba(61,80,232,0.35)',
+                borderRadius: 8,
+                textDecoration: 'none', color: 'rgba(255,255,255,0.92)',
+                fontSize: 13.5, lineHeight: 1.55,
+                transition: 'background 220ms ease, border-color 220ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(90deg, rgba(61,80,232,0.20) 0%, rgba(61,80,232,0.10) 100%)'
+                e.currentTarget.style.borderColor = 'rgba(61,80,232,0.60)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(90deg, rgba(61,80,232,0.12) 0%, rgba(61,80,232,0.05) 100%)'
+                e.currentTarget.style.borderColor = 'rgba(61,80,232,0.35)'
+              }}
+            >
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span aria-hidden="true" style={{
+                  display: 'inline-block', width: 6, height: 6, borderRadius: 999,
+                  background: 'var(--electric)',
+                  boxShadow: '0 0 10px rgba(61,80,232,0.7)',
+                }} />
+                <strong style={{ color: '#9db4ff', fontWeight: 600, letterSpacing: '0.06em', fontSize: 10.5, textTransform: 'uppercase' }}>
+                  Live on Product Hunt today
+                </strong>
+              </div>
+              <div>
+                Upvote &amp; share how Cue felt — then <strong style={{ color: '#fff' }}>DM me on X</strong> with your email and I&apos;ll unlock <em style={{ fontStyle: 'italic' }}>one premium component</em>, free. Just this week. →
+              </div>
+            </a>
             <p className="cue-welcome-sub">
               A curated library of Awwwards-tier UI components. Every card ships with the copy-paste prompt for Cursor / v0 / Bolt, plus React source for the ones that need it.
             </p>
