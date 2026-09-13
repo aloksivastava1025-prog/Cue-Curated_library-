@@ -557,6 +557,159 @@ function MainApp() {
         }
         .cue-topsearch-clear:hover { color: var(--text); background: rgba(255,255,255,0.05); }
       `}</style>
+
+      {/* Top-of-page announcement banner (Sep 13 2026, Alok).
+          Redesign v2 — matches Cue's dark editorial vibe:
+            · deep near-black bg with a hairline top+bottom border
+              instead of the orange fill (that read as commodity promo)
+            · off-white text, muted grey supporting copy, italic serif
+              accent for the reward — the same treatment used in the
+              welcome modal and hero
+            · official PH "Featured" widget embedded on the left, with
+              the upvote counter cropped off so the width stays honest
+            · single hairline pulsing dot (Cue's motion signature)
+            · full-width clickable to PH, scrolls away with the page. */}
+      <div
+        className="cue-topbanner"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 16,
+          padding: '10px 24px',
+          background: 'linear-gradient(90deg, #DBE5FF 0%, #EFF3FF 55%, #FFFFFF 100%)',
+          borderBottom: '1px solid rgba(20,17,14,0.08)',
+          color: '#14110E',
+          position: 'relative', zIndex: 101,
+          fontFamily: 'var(--font-sans)',
+          fontSize: 13, letterSpacing: '0.005em', fontWeight: 400,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {/* Left group — text + PH badge → both go to Product Hunt.
+            Kept as one anchor so anywhere the user lands the pointer
+            in this cluster takes them to the same place. */}
+        <a
+          href="https://www.producthunt.com/products/cue-21?embed=true&utm_source=cue-topbanner&utm_medium=banner&utm_campaign=badge-cue-b7700868-7d87-400e-ac0d-92e996ef82c4"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            try { window.posthog?.capture?.('topbanner_producthunt_click') } catch {}
+          }}
+          aria-label="Cue is live on Product Hunt — click to upvote"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 16,
+            textDecoration: 'none', color: 'inherit',
+          }}
+        >
+        {/* Live dot — pulses in Cue's electric blue against the
+            pastel gradient. Sets the "actively shipping" tone
+            before any text is read. */}
+        <span aria-hidden="true" style={{
+          display: 'inline-block', width: 6, height: 6, borderRadius: 999,
+          background: 'var(--electric)',
+          boxShadow: '0 0 10px rgba(61,80,232,0.55)',
+          animation: 'cueTopbannerPulse 1.6s ease-in-out infinite',
+          flexShrink: 0,
+        }} />
+
+        <span className="cue-topbanner-text" style={{
+          display: 'inline-flex', alignItems: 'baseline', gap: 5,
+          overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          <span style={{ color: '#14110E', fontWeight: 600 }}>Live today.</span>
+          <span style={{ color: 'rgba(20,17,14,0.65)' }}>Upvote &amp; share how Cue felt —</span>
+          <span style={{
+            fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+            color: '#14110E', fontWeight: 400,
+          }}>DM me on X with your email,</span>
+          <span style={{ color: 'rgba(20,17,14,0.65)' }}>I&apos;ll unlock one premium component, free.</span>
+        </span>
+
+        {/* Official PH widget — full 250x54, no crop. User feedback
+            (Sep 13 2026): the cropped-count version looked truncated.
+            Serving the whole badge preserves the Product Hunt
+            recognition. Light theme reads cleanly on the blue-white
+            gradient bg. */}
+        <span
+          className="cue-topbanner-badge"
+          aria-hidden="true"
+          style={{
+            display: 'inline-flex', alignItems: 'center',
+            lineHeight: 0,
+            flexShrink: 0,
+          }}
+        >
+          <img
+            alt=""
+            width="180"
+            height="39"
+            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1248790&theme=light&t=1789279549631"
+            style={{ display: 'block' }}
+          />
+        </span>
+        </a>
+
+        {/* Right pill — direct link to Alok's X so the DM path is a
+            single click. Was 'Upvote Cue →' which went to PH like
+            everything else on the left; that redundancy is what Alok
+            flagged Sep 13 2026. Now the two clusters resolve to two
+            different destinations: content = Product Hunt, right pill
+            = X DMs. Same X handle used in the banner copy above. */}
+        <a
+          href="https://x.com/Alok619308"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            try { window.posthog?.capture?.('topbanner_x_click') } catch {}
+          }}
+          className="cue-topbanner-cta"
+          aria-label="DM Alok on X to claim your free component"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            color: '#14110E',
+            background: 'rgba(255,255,255,0.55)',
+            padding: '5px 14px',
+            borderRadius: 999,
+            border: '1px solid rgba(20,17,14,0.12)',
+            fontSize: 11.5, fontWeight: 600, letterSpacing: '0.02em',
+            textDecoration: 'none',
+            transition: 'background 180ms, border-color 180ms, transform 180ms cubic-bezier(0.19,1,0.22,1)',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          DM me on X
+        </a>
+      </div>
+      <style>{`
+        @keyframes cueTopbannerPulse {
+          0%, 100% { opacity: 0.55; transform: scale(1); }
+          50%      { opacity: 1;    transform: scale(1.25); }
+        }
+        .cue-topbanner:hover .cue-topbanner-cta {
+          background: rgba(255,255,255,0.9);
+          border-color: rgba(20,17,14,0.24);
+          transform: translateY(-1px);
+        }
+        /* Under 960px viewport drop the embedded badge — the text +
+           dot + CTA still carry the message and the widget starts
+           fighting for width. Under 640px keep only the essential
+           "Live on Product Hunt — Upvote →". Under 420px the whole
+           banner folds; pricing + discord pills carry the nudge. */
+        @media (max-width: 960px) {
+          .cue-topbanner-badge { display: none !important; }
+        }
+        @media (max-width: 640px) {
+          .cue-topbanner { padding: 9px 16px !important; gap: 12px !important; font-size: 12px !important; }
+          .cue-topbanner-text > span:nth-child(3),
+          .cue-topbanner-text > span:nth-child(4) { display: none !important; }
+        }
+        @media (max-width: 420px) {
+          .cue-topbanner { display: none !important; }
+        }
+      `}</style>
+
       {/* Sticky Nav */}
       <nav className="cue-nav" style={{
         position: 'sticky', top: 0, zIndex: 100,
@@ -584,40 +737,26 @@ function MainApp() {
               lineHeight: 1, whiteSpace: 'nowrap',
             }}>Beta</span>
           </div>
-          {/* Subtle "Hire me" text next to the logo. Deliberately not
-              a bright pill — the top-right already carries the
-              primary CTAs (Suggest, Menu, avatar) and adding a
-              highlighted button there made the nav feel crowded. */}
-          <button
-            type="button"
-            onClick={() => setHireOpen(true)}
-            className="cue-nav-hire-inline"
-            title="Hire me for a project build"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '4px 10px', borderRadius: 999,
-              background: 'rgba(61,80,232,0.10)',
-              border: '1px solid rgba(61,80,232,0.35)',
-              color: '#9b9bff',
-              fontSize: 11.5, fontFamily: 'var(--font-sans)',
-              letterSpacing: '0.02em', cursor: 'pointer',
-              transition: 'background 120ms ease, border-color 120ms ease, color 120ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(61,80,232,0.18)'
-              e.currentTarget.style.borderColor = 'rgba(61,80,232,0.55)'
-              e.currentTarget.style.color = '#c9c9ff'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(61,80,232,0.10)'
-              e.currentTarget.style.borderColor = 'rgba(61,80,232,0.35)'
-              e.currentTarget.style.color = '#9b9bff'
-            }}
-          >
-            <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: 999, background: '#9b9bff' }} />
-            Hire me
-          </button>
+          {/* Nav PH badge + offer chip removed (Sep 13 2026) — the
+              full-width announcement banner above the nav now
+              carries the Product Hunt message. Keeping both was
+              double-messaging in the same viewport. */}
         </div>
+        {/* Center-nav PH pill removed (Sep 13 2026) — replaced by the
+            inline PH badge in the brand cluster on the left. One
+            badge only; two was clutter. */}
+        <style>{`
+          /* Under narrow desktop the offer chip fights the resources
+             counter for width — drop it first, keep the badge. Below
+             720px the whole thing folds; the pricing/discord CTAs
+             already carry the same nudge on mobile. */
+          @media (max-width: 960px) {
+            .cue-nav-ph-offer { display: none !important; }
+          }
+          @media (max-width: 720px) {
+            .cue-nav-ph-inline { display: none !important; }
+          }
+        `}</style>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div className="cue-nav-count" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)', fontSize: '12px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--electric)', boxShadow: '0 0 8px var(--electric)' }}></div>
