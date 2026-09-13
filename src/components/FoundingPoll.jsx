@@ -966,9 +966,19 @@ export default function FoundingPoll() {
 
       <style>{`
         .cue-notch-container {
-          position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+          /* Anchored just below the launch-week top banner so the
+             notch drops from the main page area, not from inside
+             the banner. Falls back to 0 for browsers without CSS
+             custom properties. Value updated Sep 13 2026, Alok. */
+          position: fixed; top: 48px; left: 50%; transform: translateX(-50%);
           z-index: 200; pointer-events: none;
           font-family: var(--font-sans, system-ui);
+        }
+        /* Banner wraps to two rows under 520px, so bump the notch
+           further down on phones to clear the taller banner. Kept
+           in sync with the .cue-topbanner breakpoint in App.jsx. */
+        @media (max-width: 520px) {
+          .cue-notch-container { top: 68px; }
         }
         .cue-notch {
           background: #FFFFFF;

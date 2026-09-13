@@ -636,16 +636,17 @@ function MainApp() {
           <span style={{ color: 'rgba(20,17,14,0.65)' }}>I&apos;ll unlock one premium component, free.</span>
         </span>
 
-        {/* Official PH widget — full 250x54, no crop. User feedback
-            (Sep 13 2026): the cropped-count version looked truncated.
-            Serving the whole badge preserves the Product Hunt
-            recognition. Light theme reads cleanly on the blue-white
-            gradient bg. */}
+        {/* Official PH widget — full 180x39. The auto-fetched upvote
+            count renders as "???" on pre-launch products (Sep 13
+            2026, Alok flagged); mask just the count digits with a
+            small overlay tuned to the badge background so only the
+            upvote arrow stays visible. Once the product is live and
+            the widget returns a real count, remove the mask. */}
         <span
           className="cue-topbanner-badge"
           aria-hidden="true"
           style={{
-            display: 'inline-flex', alignItems: 'center',
+            display: 'inline-flex', alignItems: 'center', position: 'relative',
             lineHeight: 0,
             flexShrink: 0,
           }}
@@ -657,6 +658,21 @@ function MainApp() {
             src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1248790&theme=light&t=1789279549631"
             style={{ display: 'block' }}
           />
+          {/* Cover the "???" count digits sitting just under the
+              upvote arrow on the right side of the badge. Colour
+              matches the badge's own white bg so the seam is
+              invisible. Sized to hide only the count row, not the
+              arrow above it. */}
+          <span style={{
+            position: 'absolute',
+            right: 4,
+            bottom: 3,
+            width: 34,
+            height: 12,
+            background: '#FFFFFF',
+            borderRadius: 3,
+            pointerEvents: 'none',
+          }} />
         </span>
         </a>
 
@@ -733,21 +749,42 @@ function MainApp() {
           border-color: rgba(20,17,14,0.24);
           transform: translateY(-1px);
         }
-        /* Under 960px viewport drop the embedded badge — the text +
-           dot + CTA still carry the message and the widget starts
-           fighting for width. Under 640px keep only the essential
-           "Live on Product Hunt — Upvote →". Under 420px the whole
-           banner folds; pricing + discord pills carry the nudge. */
+        /* Mobile responsive (Sep 13 2026 fix, Alok — banner was
+           disappearing entirely on phone widths). Now the banner
+           STAYS visible at every viewport; only the pieces that
+           won't fit fold gracefully:
+             • Under 960px  → PH embed widget hides (too wide)
+             • Under 720px  → sub-copy pieces trim, tighter padding
+             • Under 520px  → banner wraps to two lines, X pill
+                              sits below the text, both stay tappable
+           No display:none on the whole banner anywhere — the launch
+           moment matters on mobile too. */
         @media (max-width: 960px) {
           .cue-topbanner-badge { display: none !important; }
         }
-        @media (max-width: 640px) {
-          .cue-topbanner { padding: 9px 16px !important; gap: 12px !important; font-size: 12px !important; }
+        @media (max-width: 720px) {
+          .cue-topbanner { padding: 9px 14px !important; gap: 10px !important; font-size: 12px !important; }
           .cue-topbanner-text > span:nth-child(3),
           .cue-topbanner-text > span:nth-child(4) { display: none !important; }
         }
-        @media (max-width: 420px) {
-          .cue-topbanner { display: none !important; }
+        @media (max-width: 520px) {
+          .cue-topbanner {
+            flex-wrap: wrap !important;
+            padding: 8px 12px !important;
+            gap: 8px !important;
+            font-size: 11.5px !important;
+            justify-content: center !important;
+          }
+          .cue-topbanner-text {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+            flex-wrap: wrap;
+          }
+          .cue-topbanner-cta {
+            font-size: 11px !important;
+            padding: 4px 10px !important;
+          }
         }
       `}</style>
 
