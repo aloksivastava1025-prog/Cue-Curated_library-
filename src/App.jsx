@@ -195,6 +195,11 @@ function MainApp() {
   // Live founding-spot counter — surfaces scarcity on the homepage
   // so a visitor who never scrolls to /pricing still sees the cap.
   const [foundingCount, setFoundingCount] = useState(0);
+  // Inbox is controlled from the NavMenu 'Inbox' item now — the bell
+  // that used to live standalone in the top nav is hidden via hideBell.
+  // Keeps notifications alive but the top nav uncluttered.
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [inboxUnread, setInboxUnread] = useState(0);
   useEffect(() => {
     let alive = true;
     backend.getFoundingCount()
@@ -625,27 +630,17 @@ function MainApp() {
             <span className="cue-nav-count-label">&nbsp;resources</span>
           </div>
           <a href="/pricing" className="cue-nav-pricing" style={{ fontSize: '12px', color: 'var(--text)', textDecoration: 'none' }}>Pricing</a>
-          <button
-            onClick={() => openFeedback('nav')}
-            className="cue-nav-suggest"
-            title="Suggest an improvement"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '5px 12px', height: 30, borderRadius: 999,
-              background: 'transparent', border: '1px solid var(--border)',
-              color: 'var(--text)', cursor: 'pointer',
-              fontSize: 11.5, fontFamily: 'var(--font-sans)', letterSpacing: '0.02em',
-              transition: 'background 0.15s ease, border-color 0.15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
-          >
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 8h6M9 12h6m-6 4h4M4 4h16v13H8l-4 4V4z" />
-            </svg>
-            <span>Suggest</span>
-          </button>
-          <UserInbox />
+          {/* Suggest + Inbox both moved into the Menu dropdown to keep
+              the top-right uncluttered (Sep 13 2026, Alok). UserInbox
+              runs in hideBell mode — no visible button, panel opens
+              from the NavMenu 'Inbox' item. Unread count is lifted to
+              badge that entry (and roll up into the Menu total). */}
+          <UserInbox
+            hideBell
+            openControl={inboxOpen}
+            onOpenChange={setInboxOpen}
+            onUnreadChange={setInboxUnread}
+          />
           <NavMenu
             items={[
               // Pricing lives in the top nav on desktop and gets hidden
@@ -667,6 +662,21 @@ function MainApp() {
                 hidden: !isSignedIn,
                 icon: (
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                ),
+              },
+              // Inbox — bell used to be standalone; now lives inside
+              // this menu. Badge shows admin-reply count. Click flips
+              // the controlled UserInbox panel open.
+              {
+                label: 'Inbox',
+                onClick: () => setInboxOpen(true),
+                badge: inboxUnread,
+                hidden: !isSignedIn,
+                icon: (
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
                 ),
               },
               // Suggest is a nav button on desktop, hidden on mobile —

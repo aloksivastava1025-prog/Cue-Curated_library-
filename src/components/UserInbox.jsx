@@ -21,10 +21,30 @@ function fmtDate(iso) {
 
 // Nav bell that shows unread admin replies to the signed-in user's own
 // feedback threads. Renders nothing when signed out.
-export default function UserInbox() {
+//
+// Props (Sep 13 2026 refactor, Alok — nav declutter):
+//   hideBell       — hide the standalone bell button. Panel becomes a
+//                    fixed top-right sheet triggered by parent.
+//   openControl    — controlled open state. Ignored when null.
+//   onOpenChange   — parent gets notified when panel wants to open/close.
+//   onUnreadChange — parent gets the live unread count (for badging a
+//                    NavMenu 'Inbox' item, etc.).
+export default function UserInbox({
+  hideBell = false,
+  openControl = null,
+  onOpenChange = () => {},
+  onUnreadChange = () => {},
+} = {}) {
   const { user, isSignedIn } = useUser()
   const email = isSignedIn ? user?.primaryEmailAddress?.emailAddress?.toLowerCase() : null
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = openControl !== null
+  const open = isControlled ? openControl : internalOpen
+  const setOpen = (v) => {
+    const next = typeof v === 'function' ? v(open) : v
+    if (isControlled) onOpenChange(next)
+    else setInternalOpen(next)
+  }
   const [threads, setThreads] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -81,6 +101,24 @@ export default function UserInbox() {
     return n
   }, [threads, lastSeen])
 
+  // Report unread count up whenever it changes — used by the NavMenu
+  // 'Inbox' item badge when this component is running in hideBell mode.
+  useEffect(() => {
+    onUnreadChange(unreadCount)
+  }, [unreadCount, onUnreadChange])
+
+  // When parent opens the panel via openControl, mirror the same
+  // "freeze the highlight cutoff + mark as seen" behaviour the bell
+  // button trigger does.
+  useEffect(() => {
+    if (!isControlled) return
+    if (open) {
+      setSeenSnapshot(lastSeen)
+      markSeen()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   function markSeen() {
     if (!seenKey) return
     const now = new Date().toISOString()
@@ -103,42 +141,51 @@ export default function UserInbox() {
 
   if (!isSignedIn || !email) return null
 
+  // Panel positioning depends on whether we're the standalone bell
+  // (anchor relative to the button) or a headless controller opened
+  // from the NavMenu (fixed top-right sheet).
+  const panelPosition = hideBell
+    ? { position: 'fixed', top: 72, right: 16 }
+    : { position: 'absolute', top: 'calc(100% + 8px)', right: 0 }
+
   return (
-    <div ref={rootRef} style={{ position: 'relative' }}>
-      <button
-        onClick={() => {
-          const next = !open
-          if (next) setSeenSnapshot(lastSeen)  // freeze highlight cutoff for this panel session
-          setOpen(next)
-          if (next) markSeen()
-        }}
-        aria-label="Messages"
-        title="Messages from CUE"
-        style={{
-          background: 'transparent', border: '1px solid var(--border)',
-          color: 'var(--text)', width: 34, height: 30, borderRadius: 999,
-          cursor: 'pointer', position: 'relative',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
-        {unreadCount > 0 && (
-          <span style={{
-            position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
-            padding: '0 4px', borderRadius: 999,
-            background: 'var(--electric)', color: '#fff',
-            fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+    <div ref={rootRef} style={{ position: hideBell ? 'static' : 'relative' }}>
+      {!hideBell && (
+        <button
+          onClick={() => {
+            const next = !open
+            if (next) setSeenSnapshot(lastSeen)  // freeze highlight cutoff for this panel session
+            setOpen(next)
+            if (next) markSeen()
+          }}
+          aria-label="Messages"
+          title="Messages from CUE"
+          style={{
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--text)', width: 34, height: 30, borderRadius: 999,
+            cursor: 'pointer', position: 'relative',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          }}>{unreadCount}</span>
-        )}
-      </button>
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
+              padding: '0 4px', borderRadius: 999,
+              background: 'var(--electric)', color: '#fff',
+              fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}>{unreadCount}</span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div className="cue-inbox-panel" style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          ...panelPosition,
           width: 380, maxWidth: 'calc(100vw - 16px)',
           maxHeight: '70vh', overflowY: 'auto',
           background: '#0d0d10', border: '1px solid var(--border)', borderRadius: 12,
