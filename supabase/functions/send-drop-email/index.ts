@@ -108,6 +108,20 @@ serve(async (req) => {
     const ctaUrl      = String(body?.ctaUrl || `${SITE_URL}/#/pricing`).trim().slice(0, 500)
     const campaignKey = String(body?.campaignKey || '').trim().slice(0, 60)
     const testTo      = String(body?.to || '').trim().toLowerCase().slice(0, 320)
+    // Batch controls (Sep 14 2026, Alok — Resend's minute-level
+    // send limit was tripping on all-in-one blasts to the full user
+    // + waitlist union). Accept an explicit `limit` and an optional
+    // `since` ISO timestamp to target only recent signups.
+    //   limit — how many recipients to include this run (default 190)
+    //   since — only include user_profiles rows with created_at >= since
+    //           (waitlist rows carry no created_at cursor today, so
+    //           `since` filters signed-up users only; waitlist is
+    //           trimmed by the same `limit` cap after dedupe)
+    const rawLimit = Number(body?.limit)
+    const batchLimit = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(Math.floor(rawLimit), 1000)
+      : 190
+    const sinceIso = typeof body?.since === 'string' ? body.since.trim() : ''
 
     if (!subject || !bodyText) {
       return new Response(JSON.stringify({ error: 'subject + body required' }), {
@@ -185,13 +199,23 @@ serve(async (req) => {
     //
     // Two queries + merge because they live in different tables and
     // Supabase doesn't do cross-table UNION at the REST level.
+    // Newest signups first + double the batch limit at query time —
+    // dedupe against unsubscribes / existing sends may drop some, so
+    // over-fetching keeps the final batch close to `batchLimit`.
+    let usersQuery = supabase.from('user_profiles')
+      .select('user_id, email, full_name, plan, created_at')
+      .not('email', 'is', null)
+      .or('plan.is.null,plan.eq.free')
+      .order('created_at', { ascending: false })
+      .limit(batchLimit * 2)
+    if (sinceIso) usersQuery = usersQuery.gte('created_at', sinceIso)
+
     const [{ data: freeUsers, error: usersErr }, { data: waitlist, error: wlErr }] = await Promise.all([
-      supabase.from('user_profiles')
-        .select('user_id, email, full_name, plan')
-        .not('email', 'is', null)
-        .or('plan.is.null,plan.eq.free'),
+      usersQuery,
       supabase.from('waitlist_emails')
-        .select('email'),
+        .select('email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(batchLimit * 2),
     ])
 
     if (usersErr) {
@@ -211,13 +235,29 @@ serve(async (req) => {
       .eq('unsubscribed', true)
     const unsubSet = new Set((prefs || []).map(p => (p.email || '').toLowerCase()))
 
+    // Fetch already-sent emails for THIS campaign so re-runs don't
+    // spin on the same batch. Combined with the per-run batchLimit,
+    // this lets the admin drip a big audience out over multiple hits
+    // without exhausting Resend's minute-level ceiling in one shot.
+    const alreadySentSet = new Set<string>()
+    if (campaignKey) {
+      const { data: sentLog } = await supabase
+        .from('email_send_log')
+        .select('email')
+        .eq('campaign_key', campaignKey)
+      for (const row of (sentLog || [])) {
+        const em = String(row.email || '').toLowerCase()
+        if (em) alreadySentSet.add(em)
+      }
+    }
+
     // Dedupe + filter. Signed-up users come first so their
     // first_name wins if they're also on the waitlist.
     const seen = new Set<string>()
     const recipients: Array<{ user_id: string; email: string; first_name: string }> = []
     for (const u of (freeUsers || [])) {
       const em = String(u.email || '').toLowerCase().trim()
-      if (!em || seen.has(em) || unsubSet.has(em)) continue
+      if (!em || seen.has(em) || unsubSet.has(em) || alreadySentSet.has(em)) continue
       seen.add(em)
       // Derive a first name: user_profiles.full_name first word →
       // else the local-part of the email → else fallback 'there'.
@@ -235,7 +275,7 @@ serve(async (req) => {
     // No first_name available — falls back to 'there' in the email.
     for (const w of (waitlist || [])) {
       const em = String(w.email || '').toLowerCase().trim()
-      if (!em || seen.has(em) || unsubSet.has(em)) continue
+      if (!em || seen.has(em) || unsubSet.has(em) || alreadySentSet.has(em)) continue
       seen.add(em)
       recipients.push({
         user_id: `email:${em}`, // anchor for unsubscribe token
@@ -243,6 +283,11 @@ serve(async (req) => {
         first_name: 'there',
       })
     }
+
+    // Final safety cap — even after query-level limits + dedupe some
+    // batches can still overshoot. Hard-trim to batchLimit so Resend's
+    // minute-level send rate never trips.
+    if (recipients.length > batchLimit) recipients.length = batchLimit
 
     // Ensure every recipient has a preferences row (so their unsub
     // token exists). Bulk-upsert on user_id.
