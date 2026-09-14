@@ -101,7 +101,13 @@ ${lines}
 
 The previews are free — hover any card and see them run. If one of them fits a project you're building, the full copy-paste prompt + React source unlocks with Cue+ ($99 lifetime, no subscription).
 
-Also new this week — you can now pay $12 for just ONE component if only one caught your eye. Small experiment, might remove it soon, so grab if it makes sense.
+Also — quick heads-up: Cue is LIVE on Product Hunt this week.
+
+If you support the launch (upvote + drop a comment about your experience), I'll unlock ONE premium component of your choice, free. Just DM me on X (@Alok619308) or reply to this email with the name of the component you want, and I'll flip it on your account within an hour.
+
+Product Hunt page: https://www.producthunt.com/products/cue-21
+
+Valid launch week only.
 
 One thing I'd love to know: what's the #1 thing you're stuck on right now building UI? I'm shaping next month's drops around whatever real people keep hitting.
 
